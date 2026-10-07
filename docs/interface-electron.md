@@ -1,6 +1,8 @@
 # Especificação: interface desktop do Soulcrate (Electron)
 
-> Status: **proposta** · Versão do documento: 0.1 · Outubro de 2026
+> Status: **"Antes" concluído, exceto §4.4 (produto e design)** · Versão do documento: 0.2 · Outubro de 2026
+>
+> A §4 registra o que foi feito em cada item. As decisões da [§10](#10-decisões-em-aberto) que as investigações resolveram estão marcadas como decididas.
 >
 > Este documento descreve o plano completo para criar o app desktop do Soulcrate: o que precisa mudar no projeto **antes**, como o app é construído **durante** a implementação e o que fica para **depois** do lançamento.
 
@@ -94,7 +96,7 @@ flowchart LR
       R[Renderer<br/>React, sem Node] <-->|IPC tipado via preload| M[Main process<br/>serviços]
     end
     M -->|spawn| D[docker / docker compose]
-    M -->|spawn destacado| P[powershell baixar-lista.ps1]
+    M -->|lançador + Start-Process| P[powershell baixar-lista.ps1]
     M -->|HTTP + API key| S[slskd API :5030]
     M -->|lê/escreve| F[(.env, slskd.yml,<br/>listas, lotes/)]
     P -->|eventos JSONL| F
@@ -131,8 +133,8 @@ Hoje o `docker-compose.yml`, os scripts e as pastas convivem no clone do reposit
 ### 3.4 Comunicação com o `baixar-lista.ps1`
 
 - O app chama o `.ps1` direto (não o `.bat`, que tem `pause` e `notepad`), com `powershell.exe -NoProfile -NonInteractive -ExecutionPolicy Bypass -File ...`.
-- O processo é iniciado **destacado** (`detached: true`, `windowsHide: true`), com stdout e stderr redirecionados para um **arquivo** em `lotes/`, não para um pipe. Assim, fechar o app **não mata o lote**, e o app reabre e se reconecta à execução em andamento.
-- O progresso estruturado chega por um arquivo **JSONL de eventos** (ver [§4.1](#41-mudanças-no-baixar-listaps1)), que o app acompanha (tail). O texto colorido continua existindo para quem usa o `.bat` e aparece no app como "log bruto".
+- O processo é iniciado por um **PowerShell lançador** que usa `Start-Process -WindowStyle Hidden`, com stdout e stderr do lote redirecionados para **arquivos** em `lotes/`, não para um pipe. Assim, fechar o app **não mata o lote**, e o app reabre e se reconecta à execução em andamento. **`spawn` com `detached: true` não serve**: com ele o `powershell.exe` sai na hora sem rodar nada, e sem ele o lote morre junto com o app. A receita, com as armadilhas de aspas e de handles herdados, está no [SP3](spikes/sp3-processo-destacado.md).
+- O progresso estruturado chega por um arquivo **JSONL de eventos** ([protocolo](eventos-lote.md)), que o app acompanha lendo por offset ([SP4](spikes/sp4-tail-jsonl.md)). O texto colorido continua existindo para quem usa o `.bat` e aparece no app como "log bruto".
 - A parada é feita por **arquivo-sinal** (não por `kill`), para que o bloco `finally` do script rode e grave os relatórios.
 
 ### 3.5 Estrutura no repositório
@@ -171,11 +173,11 @@ Tudo nesta seção é feito **antes** de escrever telas. São mudanças pequenas
 | --- | --- | --- | --- |
 | P1 | **Testes Pester de caracterização** | Cobrir `Clean-Line`, `Parse-Line`, `Read-Lista` (txt e csv), `Test-File`, `Get-Tolerance`, `Find-InCatalog` com os exemplos do README | Rede de segurança antes de mexer no script. Exige que as funções possam ser carregadas sem rodar o `Main` (ver P2) |
 | P2 | **Separar funções do fluxo principal** | Mover as funções para `baixar-lista.lib.ps1`, dot-sourced pelo `.ps1`. O `.ps1` continua sendo o ponto de entrada com os mesmos parâmetros | Permite testar as funções e reutilizá-las no modo de análise (P5) |
-| P3 | **Eventos JSONL** | Novo parâmetro `-Eventos <arquivo>`. Cada mudança relevante grava uma linha JSON (esquema no [Apêndice A](#apêndice-a-esquema-dos-eventos-do-lote)). Sem o parâmetro, o comportamento atual não muda | Progresso estruturado sem interpretar o texto da tela |
+| P3 | **Eventos JSONL** | Novo parâmetro `-Eventos <arquivo>`. Cada mudança relevante grava uma linha JSON ([protocolo](eventos-lote.md)). Sem o parâmetro, o comportamento atual não muda | Progresso estruturado sem interpretar o texto da tela |
 | P4 | **Parada segura** | Novo parâmetro `-ArquivoParada <arquivo>`. O laço principal confere a existência do arquivo a cada volta; se existir, sai do laço e o `finally` grava os relatórios. Emite `run.stopping` e `run.end` com `reason: "user"` | `kill` no processo pula o `finally` e perde `resultado-*.txt` e `nao-baixadas-*.txt` |
 | P5 | **Modo de análise** | Novo switch `-SoAnalisar`: lê a lista, limpa, separa artista/título/mix, marca duplicadas e (opcional) o que já está na biblioteca e no estado; grava um JSON e sai sem buscar nada | Pré-visualização da lista no editor do app usando **a mesma** lógica de parsing do script (sem duplicar em TS) |
 | P6 | **Diagnóstico estruturado** | Além do `diagnostico-*.txt`, emitir um evento `item.diagnostic` por faixa não encontrada (buscas, contagem de motivos, arquivos mais parecidos, "talvez seja", catálogo do artista) | Tela de diagnóstico sem interpretar texto livre |
-| P7 | **Códigos de saída** | `0` concluído; `1` erro inesperado; `2` parado pelo usuário; `3` slskd inacessível; `4` configuração inválida (API key, lista) | O app decide a mensagem sem ler o log |
+| P7 | **Códigos de saída** | `0` concluído; `1` erro inesperado; `2` parado pelo usuário; `3` slskd inacessível; `4` configuração inválida (API key, lista); `5` lista já rodando (P8); `130` Ctrl+C | O app decide a mensagem sem ler o log |
 | P8 | **Trava por lista** | Criar `lotes/estado-<lista>.lock` com PID e horário; recusar iniciar se houver trava de um processo vivo; limpar no `finally` | Evita duas execuções da mesma lista (pelo app e pelo `.bat`) corrompendo o `estado-*.tsv` |
 | P9 | **Identificador da execução** | Novo parâmetro opcional `-IdExecucao`; se ausente, usa o `$stamp` atual. Todos os arquivos da execução usam esse id | O app sabe de antemão o nome de todos os arquivos que serão gerados |
 | P10 | **Keep-awake** | Manter o `SetThreadExecutionState` atual (funciona com processo destacado). O app **não** duplica com `powerSaveBlocker` durante o lote | Uma única fonte de verdade |
@@ -186,6 +188,13 @@ Critérios de aceite do bloco:
 - Testes Pester passam no Windows PowerShell 5.1 e no `pwsh` 7.
 - Uma execução com `-Eventos` gera um JSONL válido linha a linha, e o último evento é sempre `run.end` (inclusive em erro e em parada).
 
+**Como ficou.** P1–P10 implementados. Referência do protocolo (parâmetros, arquivos, códigos de saída, trava, eventos e análise): [`docs/eventos-lote.md`](eventos-lote.md), que substitui o [Apêndice A](#apêndice-a-esquema-dos-eventos-do-lote).
+
+- Testes: 76 de funções (`tests/baixar-lista.lib.Tests.ps1`) e 40 de integração contra um slskd falso em Node (`tests/baixar-lista.Integracao.Tests.ps1`, `tests/dubles/slskd-falso.mjs`).
+- Sem regressão: a versão anterior e a nova, rodadas sem os parâmetros novos contra o mesmo slskd falso e a mesma lista, deram **zero diferenças** na tela e nos arquivos de `lotes/`.
+- Fixtures de execuções reais (completa, parada, erro de configuração e análise) em `app/tests/fixtures/lote/`, geradas por `tests/Gerar-Fixtures.ps1`.
+- Testado localmente no Windows PowerShell 5.1. O PowerShell 7 fica a cargo do CI, que roda a mesma suíte nos dois.
+
 ### 4.2 Mudanças na stack
 
 | # | Mudança | Detalhe |
@@ -194,6 +203,13 @@ Critérios de aceite do bloco:
 | S2 | **Portas só em `127.0.0.1`** (opcional, recomendado) | `127.0.0.1:5030:5030`, `127.0.0.1:9765:9765`, `127.0.0.1:4533:4533`. A porta `2234` continua aberta (é a do Soulseek). Reduz a exposição da API do slskd na rede local. Documentar no README |
 | S3 | **Rótulo de versão da stack** | Arquivo `VERSION` na raiz (ex.: `stack 1.0.0`). O app compara com a versão que traz embutida para saber se precisa atualizar os arquivos (§3.3) |
 | S4 | **Validação reutilizável** | Documentar em um só lugar as regras que hoje estão no `subir.bat` (marcadores `PREENCHA_`, `troque-`, `TROQUE_POR_UMA_CHAVE_ALEATORIA`, chave igual nos dois arquivos). O app implementa as mesmas regras em TS, com testes que usam os mesmos exemplos |
+
+**Como ficou.**
+
+- **S1:** healthcheck nos três serviços, com os comandos testados dentro das imagens fixadas. slskd: `/health` (a imagem já trazia um, mas com `start_period` de 1 h). Navidrome: `wget --spider /ping`. Soulbeet: `python3` + `urllib`, porque a imagem é distroless; o `/health` dele devolve a página da SPA e não serve.
+- **S2:** portas das interfaces em `${BIND_ADDR:-127.0.0.1}`. `BIND_ADDR=0.0.0.0` no `.env` volta a liberar para a rede (ex.: Navidrome no celular). Documentado no README, no `.env.example` e no `CHANGELOG.md`.
+- **S3:** arquivo `VERSION` com `1.0.0`, só o número SemVer, sem o prefixo "stack".
+- **S4:** [`validar-config.ps1`](../validar-config.ps1) é a implementação de referência, usada pelo `subir.bat`. As regras estão em [`docs/validacao-configuracao.md`](validacao-configuracao.md) e os casos compartilhados com o app em `app/tests/fixtures/config/casos.json` (19 testes). Além das regras do `subir.bat`, passou a acusar campos vazios, PUID/PGID inválidos, pasta inexistente e chaves diferentes, e a avisar sobre OneDrive, discos diferentes e chaves curtas. A configuração real em uso passou sem erros nem avisos.
 
 ### 4.3 Investigações técnicas (spikes)
 
@@ -210,6 +226,17 @@ Cada spike gera uma nota curta em `docs/spikes/` com a conclusão. Nenhum códig
 | SP7 | `WebContentsView` com as três Web UIs: login persiste entre aberturas? Precisa de partição de sessão separada? |
 | SP8 | Caminhos com espaço, acento, OneDrive e disco externo no `.env` (barras normais) funcionam no Docker Desktop? Quais devem ser bloqueados ou avisados? |
 
+**Como ficou.** Notas em [`docs/spikes/`](spikes/README.md), com os scripts para reproduzir. Resumo:
+
+- **SP1:** `docker desktop status --format json` + `docker version`; WSL só como diagnóstico (a saída é UTF-16 e traduzida).
+- **SP2:** `docker desktop start --timeout`, com o executável como plano B. **Falta exercitar a partida a frio** (o Docker Desktop não foi fechado durante a investigação).
+- **SP3:** `detached: true` **não funciona** com o PowerShell; o lançador com `Start-Process` funciona. A §3.4 foi corrigida.
+- **SP4:** leitura por offset + `fs.watch` + timer: 3.000 eventos sem perda, repetição nem quebra.
+- **SP5:** `POST /auth/createAdmin` no Navidrome funciona.
+- **SP6:** o Soulbeet é configurável pela API (`/api/auth/login`, `/api/config`, `/api/folders`); `POST /api/folders` não é idempotente.
+- **SP7:** **pendente**, precisa do esqueleto do Electron; plano de teste escrito.
+- **SP8:** espaço e acento funcionam; virou regras do `validar-config.ps1`.
+
 ### 4.4 Produto e design
 
 - **Fluxos principais** escritos e validados com 2 ou 3 DJs (usuários reais da stack): primeira instalação, baixar uma lista, entender por que uma faixa não veio, tentar de novo.
@@ -224,13 +251,20 @@ Cada spike gera uma nota curta em `docs/spikes/` com a conclusão. Nenhum códig
 - GitHub Actions em `windows-latest`: lint, testes unitários, Pester, build do instalador como artefato. Testes que dependem de Docker rodam só localmente (ver [§7](#7-estratégia-de-testes)).
 - Convenção de commits (o histórico já usa `docs:`; adotar Conventional Commits) e changelog gerado a partir deles.
 
+**Como ficou.**
+
+- `app/` com Node 24 (`.nvmrc` e `engines`), npm com `package-lock.json`, TypeScript estrito, ESLint, Prettier e Vitest. Ainda sem Electron (Fase 0). Já traz os tipos do protocolo do lote (`src/shared/`), testados contra as fixtures reais, e um [guia de desenvolvimento](../app/README.md).
+- CI em `.github/workflows/ci.yml` (`windows-latest`): Pester no Windows PowerShell 5.1 e no PowerShell 7, e lint, formatação, tipos e testes do app. O build do instalador entra quando houver Electron (Fase 0).
+- [`CONTRIBUTING.md`](../CONTRIBUTING.md) com Conventional Commits, regras de codificação dos arquivos e versões; [`CHANGELOG.md`](../CHANGELOG.md) mantido à mão por enquanto, já que a geração automática pede um processo de release que ainda não existe.
+- `.gitattributes`: `app/` sempre em LF; fixtures sem conversão de fim de linha.
+
 ### 4.6 Checklist de saída do "Antes"
 
-- [ ] P1–P9 mesclados; `.bat` sem regressão.
-- [ ] S1, S3 e S4 mesclados; S2 decidido.
-- [ ] Spikes SP1–SP4 concluídos (SP5–SP8 podem terminar durante a Fase 2).
-- [ ] Wireframes e vocabulário aprovados.
-- [ ] Pasta `app/` criada com esqueleto vazio e CI verde.
+- [x] P1–P10 implementados; `.bat` sem regressão (comparação da tela e dos arquivos). Implementado na branch `feat/preparacao-interface`, falta mesclar.
+- [x] S1, S3 e S4 implementados; S2 decidido e implementado (`BIND_ADDR`).
+- [x] Spikes SP1–SP4 concluídos (SP2 sem a partida a frio). SP5, SP6 e SP8 também; SP7 pendente.
+- [ ] Wireframes e vocabulário aprovados (§4.4, fora do escopo desta etapa).
+- [x] Pasta `app/` criada com esqueleto e CI configurado. **Falta ver o CI verde no GitHub** (depende do push).
 
 ---
 
@@ -286,7 +320,7 @@ Cada fase termina com algo utilizável e testável. A ordem prioriza o que mais 
   6. **Opcionais:** fuso (padrão: do sistema), `PUID`/`PGID` (padrão 1000), `MUSICBRAINZ_CONTATO`.
   7. **Revisão** e gravação. Backup automático (`.env.bak-<data>`) se os arquivos já existiam.
 - Escrita do `slskd.yml` pelo `yaml` `Document` (preserva comentários e o resto do arquivo).
-- Pós-configuração guiada (ou automática, conforme SP5/SP6): criar o admin do Navidrome, configurar URL/API key/pasta no Soulbeet.
+- Pós-configuração **automática**, com a stack no ar: criar o admin do Navidrome ([SP5](spikes/sp5-navidrome-admin.md)) e configurar URL do slskd, API key e pasta `/music` no Soulbeet pela API dele ([SP6](spikes/sp6-soulbeet-config.md)).
 - **Checagem de porta 2234:** testa se a porta está em uso localmente e explica o redirecionamento no roteador (sem tentar UPnP na v1).
 - **Tela Configurações** reaproveita os passos do assistente para editar depois. Mudanças que exigem reiniciar a stack mostram um botão "Aplicar e reiniciar".
 
@@ -511,7 +545,7 @@ As fases 4 e 5 podem andar em paralelo depois da 3.
 | Mudanças no `baixar-lista.ps1` quebram o comportamento atual | Alto | Testes Pester de caracterização (P1) antes de qualquer mudança; critério de "mesma saída sem `-Eventos`" |
 | Instalação do Docker Desktop/WSL continua difícil e o app não resolve isso | Alto | Cartões de diagnóstico claros na Fase 1; guia passo a passo com capturas; não tentar instalar o Docker pelo app na v1 |
 | Processo destacado fica órfão ou duplicado | Médio | Trava com PID (P8), reconexão na abertura, botão "encerrar execução travada" que cria o arquivo-sinal e, após timeout, oferece encerrar à força avisando que os relatórios podem ficar incompletos |
-| Soulbeet sem API de configuração | Médio | SP6; se não houver, passo guiado com valores para copiar com um clique |
+| A API interna do Soulbeet ou do Navidrome muda numa versão nova | Médio | As duas APIs (SP5, SP6) são as que as próprias interfaces usam, não APIs documentadas. As versões ficam fixas; ao atualizar, repetir os testes do SP5/SP6. Plano B: passo guiado com valores para copiar |
 | Atualização do app sobrescreve personalização do `config.yaml` | Médio | Manifesto com hashes (§3.3) e arquivo `.novo` |
 | SmartScreen bloqueia o instalador não assinado | Médio | Decidir sobre assinatura (§10); documentar "Mais informações → Executar assim mesmo" |
 | Segredos vazam em log ou pacote de suporte | Alto | Filtro de segredos com teste unitário dedicado; segredos nunca no renderer |
@@ -525,11 +559,11 @@ As fases 4 e 5 podem andar em paralelo depois da 3.
 | # | Decisão | Opções | Recomendação |
 | --- | --- | --- | --- |
 | D1 | Onde fica a pasta do Soulcrate no app instalado | `%USERPROFILE%\Soulcrate` × escolha livre × dentro da pasta do app | Padrão `%USERPROFILE%\Soulcrate`, com escolha livre no assistente; nunca dentro da pasta de instalação |
-| D2 | Expor as portas só em `127.0.0.1` (S2) | Sim × não | Sim. Quem quiser acesso pela rede local muda no `docker-compose.yml` |
+| D2 | Expor as portas só em `127.0.0.1` (S2) | Sim × não | **Decidido:** sim, por padrão; `BIND_ADDR=0.0.0.0` no `.env` libera para a rede |
 | D3 | Assinatura de código | Certificado OV/EV × Azure Trusted Signing × sem assinatura | Começar sem assinatura no beta; decidir antes da 1.0 conforme custo |
-| D4 | Endpoint de saúde do slskd e do Soulbeet | Endpoint HTTP dedicado × checagem de porta | Confirmar nas versões fixadas (S1) |
-| D5 | Configuração automática do Navidrome e do Soulbeet | Automática × guiada | Depende de SP5 e SP6 |
-| D6 | npm × pnpm | — | O que o mantenedor preferir; o importante é um só |
+| D4 | Endpoint de saúde do slskd e do Soulbeet | Endpoint HTTP dedicado × checagem de porta | **Decidido:** slskd `/health`; Soulbeet, checagem HTTP da raiz (o `/api/system/health` exige login) |
+| D5 | Configuração automática do Navidrome e do Soulbeet | Automática × guiada | **Decidido:** automática (SP5 e SP6 confirmaram as APIs) |
+| D6 | npm × pnpm | — | **Decidido:** npm |
 | D7 | Fechar a janela durante um lote | Minimiza para a bandeja × pergunta × fecha | Minimiza para a bandeja e mostra aviso na primeira vez (o lote continua de qualquer forma) |
 
 ---
@@ -538,33 +572,13 @@ As fases 4 e 5 podem andar em paralelo depois da 3.
 
 ### Apêndice A: esquema dos eventos do lote
 
-Uma linha JSON por evento em `lotes/eventos-<id>.jsonl`. Todo evento tem `v` (versão do esquema), `t` (ISO 8601) e `type`.
+**Substituído por [`docs/eventos-lote.md`](eventos-lote.md)**, a referência do protocolo como implementado, com exemplos reais em `app/tests/fixtures/lote/`. Em relação ao esboço original desta seção:
 
-```jsonc
-{"v":1,"t":"2026-10-07T16:10:02-03:00","type":"run.start","id":"20261007-161002","list":"C:/Users/.../lista.txt","total":30,"options":{"Paralelo":5,"AceitarWav":false},"pid":12345}
-{"v":1,"t":"...","type":"run.skip","alreadyDone":4,"inLibrary":6,"toProcess":20}
-{"v":1,"t":"...","type":"catalog.progress","done":15,"total":20}
-{"v":1,"t":"...","type":"catalog.result","key":"vendex|abaddon","line":"Vendex - Abaddon","result":"CORRIGIDO","searchLine":"Vendex - Abbadon","similar":["Abbadon","Abbadon (Kyar Remix)"]}
-{"v":1,"t":"...","type":"item.status","key":"azyr|no escape","line":"Azyr - No Escape","status":"baixando","format":"MP3 320","user":"dare204","attempt":1,"remoteQueued":false}
-{"v":1,"t":"...","type":"item.attemptFailed","key":"azyr|no escape","user":"dare204","reason":"Completed, Errored"}
-{"v":1,"t":"...","type":"item.final","key":"azyr|no escape","line":"Azyr - No Escape","status":"importada","path":"music/Techno/Azyr/No Escape.flac","via":null,"note":""}
-{"v":1,"t":"...","type":"item.diagnostic","key":"vendex|abaddon","searches":["Vendex Abaddon","[artista] Vendex"],"reasons":{"titulo diferente":3},"closest":[{"reason":"titulo diferente","user":"f","file":"Hard/Vendex - Plague.flac"}],"suggestions":["Abbadon"],"artistCatalog":[{"title":"Abbadon","users":3}]}
-{"v":1,"t":"...","type":"search.paused","until":"2026-10-07T16:40:00-03:00","reason":"bloqueio"}
-{"v":1,"t":"...","type":"search.windowFull","limit":30}
-{"v":1,"t":"...","type":"beets.batch","phase":"start","count":10}
-{"v":1,"t":"...","type":"beets.batch","phase":"end","count":10,"ok":true,"log":"lotes/beets-....log"}
-{"v":1,"t":"...","type":"progress","done":14,"total":30,"searching":1,"downloading":4,"remoteQueued":1,"waiting":9,"beets":5,"ok":10,"notFound":2,"failed":0,"etaMin":12}
-{"v":1,"t":"...","type":"warning","code":"slskd_unreachable","message":"...","streak":3}
-{"v":1,"t":"...","type":"run.stopping","reason":"user"}
-{"v":1,"t":"...","type":"run.end","reason":"completed|user|error|slskd_down","exitCode":0,"summary":{"importada":20,"nao encontrada":2},"files":{"result":"lotes/resultado-....txt","notDownloaded":"lotes/nao-baixadas-....txt","diagnostic":"lotes/diagnostico-....txt","catalog":"lotes/catalogo-....txt","beetsLog":"lotes/beets-....log"}}
-```
-
-Regras:
-
-- `key` é a mesma chave usada no `estado-*.tsv` (identifica a faixa entre execuções).
-- Campos novos podem ser adicionados sem mudar `v`; remoção ou mudança de significado incrementa `v`.
-- `run.end` é **sempre** o último evento, inclusive no `trap` de erro.
-- Caminhos relativos à pasta do Soulcrate, com `/`.
+- `item.final` traz `local` (o arquivo em `downloads/`), e não o caminho final em `music/`, que só o beets conhece depois de mover.
+- `key` é a linha normalizada (`azyr no escape`), igual à do `estado-*.tsv`.
+- Eventos a mais: `run.skip`, `catalog.progress`, `catalog.result`, `item.status`, `item.attemptFailed`, `search.check`.
+- `run.end.reason` também pode ser `config`, `locked` e `interrupted` (códigos 4, 5 e 130).
+- Em erro antes de ler a lista (ou com a lista já rodando), o arquivo tem só o `run.end`.
 
 ### Apêndice B: mapa de status das faixas
 
