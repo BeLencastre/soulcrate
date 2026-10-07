@@ -1,0 +1,114 @@
+{
+  "descricao": "Casos de validacao da configuracao (docs/validacao-configuracao.md). Usados pelo validar-config.ps1 (tests/validar-config.Tests.ps1) e pelo app, que precisa dar o mesmo resultado. Cada caso parte de 'base': 'env' troca/remove variaveis do .env base (null = sem .env), 'envDoRepositorio' usa um arquivo do repositorio como .env, 'yml' e o slskd.yml (null = sem arquivo; {{CHAVE}} = chave da base), 'pastas' sao as pastas criadas na raiz. 'esperado' lista os ids de cada nivel, sem ordem; achados repetidos contam uma vez.",
+  "base": {
+    "env": {
+      "PUID": "1000",
+      "PGID": "1000",
+      "TZ": "America/Sao_Paulo",
+      "DOWNLOADS_DIR": "./downloads",
+      "INCOMPLETE_DIR": "./incomplete",
+      "MUSIC_DIR": "./music",
+      "SLSK_USERNAME": "dj_teste",
+      "SLSK_PASSWORD": "senha-teste-123",
+      "SLSKD_WEB_USER": "admin",
+      "SLSKD_WEB_PASSWORD": "outra-senha-456",
+      "SOULBEET_SECRET_KEY": "0123456789abcdef0123456789abcdef0123456789abcdef",
+      "SLSKD_API_KEY_SOULBEET": "abcdef0123456789abcdef0123456789"
+    },
+    "chave": "abcdef0123456789abcdef0123456789",
+    "yml": "web:\n  authentication:\n    api_keys:\n      soulbeet:\n        # A mesma chave vai no .env -> SLSKD_API_KEY_SOULBEET\n        key: {{CHAVE}}\n        role: ReadWrite\n        cidr: 172.16.0.0/12,10.0.0.0/8,192.168.0.0/16\n",
+    "pastas": ["downloads", "incomplete", "music"]
+  },
+  "casos": [
+    {
+      "nome": "configuracao valida",
+      "esperado": { "codigo": 0, "erros": [], "avisos": [] }
+    },
+    {
+      "nome": "sem .env",
+      "env": null,
+      "esperado": { "codigo": 1, "erros": ["ENV_AUSENTE"], "avisos": [] }
+    },
+    {
+      "nome": "sem slskd.yml",
+      "yml": null,
+      "esperado": { "codigo": 2, "erros": ["YML_AUSENTE"], "avisos": [] }
+    },
+    {
+      "nome": ".env copiado do .env.example sem preencher",
+      "envDoRepositorio": ".env.example",
+      "esperado": { "codigo": 1, "erros": ["ENV_EXEMPLO"], "avisos": [] }
+    },
+    {
+      "nome": "slskd.yml com a chave de exemplo",
+      "yml": "web:\n  authentication:\n    api_keys:\n      soulbeet:\n        key: TROQUE_POR_UMA_CHAVE_ALEATORIA\n        role: ReadWrite\n",
+      "esperado": { "codigo": 2, "erros": ["YML_EXEMPLO"], "avisos": [] }
+    },
+    {
+      "nome": "chave do .env diferente da do slskd.yml",
+      "env": { "trocar": { "SLSKD_API_KEY_SOULBEET": "ffffffffffffffffffffffffffffffff" } },
+      "esperado": { "codigo": 1, "erros": ["CHAVES_DIFERENTES"], "avisos": [] }
+    },
+    {
+      "nome": "senha do Soulseek vazia",
+      "env": { "trocar": { "SLSK_PASSWORD": "" } },
+      "esperado": { "codigo": 1, "erros": ["ENV_VAZIA"], "avisos": [] }
+    },
+    {
+      "nome": "TZ faltando",
+      "env": { "remover": ["TZ"] },
+      "esperado": { "codigo": 1, "erros": ["ENV_VAZIA"], "avisos": [] }
+    },
+    {
+      "nome": "PUID que nao e numero",
+      "env": { "trocar": { "PUID": "abc" } },
+      "esperado": { "codigo": 1, "erros": ["ENV_ID_INVALIDO"], "avisos": [] }
+    },
+    {
+      "nome": "pasta da biblioteca que nao existe",
+      "env": { "trocar": { "MUSIC_DIR": "./nao-existe" } },
+      "esperado": { "codigo": 1, "erros": ["PASTA_INEXISTENTE"], "avisos": [] }
+    },
+    {
+      "nome": "pasta com barra invertida",
+      "env": { "trocar": { "DOWNLOADS_DIR": ".\\downloads" } },
+      "esperado": { "codigo": 0, "erros": [], "avisos": ["PASTA_BARRA_INVERTIDA"] }
+    },
+    {
+      "nome": "chave secreta do Soulbeet curta",
+      "env": { "trocar": { "SOULBEET_SECRET_KEY": "curta" } },
+      "esperado": { "codigo": 0, "erros": [], "avisos": ["CHAVE_CURTA"] }
+    },
+    {
+      "nome": "sem a chave do lote no .env",
+      "env": { "remover": ["SLSKD_API_KEY_SOULBEET"] },
+      "esperado": { "codigo": 0, "erros": [], "avisos": ["ENV_SEM_CHAVE_LOTE"] }
+    },
+    {
+      "nome": "valores entre aspas",
+      "env": { "trocar": { "SLSK_PASSWORD": "\"senha com espaco\"", "SLSKD_API_KEY_SOULBEET": "'abcdef0123456789abcdef0123456789'" } },
+      "esperado": { "codigo": 0, "erros": [], "avisos": [] }
+    },
+    {
+      "nome": "slskd.yml com outra chave antes da do Soulbeet",
+      "yml": "web:\n  authentication:\n    api_keys:\n      outra:\n        key: 99999999999999999999999999999999\n        role: ReadOnly\n      soulbeet:\n        key: \"{{CHAVE}}\"\n        role: ReadWrite\n",
+      "esperado": { "codigo": 0, "erros": [], "avisos": [] }
+    },
+    {
+      "nome": "slskd.yml sem a entrada soulbeet (usa a primeira chave)",
+      "yml": "web:\n  authentication:\n    api_keys:\n      minha:\n        key: {{CHAVE}}\n",
+      "esperado": { "codigo": 0, "erros": [], "avisos": [] }
+    },
+    {
+      "nome": "slskd.yml sem nenhuma chave",
+      "yml": "web:\n  authentication:\n    disabled: false\n",
+      "esperado": { "codigo": 2, "erros": ["YML_SEM_CHAVE"], "avisos": [] }
+    },
+    {
+      "nome": "erros nos dois arquivos: o .env tem prioridade no codigo",
+      "env": { "trocar": { "SLSK_USERNAME": "seu_usuario_soulseek" } },
+      "yml": "web:\n  authentication:\n    api_keys:\n      soulbeet:\n        key: TROQUE_POR_UMA_CHAVE_ALEATORIA\n",
+      "esperado": { "codigo": 1, "erros": ["ENV_EXEMPLO", "YML_EXEMPLO"], "avisos": [] }
+    }
+  ]
+}

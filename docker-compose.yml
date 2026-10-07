@@ -53,8 +53,14 @@ services:
       SLSKD_PASSWORD: ${SLSKD_WEB_PASSWORD}
       SLSKD_SLSK_LISTEN_PORT: "2234"     # 50300 cai em faixa reservada pelo Windows/Hyper-V
     ports:
-      - "5030:5030"      # Web UI / API (HTTP)
+      - "${BIND_ADDR:-127.0.0.1}:5030:5030"   # Web UI / API (HTTP); só neste PC, a menos que BIND_ADDR mude no .env
       - "2234:2234"      # Porta de escuta Soulseek (faça port-forward no roteador)
+    healthcheck:                         # a imagem já traz um, mas só começa a contar depois de 1 h
+      test: ["CMD-SHELL", "wget -q -O - http://localhost:5030/health || exit 1"]
+      interval: 30s
+      timeout: 5s
+      start_period: 60s
+      retries: 3
     volumes:
       - ./slskd:/app                          # slskd.yml (API key), banco e logs
       - *downloads-volume                     # IDÊNTICO ao Soulbeet
@@ -85,7 +91,13 @@ services:
       BEETS_ALBUM_MODE: "false"          # DJ baixa faixa a faixa -> modo singleton
       NUMBA_CACHE_DIR: /data/.numba-cache # cache do librosa (BPM mais rápido após a 1ª faixa)
     ports:
-      - "9765:9765"
+      - "${BIND_ADDR:-127.0.0.1}:9765:9765"
+    healthcheck:                         # imagem distroless: sem shell nem wget, só o python
+      test: ["CMD", "/usr/bin/python3", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:9765/', timeout=4)"]
+      interval: 30s
+      timeout: 5s
+      start_period: 60s
+      retries: 3
     volumes:
       - ./soulbeet/data:/data
       - ./soulbeet/config:/config                          # config.yaml do beets
@@ -111,7 +123,13 @@ services:
       ND_SCANSCHEDULE: 15m
       ND_LOGLEVEL: info
     ports:
-      - "4533:4533"
+      - "${BIND_ADDR:-127.0.0.1}:4533:4533"
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:4533/ping"]
+      interval: 30s
+      timeout: 5s
+      start_period: 30s
+      retries: 3
     volumes:
       - ./navidrome:/data
       - type: bind
