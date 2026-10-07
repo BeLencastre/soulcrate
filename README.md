@@ -9,27 +9,35 @@
 
 > *Soul*seek + *crate*: o caixote de discos do DJ. O Soulcrate garimpa as faixas na rede Soulseek e entrega tudo no seu caixote, pronto para tocar.
 
-Uma stack Docker que junta três ferramentas open source, com um perfil de tagging pensado para DJs que tocam em Rekordbox / CDJ / XDJ:
+```mermaid
+flowchart LR
+    A[Sua lista de faixas] --> B[Soulcrate procura e baixa]
+    B --> C[Organiza e etiqueta: BPM, tom e capa]
+    C --> D[Biblioteca pronta]
+    D --> E[Rekordbox, pendrive, CDJ/XDJ]
+```
 
-
-| Serviço                                         | Função                                                                 | Porta  |
-| ----------------------------------------------- | ---------------------------------------------------------------------- | ------ |
-| [slskd](https://github.com/slskd/slskd)         | Cliente Soulseek (busca e download) com Web UI e API                   | `5030` |
-| [Soulbeet](https://github.com/terry90/soulbeet) | Interface que busca no slskd e importa com o [beets](https://beets.io) | `9765` |
-| [Navidrome](https://www.navidrome.org)          | Player web / servidor Subsonic. O login do Soulbeet usa as contas dele | `4533` |
 
 
 ---
 
-
-
 ## Sumário
 
-- [Recursos](#recursos)
-- [Como funciona](#como-funciona)
+**Conhecendo o projeto**
+
+- [O que é o Soulcrate](#o-que-é-o-soulcrate)
+- [O problema](#o-problema)
+- [Como o Soulcrate resolve](#como-o-soulcrate-resolve)
+- [Para quem é](#para-quem-é)
+
+**Começando**
+
 - [Requisitos](#requisitos)
 - [Instalação](#instalação)
 - [Configuração inicial](#configuração-inicial)
+
+**Usando no dia a dia**
+
 - [Uso no dia a dia](#uso-no-dia-a-dia)
   - [Mapa rápido](#mapa-rápido)
   - [Rotina: ligar, usar, desligar](#rotina-ligar-usar-desligar)
@@ -37,62 +45,121 @@ Uma stack Docker que junta três ferramentas open source, com um perfil de taggi
 - [Download em lote](#download-em-lote)
   - [Escrevendo a lista](#escrevendo-a-lista)
   - [Rodando](#rodando)
+- [Rekordbox e pendrive](#rekordbox-e-pendrive)
+- [Solução de problemas](#solução-de-problemas)
+
+**Por dentro do projeto**
+
+- [Como funciona](#como-funciona)
+- [O que acontece com cada faixa (beets)](#o-que-acontece-com-cada-faixa-beets)
+- [Personalização](#personalização)
+- [Estrutura do projeto](#estrutura-do-projeto)
+
+**Referência avançada**
+
+- [Download em lote a fundo](#download-em-lote-a-fundo)
   - [Como o script escolhe o arquivo](#como-o-script-escolhe-o-arquivo)
   - [Lendo a tela](#lendo-a-tela)
   - [Arquivos em](#arquivos-em-lotes) `lotes/`
   - [Faixas que não vieram](#faixas-que-não-vieram)
   - [Opções](#opções)
-- [O que acontece com cada faixa (beets)](#o-que-acontece-com-cada-faixa-beets)
-- [Rekordbox e pendrive](#rekordbox-e-pendrive)
 - [Manutenção da biblioteca](#manutenção-da-biblioteca)
-- [Estrutura do projeto](#estrutura-do-projeto)
 - [Versões](#versões)
-- [Personalização](#personalização)
-- [Solução de problemas](#solução-de-problemas)
 - [Atualização](#atualização)
 - [Backup](#backup)
+
+**Sobre o projeto**
+
 - [Aviso](#aviso)
 - [Créditos](#créditos)
 - [Licença](#licença)
 
 ---
 
+## O que é o Soulcrate
+
+O Soulcrate é um **garimpeiro de músicas para DJs**. Você diz quais faixas quer, uma a uma ou colando uma lista inteira, e ele:
+
+1. **Procura** cada faixa na rede [Soulseek](https://www.slsknet.org), uma rede de compartilhamento de músicas entre usuários;
+2. **Escolhe e baixa** a melhor versão disponível (FLAC, ou MP3 320 kbps);
+3. **Etiqueta** a faixa com BPM, tom harmônico e capa;
+4. **Organiza** tudo em pastas por gênero e artista;
+5. **Entrega** uma biblioteca que o Rekordbox lê direto, pronta para ir para o pendrive.
+
+Ele roda **no seu próprio computador**, e os arquivos ficam com você. Não há assinatura nem serviço online do Soulcrate (só uma conta no Soulseek, criada no primeiro login): é um conjunto de ferramentas open source já configuradas para trabalhar juntas, com scripts de um clique no Windows.
+
+**O que você ganha:**
+
+- **Uma lista vira uma biblioteca.** Cole 50 faixas num arquivo de texto e vá tomar um café.
+- **BPM e tom já gravados** nas faixas, sem esperar a análise do Rekordbox para saber onde cada uma se encaixa.
+- **A versão certa da faixa.** Se você pediu a "Extended Mix", ela não vira "Radio Edit" no caminho.
+- **Pastas limpas e previsíveis**, com nomes que o pendrive aceita.
+- **Compatível com Rekordbox, CDJ e XDJ**, com as tags no formato mais compatível com esses equipamentos.
+- **Transparência.** Para cada faixa que não veio, um relatório diz por quê e o que dá para fazer.
+- **Um clique.** Ligar, desligar, ver o estado e baixar uma lista são arquivos `.bat`.
+
+## O problema
+
+Montar o repertório de um set dá trabalho antes mesmo de tocar a primeira música:
+
+- **Garimpar faixa por faixa** na rede é lento. Cada busca devolve centenas de arquivos, e a maioria é a versão errada, uma prévia, um MP3 de baixa qualidade ou outra música com nome parecido.
+- **Os arquivos chegam bagunçados**: tags faltando ou erradas, sem capa, sem BPM, sem tom, com nomes confusos.
+- **As versões se perdem.** Ferramentas de organização automática costumam trocar "Track (Extended Mix)" por "Track".
+- **BPM e tom ficam para depois**, e a análise de uma biblioteca grande no Rekordbox é demorada.
+- **Cada faixa em uma pasta aleatória**, com caracteres que o pendrive não aceita.
+- **Listas grandes são impraticáveis à mão.** Uma playlist exportada do Spotify ou uma tracklist do 1001Tracklists pode ter dezenas de faixas, e a rede ainda bloqueia quem faz buscas demais.
+
+O resultado é um fim de semana de trabalho braçal para cada atualização do repertório.
+
+## Como o Soulcrate resolve
+
+Cada dor acima tem uma resposta direta:
 
 
-## Recursos
+| Antes                                      | Com o Soulcrate                                                                            |
+| ------------------------------------------ | ------------------------------------------------------------------------------------------ |
+| Buscar e conferir arquivo por arquivo      | Uma lista `.txt` ou `.csv` (inclusive de playlist do Spotify); ele busca e escolhe sozinho |
+| Arquivos de qualidade duvidosa             | Só FLAC ou MP3 320 kbps, por padrão; prévias e arquivos curtos são recusados               |
+| Versão trocada ou arquivo de outro artista | Confere artista, título e mix pedido antes de aceitar um arquivo                           |
+| Títulos errados na lista                   | Confere os títulos no catálogo do MusicBrainz e avisa quando o título não existe           |
+| Sem BPM, tom ou capa                       | Grava BPM, tom harmônico e capa embutida em cada faixa                                     |
+| Pastas e nomes bagunçados                  | `music/<Gênero>/<Artista>/<Título>`, com nomes seguros para pendrive                       |
+| Bloqueio do Soulseek por excesso de buscas | Ritmo de buscas controlado e retomada automática                                           |
+| "Por que essa faixa não veio?"             | Relatório com o motivo de cada recusa e sugestões de título                                |
 
-- **Tags prontas para DJ**: BPM (librosa/autobpm), tom harmônico (keyfinder), capa embutida e ID3v2.3 (a versão mais compatível com Rekordbox e CDJ/XDJ).
-- **Preserva a versão da faixa**: o plugin `keepmix` impede que o autotag troque "Track (Extended Mix)" por "Track" ou "Track (Radio Edit)".
-- **Organização automática** em `music/<Gênero>/<Artista>/<Título>`.
-- **Metadados do MusicBrainz e do Bandcamp** (beetcamp), onde está boa parte do catálogo de house e techno.
-- **Download em lote**: um `.txt` com uma faixa por linha (ou um `.csv` exportado do Spotify), com buscas e downloads em paralelo, conferência dos títulos no MusicBrainz, proteção contra o bloqueio de buscas do Soulseek e um diagnóstico detalhado de cada faixa não encontrada. A execução retoma de onde parou e pula o que já está na biblioteca.
-- **Scripts de um clique para Windows**: subir, parar, status e download em lote.
 
+**Na prática**, você escreve isto no `lista.txt`:
 
-
-## Como funciona
-
-```mermaid
-flowchart LR
-    L[lista.txt / .csv] -->|baixar-lista.bat| S
-    U[Soulbeet UI :9765] -->|busca e enfileira| S[slskd :5030]
-    S <-->|rede Soulseek| P((outros usuários))
-    S -->|arquivo pronto| D[(downloads/)]
-    D -->|beets: BPM, tom, capa, tags| M[(music/Gênero/Artista/Título)]
-    M --> N[Navidrome :4533]
-    M --> R[Rekordbox → USB → CDJ/XDJ]
+```text
+Azyr - No Escape
+Creeds - Push Up (Original Mix)
+RIOT CODE - Direct It To The Roof (Azyr Remix)
 ```
 
+Dá dois cliques em `baixar-lista.bat` e, quando termina, as faixas estão assim, já com BPM, tom e capa (exemplo ilustrativo):
 
+```text
+music/
+└── Techno/
+    ├── Azyr/No Escape.flac
+    ├── Creeds/Push Up (Original Mix).flac
+    └── RIOT CODE/Direct It To The Roof (Azyr Remix).flac
+```
 
-1. O slskd baixa de outros usuários do Soulseek para `downloads/`. Os arquivos parciais ficam em `incomplete/`, então o beets nunca vê um arquivo pela metade.
-2. O beets, dentro do contêiner do Soulbeet, identifica a faixa, grava as tags e move o arquivo para `music/`.
-3. O Navidrome e o Rekordbox leem `music/`.
+Se você parar no meio, ao rodar de novo ele continua de onde parou e pula o que já está na biblioteca.
 
-> [!IMPORTANT]
-> `downloads/` e `music/` são montados **no mesmo caminho** (`/downloads` e `/music`) no slskd e no Soulbeet. É isso que permite ao beets achar o arquivo que o slskd informou. Não mude um sem mudar o outro.
+## Para quem é
 
+- **DJs que tocam em Rekordbox, CDJ ou XDJ** e querem montar a biblioteca sem trabalho manual.
+- Quem já usa (ou quer usar) o Soulseek e está cansado de conferir arquivo por arquivo.
+- Quem tem um computador com Windows 10/11 e aceita instalar o [Docker Desktop](https://www.docker.com/products/docker-desktop/). Linux e macOS também funcionam, via linha de comando.
 
+Não é um aplicativo com instalador: você configura um arquivo `.env`, e a primeira instalação leva de 5 a 10 minutos. O passo a passo está em [Instalação](#instalação).
+
+> [!NOTE]
+> O Soulseek é uma rede P2P. Leia o [Aviso](#aviso) antes de usar.
+
+---
 
 ## Requisitos
 
@@ -106,11 +173,14 @@ flowchart LR
 | Rede (recomendado) | Poder redirecionar a porta **2234/TCP** no roteador                                                       |
 
 
-
-
 ## Instalação
 
+**Em resumo**, são quatro passos, detalhados logo abaixo:
 
+1. Instale o Docker Desktop (veja [Requisitos](#requisitos)).
+2. Baixe o projeto e copie o `.env.example` para `.env`.
+3. Preencha o `.env` e crie a API key do slskd.
+4. Dê dois cliques em `subir.bat` e faça a [configuração inicial](#configuração-inicial) (uma vez só).
 
 ### 1. Baixe o projeto
 
@@ -158,8 +228,6 @@ openssl rand -hex 32
 > [!CAUTION]
 > Senhas e chaves ficam só no `.env` e em `slskd/slskd.yml`. Os dois estão no `.gitignore`: nunca os publique.
 
-
-
 ### 3. Crie a API key do slskd
 
 O repositório traz um modelo, `slskd/slskd.example.yml`. Copie-o para `slskd/slskd.yml`:
@@ -180,8 +248,6 @@ web:
         role: ReadWrite          # o Soulbeet precisa enfileirar downloads
         cidr: 172.16.0.0/12,10.0.0.0/8,192.168.0.0/16
 ```
-
-
 
 ### 4. Suba a stack
 
@@ -206,11 +272,7 @@ Confira se está tudo de pé com `status.bat` (ou `docker compose ps`).
 3. **Porta do Soulseek** (recomendado): no roteador, redirecione **2234/TCP** para o IP deste PC. Sem isso os downloads funcionam, mas menos usuários conseguem te enviar arquivos.
 4. **Teste**: baixe uma faixa pelo Soulbeet e veja se ela aparece em `music/<Gênero>/<Artista>/`.
 
-
-
 ## Uso no dia a dia
-
-
 
 ### Mapa rápido
 
@@ -235,8 +297,6 @@ Confira se está tudo de pé com `status.bat` (ou `docker compose ps`).
 | `baixar-lista.bat` | [Download em lote](#download-em-lote)                                                       |
 
 
-
-
 ### Rotina: ligar, usar, desligar
 
 1. Abra o **Docker Desktop** e espere ele ficar verde.
@@ -249,8 +309,6 @@ Os contêineres têm `restart: unless-stopped`: se o Docker Desktop abrir com o 
 
 > [!TIP]
 > Enquanto a stack está no ar, o slskd compartilha a sua `music` na rede Soulseek. Isso é bom: usuários que não compartilham são despriorizados ou banidos. Deixar ligado por mais tempo ajuda a sua "reputação" na rede.
-
-
 
 ### Baixar uma faixa pelo Soulbeet
 
@@ -330,11 +388,170 @@ O Docker precisa estar no ar (o `.bat` avisa se não estiver). Pode **fechar a j
 6. Importa no beets em **lotes de 10**, em segundo plano, sem parar os downloads.
 7. Mostra o resumo e grava os relatórios em `lotes/`.
 
+## Rekordbox e pendrive
 
+**Configuração (uma vez):**
+
+1. Em **Preferências → Avançado → Banco de dados → Pasta monitorada** (Auto Import / Watch Folder), ative e escolha a pasta `music` do projeto (ou o caminho de `MUSIC_DIR`). As faixas novas aparecem sozinhas. Outra opção é arrastar a pasta para a coleção.
+2. Em **Preferências → Análise**, desative a **detecção de tom** se quiser manter o tom do keyfinder (gravado na tag padrão `TKEY`). Deixe o **beatgrid** ativo: o BPM é gravado como número inteiro.
+
+**Depois de cada lote:**
+
+1. Analise as faixas novas no Rekordbox (beatgrid e waveform).
+2. Faça hot cues e memory cues e coloque nas playlists.
+3. Exporte para o pendrive como de costume.
+
+**Formato:** FLAC toca no Rekordbox e nos XDJ/CDJ recentes (XDJ-XZ, XDJ-RX3, XDJ-AZ, CDJ-3000). Se for tocar num equipamento antigo, confirme o suporte a FLAC antes da gig ou mantenha MP3 320/AIFF dessas faixas.
+
+## Solução de problemas
+
+**O Soulbeet não conecta no slskd**
+
+Use `http://slskd:5030`, não `localhost`. Confira se a API key em **Settings** é idêntica à de `slskd/slskd.yml` e se o slskd está de pé (`status.bat`).
+
+**O download termina, mas a faixa não aparece em** `music/`
+
+Veja `soulbeet/data/beets-import.log` e `lotes/beets-*.log`. Confirme que `DOWNLOADS_DIR` é o mesmo nos dois serviços (o `docker-compose.yml` já garante isso).
+
+`error loading plugin mbtwopass` **ou erro no** `lastgenre`
+
+- `mbtwopass`: o `pluginpath` do `config.yaml` precisa incluir `/opt/beets-plugins`. Não remova essa linha.
+- `lastgenre: ... No package metadata ... httpx2/httpcore2`: pacotes da imagem base sem metadados. O `fix-metadata.py` corrige isso no build: rode o `subir.bat` para reconstruir a imagem e procure `lastgenre ok` no log.
+
+`Bandcamp ... Permission denied: 'response.json'`
+
+O beets estava rodando numa pasta sem permissão de escrita. O download em lote já roda o beets com `-w /data`. Se aparecer em importações pelo Soulbeet, confira as permissões de `soulbeet/data/` (`PUID`/`PGID` no `.env`).
+
+**Todas as faixas entram "as-is" / faixa com tags ruins**
+
+Significa que o MusicBrainz/Bandcamp não tinha a faixa. Ela é importada com as tags originais do arquivo, mas ainda recebe BPM, tom e capa. É comum em hard techno, promos e edits. Corrija as tags no Rekordbox ou com `BEET modify`.
+
+**O download em lote diz "Nao consegui falar com o slskd"**
+
+A stack está no ar (`subir.bat`)? A API key está em `SLSKD_API_KEY_SOULBEET` no `.env` e é idêntica à de `slskd/slskd.yml`? O `cidr` da chave aceita redes privadas, que incluem o Docker Desktop.
+
+**Muitas faixas "nao encontrada" no download em lote**
+
+Abra o `lotes/diagnostico-<data>.txt` (veja [Faixas que não vieram](#faixas-que-não-vieram)):
+
+- **"talvez seja" / título que não aparece no catálogo**: a linha provavelmente está errada; corrija com o título real.
+- **"existe, mas so em formato/qualidade recusados"**: rode as não baixadas com `-AceitarWav -AceitarMp3Menor`.
+- **muitas faixas seguidas com 0 respostas**: ou o título não existe/ninguém compartilha, ou o servidor do Soulseek bloqueou as buscas. O script faz uma busca de teste para saber qual dos dois e só pausa no bloqueio; se continuar, use `-BuscasPorJanela 20`.
+- **muitas** `nao encontrada` **mesmo com centenas de respostas**: veja `lotes/catalogo-<data>.txt`. Se a faixa aparece como `NAO EXISTE`, o título da lista provavelmente está errado.
+
+Para tentar de novo: `baixar-lista.bat lotes\nao-baixadas-<data>.txt -Retentar`.
+
+**Baixou a faixa errada (título parecido)**
+
+Apague com `BEET remove -d "title:..."` (confira antes com `BEET ls`) e rode a linha de novo numa **lista nova**: a lista antiga já a marca como feita (ou use `-Retentar -NaoPularExistentes`).
+
+**Poucos resultados / downloads parados em** `Queued, Remotely`
+
+O usuário tem fila enorme ou não tem slot livre. O script troca sozinho depois de 4 min (`-FilaMaxMin`); aumente `-Paralelo` para compensar. Redirecione a porta 2234/TCP no roteador e mantenha a pasta `music` compartilhada (o slskd já compartilha por padrão). Usuários que não compartilham costumam ser despriorizados ou banidos por outros.
+
+---
+
+## Como funciona
+
+Uma stack Docker que junta três ferramentas open source, com um perfil de tagging pensado para DJs que tocam em Rekordbox / CDJ / XDJ:
+
+
+| Serviço                                         | Função                                                                 | Porta  |
+| ----------------------------------------------- | ---------------------------------------------------------------------- | ------ |
+| [slskd](https://github.com/slskd/slskd)         | Cliente Soulseek (busca e download) com Web UI e API                   | `5030` |
+| [Soulbeet](https://github.com/terry90/soulbeet) | Interface que busca no slskd e importa com o [beets](https://beets.io) | `9765` |
+| [Navidrome](https://www.navidrome.org)          | Player web / servidor Subsonic. O login do Soulbeet usa as contas dele | `4533` |
+
+
+```mermaid
+flowchart LR
+    L[lista.txt / .csv] -->|baixar-lista.bat| S
+    U[Soulbeet UI :9765] -->|busca e enfileira| S[slskd :5030]
+    S <-->|rede Soulseek| P((outros usuários))
+    S -->|arquivo pronto| D[(downloads/)]
+    D -->|beets: BPM, tom, capa, tags| M[(music/Gênero/Artista/Título)]
+    M --> N[Navidrome :4533]
+    M --> R[Rekordbox → USB → CDJ/XDJ]
+```
+
+
+
+1. O slskd baixa de outros usuários do Soulseek para `downloads/`. Os arquivos parciais ficam em `incomplete/`, então o beets nunca vê um arquivo pela metade.
+2. O beets, dentro do contêiner do Soulbeet, identifica a faixa, grava as tags e move o arquivo para `music/`.
+3. O Navidrome e o Rekordbox leem `music/`.
+
+> [!IMPORTANT]
+> `downloads/` e `music/` são montados **no mesmo caminho** (`/downloads` e `/music`) no slskd e no Soulbeet. É isso que permite ao beets achar o arquivo que o slskd informou. Não mude um sem mudar o outro.
+
+## O que acontece com cada faixa (beets)
+
+Vale para as faixas do Soulbeet e do lote:
+
+1. **Identificação:** procura a faixa no MusicBrainz e no Bandcamp. Se não achar, entra **"as-is"**, com as tags do próprio arquivo. Isso é comum em hard techno, promos e edits, e não é erro.
+2. **Título preservado:** o `keepmix` garante que "(Original Mix)", "(Extended Mix)" etc. não se percam no autotag.
+3. **BPM** (autobpm): calculado se o arquivo não tiver. É gravado como inteiro, com referência de 125 BPM.
+4. **Tom** (keyfinder): calculado se o arquivo não tiver. Vai na tag `TKEY` / `initial_key`.
+5. **Gênero** (lastgenre): só se o arquivo não tiver gênero. Ele define a **pasta raiz**.
+6. **Capa:** busca uma capa de pelo menos 500 px e embute uma versão de 600 px. Se o arquivo já tem capa, ela é mantida.
+7. **Limpeza:** remove tags-lixo e grava em **ID3v2.3**.
+8. **Move** para `music/<Gênero>/<Artista>/<Título>.<ext>`:
+  - sem gênero, a pasta é `_Sem Genero`;
+  - caracteres proibidos em pendrive (`/ \ : * ? " < > |`) são trocados ou removidos. Por isso aparecem pastas como `Electro, Techno_House, Dance`;
+  - se a faixa já está na biblioteca, ela é **pulada** (não duplica).
+
+O Navidrome reescaneia a `music` a cada 15 min.
+
+## Personalização
+
+Tudo o que o beets faz está em `[soulbeet/config/config.yaml](soulbeet/config/config.yaml)`. Os pontos mais comuns:
+
+
+| Quero...                                     | Altere                                                     |
+| -------------------------------------------- | ---------------------------------------------------------- |
+| Outra estrutura de pastas                    | `paths:` (ex.: `'$genre/$artist - $title'`)                |
+| Sobrescrever o BPM/tom que já vem no arquivo | `autobpm.force` / `keyfinder.overwrite`                    |
+| Outro gênero de referência para o BPM        | `autobpm.beat_track_kwargs.start_bpm` (125 = house/techno) |
+| Capa maior/menor                             | `embedart.maxwidth`                                        |
+| Não buscar no Bandcamp                       | Remova `bandcamp` de `plugins:`                            |
+
+
+> [!NOTE]
+> Mantenha `/opt/beets-plugins` em `pluginpath` e `musicbrainz`/`mbtwopass` em `plugins`: o Soulbeet depende deles.
+
+Depois de editar o `config.yaml`, basta reiniciar: `docker compose restart soulbeet`. Mudanças no `Dockerfile` exigem rebuild (`subir.bat`). Depois de mudar `paths:`, rode `BEET move` para reorganizar o que já está na biblioteca.
+
+## Estrutura do projeto
+
+```text
+soulcrate/
+├── docker-compose.yml          # os 3 serviços e os volumes compartilhados
+├── .env.example                # modelo de configuração (copie para .env)
+├── subir.bat / parar.bat       # sobe / derruba a stack
+├── status.bat                  # saúde dos contêineres e plugins
+├── baixar-lista.bat / .ps1     # download em lote
+├── lista.exemplo.txt           # modelo da lista (copiado para lista.txt na 1ª vez)
+├── lista.txt                   # sua lista de faixas (fora do Git)
+├── slskd/
+│   ├── slskd.example.yml       # modelo (copie para slskd.yml)
+│   └── slskd.yml               # sua API key (fora do Git)
+├── soulbeet/
+│   ├── Dockerfile              # soulbeet:full + keyfinder + autobpm + beetcamp
+│   ├── fix-metadata.py         # corrige metadados de pacotes da imagem base (lastgenre)
+│   ├── config/config.yaml      # configuração do beets (perfil DJ)
+│   └── beets-plugins/keepmix.py
+├── downloads/   incomplete/    # área de trabalho do slskd
+├── music/                      # SUA BIBLIOTECA
+├── navidrome/                  # banco e cache do Navidrome
+└── lotes/                      # relatórios do download em lote
+```
+
+---
+
+## Download em lote a fundo
+
+Esta parte detalha o que o `baixar-lista.ps1` faz por baixo do `baixar-lista.bat`: a ordem das buscas, os filtros de cada arquivo, como ler a tela, os relatórios, o diagnóstico das faixas que não vieram e todas as opções. Para o uso básico, veja [Download em lote](#download-em-lote).
 
 ### Como o script escolhe o arquivo
-
-
 
 #### Ordem das buscas
 
@@ -465,8 +682,6 @@ A linha de progresso aparece a cada 30 s. "Aguardando" são faixas que ainda vã
 | `falhou`                 | Havia candidatos, mas todos os usuários falharam                                                                                                     |
 
 
-
-
 ### Arquivos em `lotes/`
 
 
@@ -582,41 +797,6 @@ O `-Retentar` é necessário quando você roda **a mesma lista** de novo. Sem el
 | Lista enorme e com pressa                                    | `baixar-lista.bat lista.txt -SemBuscaArtista`                                                   |
 
 
-
-
-## O que acontece com cada faixa (beets)
-
-Vale para as faixas do Soulbeet e do lote:
-
-1. **Identificação:** procura a faixa no MusicBrainz e no Bandcamp. Se não achar, entra **"as-is"**, com as tags do próprio arquivo. Isso é comum em hard techno, promos e edits, e não é erro.
-2. **Título preservado:** o `keepmix` garante que "(Original Mix)", "(Extended Mix)" etc. não se percam no autotag.
-3. **BPM** (autobpm): calculado se o arquivo não tiver. É gravado como inteiro, com referência de 125 BPM.
-4. **Tom** (keyfinder): calculado se o arquivo não tiver. Vai na tag `TKEY` / `initial_key`.
-5. **Gênero** (lastgenre): só se o arquivo não tiver gênero. Ele define a **pasta raiz**.
-6. **Capa:** busca uma capa de pelo menos 500 px e embute uma versão de 600 px. Se o arquivo já tem capa, ela é mantida.
-7. **Limpeza:** remove tags-lixo e grava em **ID3v2.3**.
-8. **Move** para `music/<Gênero>/<Artista>/<Título>.<ext>`:
-  - sem gênero, a pasta é `_Sem Genero`;
-  - caracteres proibidos em pendrive (`/ \ : * ? " < > |`) são trocados ou removidos. Por isso aparecem pastas como `Electro, Techno_House, Dance`;
-  - se a faixa já está na biblioteca, ela é **pulada** (não duplica).
-
-O Navidrome reescaneia a `music` a cada 15 min.
-
-## Rekordbox e pendrive
-
-**Configuração (uma vez):**
-
-1. Em **Preferências → Avançado → Banco de dados → Pasta monitorada** (Auto Import / Watch Folder), ative e escolha a pasta `music` do projeto (ou o caminho de `MUSIC_DIR`). As faixas novas aparecem sozinhas. Outra opção é arrastar a pasta para a coleção.
-2. Em **Preferências → Análise**, desative a **detecção de tom** se quiser manter o tom do keyfinder (gravado na tag padrão `TKEY`). Deixe o **beatgrid** ativo: o BPM é gravado como número inteiro.
-
-**Depois de cada lote:**
-
-1. Analise as faixas novas no Rekordbox (beatgrid e waveform).
-2. Faça hot cues e memory cues e coloque nas playlists.
-3. Exporte para o pendrive como de costume.
-
-**Formato:** FLAC toca no Rekordbox e nos XDJ/CDJ recentes (XDJ-XZ, XDJ-RX3, XDJ-AZ, CDJ-3000). Se for tocar num equipamento antigo, confirme o suporte a FLAC antes da gig ou mantenha MP3 320/AIFF dessas faixas.
-
 ## Manutenção da biblioteca
 
 Os comandos do beets rodam dentro do contêiner. Abra um terminal na pasta do projeto e use este prefixo (chamado de `BEET` abaixo):
@@ -650,62 +830,37 @@ docker compose exec soulbeet /usr/bin/python3 -c "import sys; from beets.ui impo
 - **Mudou o** `config.yaml`**:** `docker compose restart soulbeet`.
 - **Mudou o** `Dockerfile`**:** `subir.bat` (reconstrói a imagem).
 
-
-
-## Estrutura do projeto
-
-```text
-soulcrate/
-├── docker-compose.yml          # os 3 serviços e os volumes compartilhados
-├── .env.example                # modelo de configuração (copie para .env)
-├── subir.bat / parar.bat       # sobe / derruba a stack
-├── status.bat                  # saúde dos contêineres e plugins
-├── baixar-lista.bat / .ps1     # download em lote
-├── lista.exemplo.txt           # modelo da lista (copiado para lista.txt na 1ª vez)
-├── lista.txt                   # sua lista de faixas (fora do Git)
-├── slskd/
-│   ├── slskd.example.yml       # modelo (copie para slskd.yml)
-│   └── slskd.yml               # sua API key (fora do Git)
-├── soulbeet/
-│   ├── Dockerfile              # soulbeet:full + keyfinder + autobpm + beetcamp
-│   ├── fix-metadata.py         # corrige metadados de pacotes da imagem base (lastgenre)
-│   ├── config/config.yaml      # configuração do beets (perfil DJ)
-│   └── beets-plugins/keepmix.py
-├── downloads/   incomplete/    # área de trabalho do slskd
-├── music/                      # SUA BIBLIOTECA
-├── navidrome/                  # banco e cache do Navidrome
-└── lotes/                      # relatórios do download em lote
-```
-
-
-
 ## Versões
 
 Versões testadas juntas (outubro de 2026). As marcadas como **fixa** estão travadas no `docker-compose.yml` ou no `soulbeet/Dockerfile`. As outras vêm junto com a imagem base do Soulbeet ou são resolvidas pelo `pip` a partir das fixas. Veja [Atualização](#atualização) para trocar de versão.
 
 **Serviços (contêineres)**
 
-| Componente                       | Versão                                                                    | Onde é definida                    |
-| -------------------------------- | ------------------------------------------------------------------------- | ---------------------------------- |
-| [slskd](https://github.com/slskd/slskd)          | `0.26.0` (fixa)                                           | `docker-compose.yml`               |
-| [Navidrome](https://github.com/navidrome/navidrome) | `0.64.2` (fixa)                                        | `docker-compose.yml`               |
-| [Soulbeet](https://github.com/terry90/soulbeet)  | imagem `docccccc/soulbeet:full`, travada no digest `sha256:c419f11e…` (build de 15/08/2026, posterior à v0.6.1) (fixa) | `soulbeet/Dockerfile` |
+
+| Componente                                          | Versão                                                                                                                 | Onde é definida       |
+| --------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------- | --------------------- |
+| [slskd](https://github.com/slskd/slskd)             | `0.26.0` (fixa)                                                                                                        | `docker-compose.yml`  |
+| [Navidrome](https://github.com/navidrome/navidrome) | `0.64.2` (fixa)                                                                                                        | `docker-compose.yml`  |
+| [Soulbeet](https://github.com/terry90/soulbeet)     | imagem `docccccc/soulbeet:full`, travada no digest `sha256:c419f11e…` (build de 15/08/2026, posterior à v0.6.1) (fixa) | `soulbeet/Dockerfile` |
+
 
 **Análise de áudio e tags (dentro da imagem do Soulbeet)**
 
-| Componente                          | Versão                  | Observação                                                             |
-| ----------------------------------- | ----------------------- | ---------------------------------------------------------------------- |
-| Python                              | `3.11.2`                | o da imagem base (distroless, Debian 12)                               |
-| [beets](https://github.com/beetbox/beets) | `2.11.0` (fixa)   | restrição no `Dockerfile`; usado por `keepmix.py` (`beets.plugins`, `beets.util`) |
-| [mediafile](https://github.com/beetbox/mediafile) | `0.17.0`  | usado por `keepmix.py` (`MediaFile`); vem com o beets                  |
-| [beetcamp](https://github.com/snejus/beetcamp) | `0.25.0` (fixa) | plugin `bandcamp`                                                    |
-| [librosa](https://github.com/librosa/librosa) | `0.11.0` (fixa) | plugin `autobpm`                                                     |
-| [resampy](https://github.com/bmcfee/resampy) | `0.4.3` (fixa)   | plugin `autobpm`                                                       |
-| numpy / lap                         | `2.2.6` / `0.5.13` (fixas) | mantidas iguais às da imagem base                                   |
-| numba / llvmlite / scipy / soundfile | `0.68.0` / `0.50.0` / `1.17.1` / `0.14.0` | dependências do librosa                     |
-| [libkeyfinder](https://github.com/mixxxdj/libkeyfinder) | `v2.2.6` (fixa) | compilada no build                                      |
-| [keyfinder-cli](https://github.com/evanpurkhiser/keyfinder-cli) | commit `c8a0c6f` (fixa) | compilado no build; plugin `keyfinder`         |
-| mbtwopass                           | o da imagem do Soulbeet | em `/opt/beets-plugins`                                                |
+
+| Componente                                                      | Versão                                    | Observação                                                                        |
+| --------------------------------------------------------------- | ----------------------------------------- | --------------------------------------------------------------------------------- |
+| Python                                                          | `3.11.2`                                  | o da imagem base (distroless, Debian 12)                                          |
+| [beets](https://github.com/beetbox/beets)                       | `2.11.0` (fixa)                           | restrição no `Dockerfile`; usado por `keepmix.py` (`beets.plugins`, `beets.util`) |
+| [mediafile](https://github.com/beetbox/mediafile)               | `0.17.0`                                  | usado por `keepmix.py` (`MediaFile`); vem com o beets                             |
+| [beetcamp](https://github.com/snejus/beetcamp)                  | `0.25.0` (fixa)                           | plugin `bandcamp`                                                                 |
+| [librosa](https://github.com/librosa/librosa)                   | `0.11.0` (fixa)                           | plugin `autobpm`                                                                  |
+| [resampy](https://github.com/bmcfee/resampy)                    | `0.4.3` (fixa)                            | plugin `autobpm`                                                                  |
+| numpy / lap                                                     | `2.2.6` / `0.5.13` (fixas)                | mantidas iguais às da imagem base                                                 |
+| numba / llvmlite / scipy / soundfile                            | `0.68.0` / `0.50.0` / `1.17.1` / `0.14.0` | dependências do librosa                                                           |
+| [libkeyfinder](https://github.com/mixxxdj/libkeyfinder)         | `v2.2.6` (fixa)                           | compilada no build                                                                |
+| [keyfinder-cli](https://github.com/evanpurkhiser/keyfinder-cli) | commit `c8a0c6f` (fixa)                   | compilado no build; plugin `keyfinder`                                            |
+| mbtwopass                                                       | o da imagem do Soulbeet                   | em `/opt/beets-plugins`                                                           |
+
 
 Plugins do beets ativos (`soulbeet/config/config.yaml`): `musicbrainz`, `mbtwopass`, `chroma`, `bandcamp`, `keepmix`, `autobpm`, `keyfinder`, `lastgenre`, `fetchart`, `embedart`, `scrub`.
 
@@ -713,108 +868,27 @@ Plugins do beets ativos (`soulbeet/config/config.yaml`): `musicbrainz`, `mbtwopa
 
 **No seu PC**
 
-| Componente      | Versão testada       | Mínimo                                                         |
-| --------------- | -------------------- | -------------------------------------------------------------- |
-| Docker Engine   | `29.8.2`             | Docker Desktop com Compose v2 (`docker compose`, sem hífen)    |
-| Docker Compose  | `5.5.1`              | v2 ou mais novo (o que vem no Docker Desktop)                  |
-| PowerShell      | `5.1` (Windows)      | 5.1 no Windows, ou `pwsh` 7+ no Linux/macOS para o `baixar-lista.ps1` |
+
+| Componente     | Versão testada  | Mínimo                                                                |
+| -------------- | --------------- | --------------------------------------------------------------------- |
+| Docker Engine  | `29.8.2`        | Docker Desktop com Compose v2 (`docker compose`, sem hífen)           |
+| Docker Compose | `5.5.1`         | v2 ou mais novo (o que vem no Docker Desktop)                         |
+| PowerShell     | `5.1` (Windows) | 5.1 no Windows, ou `pwsh` 7+ no Linux/macOS para o `baixar-lista.ps1` |
+
 
 > [!TIP]
 > O VS Code pode sublinhar `from beets...` e `from mediafile...` no `keepmix.py` porque esses pacotes só existem dentro do contêiner, não no seu PC. Não é erro. Para o editor reconhecê-los, rode `pip install beets==2.11.0` num ambiente virtual local.
-
-
-
-## Personalização
-
-Tudo o que o beets faz está em [`soulbeet/config/config.yaml`](soulbeet/config/config.yaml). Os pontos mais comuns:
-
-
-| Quero...                                     | Altere                                                     |
-| -------------------------------------------- | ---------------------------------------------------------- |
-| Outra estrutura de pastas                    | `paths:` (ex.: `'$genre/$artist - $title'`)                |
-| Sobrescrever o BPM/tom que já vem no arquivo | `autobpm.force` / `keyfinder.overwrite`                    |
-| Outro gênero de referência para o BPM        | `autobpm.beat_track_kwargs.start_bpm` (125 = house/techno) |
-| Capa maior/menor                             | `embedart.maxwidth`                                        |
-| Não buscar no Bandcamp                       | Remova `bandcamp` de `plugins:`                            |
-
-
-> [!NOTE]
-> Mantenha `/opt/beets-plugins` em `pluginpath` e `musicbrainz`/`mbtwopass` em `plugins`: o Soulbeet depende deles.
-
-Depois de editar o `config.yaml`, basta reiniciar: `docker compose restart soulbeet`. Mudanças no `Dockerfile` exigem rebuild (`subir.bat`). Depois de mudar `paths:`, rode `BEET move` para reorganizar o que já está na biblioteca.
-
-## Solução de problemas
-
-**O Soulbeet não conecta no slskd**
-
-Use `http://slskd:5030`, não `localhost`. Confira se a API key em **Settings** é idêntica à de `slskd/slskd.yml` e se o slskd está de pé (`status.bat`).
-
-
-
-**O download termina, mas a faixa não aparece em** `music/`
-
-Veja `soulbeet/data/beets-import.log` e `lotes/beets-*.log`. Confirme que `DOWNLOADS_DIR` é o mesmo nos dois serviços (o `docker-compose.yml` já garante isso).
-
-
-
-`error loading plugin mbtwopass` **ou erro no** `lastgenre`
-
-- `mbtwopass`: o `pluginpath` do `config.yaml` precisa incluir `/opt/beets-plugins`. Não remova essa linha.
-- `lastgenre: ... No package metadata ... httpx2/httpcore2`: pacotes da imagem base sem metadados. O `fix-metadata.py` corrige isso no build: rode o `subir.bat` para reconstruir a imagem e procure `lastgenre ok` no log.
-
-
-
-`Bandcamp ... Permission denied: 'response.json'`
-
-O beets estava rodando numa pasta sem permissão de escrita. O download em lote já roda o beets com `-w /data`. Se aparecer em importações pelo Soulbeet, confira as permissões de `soulbeet/data/` (`PUID`/`PGID` no `.env`).
-
-
-
-**Todas as faixas entram "as-is" / faixa com tags ruins**
-
-Significa que o MusicBrainz/Bandcamp não tinha a faixa. Ela é importada com as tags originais do arquivo, mas ainda recebe BPM, tom e capa. É comum em hard techno, promos e edits. Corrija as tags no Rekordbox ou com `BEET modify`.
-
-
-
-**O download em lote diz "Nao consegui falar com o slskd"**
-
-A stack está no ar (`subir.bat`)? A API key está em `SLSKD_API_KEY_SOULBEET` no `.env` e é idêntica à de `slskd/slskd.yml`? O `cidr` da chave aceita redes privadas, que incluem o Docker Desktop.
-
-
-
-**Muitas faixas "nao encontrada" no download em lote**
-
-Abra o `lotes/diagnostico-<data>.txt` (veja [Faixas que não vieram](#faixas-que-não-vieram)):
-
-- **"talvez seja" / título que não aparece no catálogo**: a linha provavelmente está errada; corrija com o título real.
-- **"existe, mas so em formato/qualidade recusados"**: rode as não baixadas com `-AceitarWav -AceitarMp3Menor`.
-- **muitas faixas seguidas com 0 respostas**: ou o título não existe/ninguém compartilha, ou o servidor do Soulseek bloqueou as buscas. O script faz uma busca de teste para saber qual dos dois e só pausa no bloqueio; se continuar, use `-BuscasPorJanela 20`.
-- **muitas** `nao encontrada` **mesmo com centenas de respostas**: veja `lotes/catalogo-<data>.txt`. Se a faixa aparece como `NAO EXISTE`, o título da lista provavelmente está errado.
-
-Para tentar de novo: `baixar-lista.bat lotes\nao-baixadas-<data>.txt -Retentar`.
-
-
-
-**Baixou a faixa errada (título parecido)**
-
-Apague com `BEET remove -d "title:..."` (confira antes com `BEET ls`) e rode a linha de novo numa **lista nova**: a lista antiga já a marca como feita (ou use `-Retentar -NaoPularExistentes`).
-
-
-
-**Poucos resultados / downloads parados em** `Queued, Remotely`
-
-O usuário tem fila enorme ou não tem slot livre. O script troca sozinho depois de 4 min (`-FilaMaxMin`); aumente `-Paralelo` para compensar. Redirecione a porta 2234/TCP no roteador e mantenha a pasta `music` compartilhada (o slskd já compartilha por padrão). Usuários que não compartilham costumam ser despriorizados ou banidos por outros.
-
-
 
 ## Atualização
 
 As versões das imagens são **fixas**, para que uma atualização de terceiros não quebre a stack de surpresa. Elas só mudam quando você muda:
 
-| Componente                          | Onde                                                                   |
-| ----------------------------------- | ---------------------------------------------------------------------- |
-| slskd, Navidrome                    | `image:` no `docker-compose.yml`                                       |
-| Soulbeet (base), keyfinder, plugins | topo do `soulbeet/Dockerfile` (digest, `ARG`s e `PLUGIN_PINS`)         |
+
+| Componente                          | Onde                                                           |
+| ----------------------------------- | -------------------------------------------------------------- |
+| slskd, Navidrome                    | `image:` no `docker-compose.yml`                               |
+| Soulbeet (base), keyfinder, plugins | topo do `soulbeet/Dockerfile` (digest, `ARG`s e `PLUGIN_PINS`) |
+
 
 Depois de trocar uma versão (ou de um `git pull` que traga versões novas):
 
@@ -840,7 +914,7 @@ O que importa guardar:
 | `slskd/slskd.yml`        | API key do slskd                          |
 
 
-
+---
 
 ## Aviso
 
@@ -856,4 +930,3 @@ O Soulseek é uma rede de compartilhamento P2P. Baixe apenas o que você tem dir
 ## Licença
 
 [MIT](LICENSE). Vale para os scripts e configurações deste repositório; cada imagem e ferramenta usada (slskd, Soulbeet, beets, Navidrome etc.) segue a própria licença.
-
