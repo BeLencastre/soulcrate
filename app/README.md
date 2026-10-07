@@ -41,44 +41,44 @@ O arquivo de estado é o "mundo" do Docker falso: editá-lo à mão simula o que
 
 Outras variáveis (só fora do app empacotado, e só para desenvolvimento e testes):
 
-| Variável | Para quê |
-| --- | --- |
-| `SOULCRATE_DIR` | Pasta do Soulcrate a usar (senão: a escolhida em Configurações, a do repositório em dev, ou `%USERPROFILE%\Soulcrate`) |
-| `SOULCRATE_USER_DATA` | Pasta de dados do app (padrão: `%APPDATA%\Soulcrate`) |
-| `SOULCRATE_SEM_DEV` | `1`: não usar a pasta do repositório como pasta do Soulcrate |
+| Variável              | Para quê                                                                                                               |
+| --------------------- | ---------------------------------------------------------------------------------------------------------------------- |
+| `SOULCRATE_DIR`       | Pasta do Soulcrate a usar (senão: a escolhida em Configurações, a do repositório em dev, ou `%USERPROFILE%\Soulcrate`) |
+| `SOULCRATE_USER_DATA` | Pasta de dados do app (padrão: `%APPDATA%\Soulcrate`)                                                                  |
+| `SOULCRATE_SEM_DEV`   | `1`: não usar a pasta do repositório como pasta do Soulcrate                                                           |
 
 ## Estrutura
 
-| Caminho | Conteúdo |
-| --- | --- |
-| `src/main/` | Processo principal: serviços (`services/`), IPC, janela, bandeja, menu, log |
-| `src/preload/` | `window.soulcrate`: a API mínima e tipada que o renderer enxerga (nenhum `ipcRenderer` cru) |
-| `src/renderer/` | A interface (React, React Router, Tailwind, TanStack Query, Zustand) |
-| `src/shared/` | O que main e renderer compartilham: contrato do IPC, modelo de estado, catálogo de erros, mensagens em português, tipos do protocolo do lote |
-| `resources/` | Ícones (app e bandeja), gerados por `scripts/gerar-icones.mjs` |
-| `tests/` | Vitest (`main/`, `shared/`, `renderer/`), Playwright (`e2e/`), dublê do docker (`dubles/`) e fixtures |
+| Caminho         | Conteúdo                                                                                                                                     |
+| --------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
+| `src/main/`     | Processo principal: serviços (`services/`), IPC, janela, bandeja, menu, log                                                                  |
+| `src/preload/`  | `window.soulcrate`: a API mínima e tipada que o renderer enxerga (nenhum `ipcRenderer` cru)                                                  |
+| `src/renderer/` | A interface (React, React Router, Tailwind, TanStack Query, Zustand)                                                                         |
+| `src/shared/`   | O que main e renderer compartilham: contrato do IPC, modelo de estado, catálogo de erros, mensagens em português, tipos do protocolo do lote |
+| `resources/`    | Ícones (app e bandeja), gerados por `scripts/gerar-icones.mjs`                                                                               |
+| `tests/`        | Vitest (`main/`, `shared/`, `renderer/`), Playwright (`e2e/`), dublê do docker (`dubles/`) e fixtures                                        |
 
 ### Serviços do main (§3.2 da especificação)
 
-| Serviço | O que faz |
-| --- | --- |
-| `DockerService` | Detecta o Docker ([SP1](../docs/spikes/sp1-deteccao-docker.md)), abre o Docker Desktop ([SP2](../docs/spikes/sp2-abrir-docker-desktop.md)) e roda `docker compose` (`up`, `down`, `ps`, `restart`, `exec`, `logs`) |
-| `HealthService` | Sonda Docker, contêineres e endpoints HTTP a cada 5 s (30 s com a janela escondida) e publica o estado |
-| `OperacoesService` | Ligar, desligar, reconstruir, reiniciar um serviço e abrir o Docker Desktop, uma de cada vez, com log ao vivo |
-| `ChecksService` | As verificações do `status.bat`, em verde/amarelo/vermelho |
-| `LogsService` | `docker compose logs -f` de cada contêiner, em lotes |
-| `WebUiService` | As Web UIs em `WebContentsView`, uma partição de sessão por serviço ([SP7](../docs/spikes/sp7-webcontentsview.md)) |
-| `config-validacao` | Validação do `.env` e do `slskd.yml` (S4), a mesma regra do `validar-config.ps1` |
-| `ProjectService`, `AppSettings` | Onde está a pasta do Soulcrate e as preferências do app |
+| Serviço                         | O que faz                                                                                                                                                                                                          |
+| ------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `DockerService`                 | Detecta o Docker ([SP1](../docs/spikes/sp1-deteccao-docker.md)), abre o Docker Desktop ([SP2](../docs/spikes/sp2-abrir-docker-desktop.md)) e roda `docker compose` (`up`, `down`, `ps`, `restart`, `exec`, `logs`) |
+| `HealthService`                 | Sonda Docker, contêineres e endpoints HTTP a cada 5 s (30 s com a janela escondida) e publica o estado                                                                                                             |
+| `OperacoesService`              | Ligar, desligar, reconstruir, reiniciar um serviço e abrir o Docker Desktop, uma de cada vez, com log ao vivo                                                                                                      |
+| `ChecksService`                 | As verificações do `status.bat`, em verde/amarelo/vermelho                                                                                                                                                         |
+| `LogsService`                   | `docker compose logs -f` de cada contêiner, em lotes                                                                                                                                                               |
+| `WebUiService`                  | As Web UIs em `WebContentsView`, uma partição de sessão por serviço ([SP7](../docs/spikes/sp7-webcontentsview.md))                                                                                                 |
+| `config-validacao`              | Validação do `.env` e do `slskd.yml` (S4), a mesma regra do `validar-config.ps1`                                                                                                                                   |
+| `ProjectService`, `AppSettings` | Onde está a pasta do Soulcrate e as preferências do app                                                                                                                                                            |
 
 ## Testes
 
-| Nível | Onde | O que cobre |
-| --- | --- | --- |
-| Unidade | `tests/shared`, `tests/main` | Estado e etapas do Início, catálogo de erros, parsers do Docker, validação S4 (**os mesmos casos do PowerShell**, `tests/fixtures/config/casos.json`), filtro de segredos, URLs permitidas |
-| Integração | `tests/main` | `DockerService`, `HealthService`, `OperacoesService`, `ChecksService` e `LogsService` contra um executor falso; `ExecutorReal` com processos de verdade (inclusive a árvore de filhos) |
-| Renderer | `tests/renderer` | A tela Início e a barra lateral (Testing Library, `window.soulcrate` simulado) |
-| Ponta a ponta | `tests/e2e` | O app de verdade contra o dublê do docker: Docker fechado → abrir; ligar, desligar e reconstruir; contêiner derrubado por fora; porta em uso; configuração inválida; Web UIs (login persistente, isolamento, navegação bloqueada); segurança do renderer |
+| Nível         | Onde                         | O que cobre                                                                                                                                                                                                                                              |
+| ------------- | ---------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Unidade       | `tests/shared`, `tests/main` | Estado e etapas do Início, catálogo de erros, parsers do Docker, validação S4 (**os mesmos casos do PowerShell**, `tests/fixtures/config/casos.json`), filtro de segredos, URLs permitidas                                                               |
+| Integração    | `tests/main`                 | `DockerService`, `HealthService`, `OperacoesService`, `ChecksService` e `LogsService` contra um executor falso; `ExecutorReal` com processos de verdade (inclusive a árvore de filhos)                                                                   |
+| Renderer      | `tests/renderer`             | A tela Início e a barra lateral (Testing Library, `window.soulcrate` simulado)                                                                                                                                                                           |
+| Ponta a ponta | `tests/e2e`                  | O app de verdade contra o dublê do docker: Docker fechado → abrir; ligar, desligar e reconstruir; contêiner derrubado por fora; porta em uso; configuração inválida; Web UIs (login persistente, isolamento, navegação bloqueada); segurança do renderer |
 
 Os testes e2e **nunca** tocam na sua stack, nos seus dados nem no seu navegador: `shell.openExternal` é trocado por um registro. As Web UIs são testadas com servidores HTTP locais nas portas 5030 e 9765; se a stack de verdade estiver no ar (portas ocupadas), esses testes são pulados. As capturas de tela ficam em `test-results/capturas/`.
 
