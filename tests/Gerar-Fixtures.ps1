@@ -26,11 +26,13 @@ $linhas = @('# lista de exemplo', 'Azyr - No Escape', 'Creeds - Push Up (Origina
 # Copia trocando a pasta temporaria do teste (que tem o nome do usuario) por C:\Soulcrate
 # e a porta aleatoria do slskd falso pela padrao
 function Copy-Fixture([string]$origem, [string]$nome) {
+  $b = [IO.File]::ReadAllBytes($origem)
+  $bom = ($b.Length -ge 3 -and $b[0] -eq 0xEF -and $b[1] -eq 0xBB -and $b[2] -eq 0xBF)   # os .txt do PowerShell 5.1 tem BOM: o app precisa lidar com isso
   $t = [IO.File]::ReadAllText($origem, $utf8).TrimStart([char]0xFEFF)
   $raiz = $amb.Raiz.TrimEnd('\')
   $t = $t.Replace($raiz.Replace('\', '\\'), 'C:\\Soulcrate').Replace($raiz, 'C:\Soulcrate')
   $t = $t -replace '127\.0\.0\.1:\d+', 'localhost:5030'
-  [IO.File]::WriteAllText((Join-Path $destino $nome), $t, $utf8)
+  [IO.File]::WriteAllText((Join-Path $destino $nome), $t, (New-Object Text.UTF8Encoding $bom))
   Write-Host "  $nome"
 }
 
