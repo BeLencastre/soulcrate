@@ -1,4 +1,4 @@
-<#
+﻿<#
   validar-config.ps1 — confere o .env e o slskd\slskd.yml antes de subir a stack.
 
   As regras estao descritas em docs/validacao-configuracao.md. O app do Soulcrate implementa
