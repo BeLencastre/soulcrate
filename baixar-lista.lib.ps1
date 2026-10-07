@@ -318,7 +318,7 @@ function Add-Diag($item, [string]$reason, [int]$score, [string]$user, [string]$f
   $item.Reasons[$reason] = 1 + [int]$item.Reasons[$reason]
   if ($score -lt 1) { return }                                               # sem titulo nem artista: lixo da busca
   if ($item.Diag.Count -ge 300) { return }
-  [void]$item.Diag.Add([pscustomobject]@{ Score = $score; Text = ("{0,-40} {1} :: {2}" -f $reason, $user, $file) })
+  [void]$item.Diag.Add([pscustomobject]@{ Score = $score; Text = ("{0,-40} {1} :: {2}" -f $reason, $user, $file); Reason = $reason; User = $user; File = $file })
 }
 
 function Get-Candidates($item, $responses, $req = $null, [switch]$NoDiag) {
@@ -393,7 +393,9 @@ function Get-TitleSuggestions($req, $titles) {
 # ============================================================================
 # Leitura da lista (.txt ou .csv)
 # ============================================================================
-function Read-Lista([string]$path) {
+# Linhas da lista ja limpas, com o numero da linha de origem no arquivo (SourceLine; no .csv,
+# o numero da linha do registro, contando o cabecalho como linha 1)
+function Read-ListaDetalhada([string]$path) {
   $out = New-Object System.Collections.ArrayList
   if ([IO.Path]::GetExtension($path).ToLowerInvariant() -eq '.csv') {
     $first = Get-Content -LiteralPath $path -Encoding UTF8 -TotalCount 1
@@ -404,20 +406,29 @@ function Read-Lista([string]$path) {
     $tCol = $cols | Where-Object { $_ -match '^(track name|track|title|titulo|título|name|song|musica|música|faixa)$' } | Select-Object -First 1
     $aCol = $cols | Where-Object { $_ -match '^(artist name\(s\)|artist name|artists?|artista\(s\)|artistas?)$' } | Select-Object -First 1
     if (-not $tCol -or -not $aCol) { throw "CSV sem colunas de titulo/artista reconhecidas. Colunas: $($cols -join ', ')" }
+    $n = 1
     foreach ($r in $rows) {
+      $n++
       $a = ([string]$r.$aCol -split '\s*[;|]\s*')[0]      # varios artistas -> o primeiro basta para a busca
       $t = [string]$r.$tCol
       $t = $t -replace '\s+-\s+((?:[^-]*?)\b(?:Remix|Mix|Edit|Version|Rework|Dub|VIP|Bootleg)\b.*)$', ' ($1)'   # "Title - X Remix" (Spotify) -> "Title (X Remix)"
-      if ($t) { [void]$out.Add((Clean-Line "$a - $t")) }
+      if ($t) { [void]$out.Add([pscustomobject]@{ Line = (Clean-Line "$a - $t"); SourceLine = $n }) }
     }
   } else {
+    $n = 0
     foreach ($l in Get-Content -LiteralPath $path -Encoding UTF8) {
+      $n++
       $t = $l.Trim()
       if (-not $t -or $t.StartsWith('#')) { continue }
       $t = Clean-Line $t
-      if ($t) { [void]$out.Add($t) }
+      if ($t) { [void]$out.Add([pscustomobject]@{ Line = $t; SourceLine = $n }) }
     }
   }
+  return ,$out
+}
+function Read-Lista([string]$path) {
+  $out = New-Object System.Collections.ArrayList
+  foreach ($d in (Read-ListaDetalhada $path)) { [void]$out.Add($d.Line) }
   return ,$out
 }
 

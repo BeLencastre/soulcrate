@@ -11,6 +11,8 @@
 #>
 
 $script:RepoRaiz = Split-Path -Parent $PSScriptRoot
+# o lote roda no mesmo PowerShell dos testes (5.1 ou 7), para o CI testar os dois
+$PsExe = (Get-Process -Id $PID).Path
 
 function New-AmbienteLote {
   param(
@@ -60,7 +62,7 @@ function Write-ListaTeste($amb, [string[]]$Linhas, [string]$Nome = 'lista.txt') 
 # Roda o lote e espera terminar. Devolve a saida (texto) e o codigo de saida.
 function Invoke-Lote($amb, [string[]]$Linhas, [string[]]$Extra = @(), [string]$Nome = 'lista.txt') {
   $lista = Write-ListaTeste $amb $Linhas $Nome
-  $out = & powershell.exe (Get-ArgsLote $amb $lista $Extra) 2>&1 | ForEach-Object { "$_" }
+  $out = & $PsExe (Get-ArgsLote $amb $lista $Extra) 2>&1 | ForEach-Object { "$_" }
   return [pscustomobject]@{ ExitCode = $LASTEXITCODE; Saida = @($out); Lista = $lista }
 }
 
@@ -69,12 +71,19 @@ function Start-Lote($amb, [string[]]$Linhas, [string[]]$Extra = @(), [string]$No
   $lista = Write-ListaTeste $amb $Linhas $Nome
   $log = Join-Path $amb.Raiz ("saida-" + [guid]::NewGuid().ToString('N').Substring(0, 6) + ".log")
   $args = @(Get-ArgsLote $amb $lista $Extra | ForEach-Object { if ($_ -match '\s') { "`"$_`"" } else { $_ } })
-  $p = Start-Process -FilePath 'powershell.exe' -ArgumentList $args -PassThru -WindowStyle Hidden -RedirectStandardOutput $log -RedirectStandardError "$log.err"
+  $p = Start-Process -FilePath $PsExe -ArgumentList $args -PassThru -WindowStyle Hidden -RedirectStandardOutput $log -RedirectStandardError "$log.err"
+  [void]$p.Handle      # sem ler o Handle antes de o processo sair, o ExitCode vem vazio
   return [pscustomobject]@{ Processo = $p; Log = $log; Lista = $lista }
 }
 
 function Get-RelatorioLote($amb, [string]$Prefixo) {
   return @(Get-ChildItem -LiteralPath (Join-Path $amb.Raiz 'lotes') -Filter "$Prefixo*" -File -ErrorAction SilentlyContinue | Sort-Object Name)
+}
+
+# Le o arquivo de eventos (-Eventos): um objeto por linha
+function Get-EventosLote([string]$Arquivo) {
+  if (-not (Test-Path -LiteralPath $Arquivo)) { return @() }
+  return @(Get-Content -LiteralPath $Arquivo -Encoding UTF8 | Where-Object { $_.Trim() } | ForEach-Object { ConvertFrom-Json $_ })
 }
 
 function Remove-AmbienteLote($amb) {

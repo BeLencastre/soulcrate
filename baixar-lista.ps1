@@ -20,6 +20,15 @@
   Uso:  baixar-lista.bat                       (usa lista.txt)
         baixar-lista.bat minhas.txt
         baixar-lista.bat playlist.csv -Paralelo 6 -Retentar
+
+  Para programas que controlam o lote (o app do Soulcrate):
+    -Eventos <arquivo>        grava um evento JSON por linha (JSONL) com o andamento
+    -ArquivoParada <arquivo>  quando esse arquivo aparecer, para com seguranca (grava os relatorios)
+    -IdExecucao <id>          nome dos arquivos desta execucao em lotes\ (padrao: data-hora)
+    -SoAnalisar               so le e analisa a lista (JSON) e sai, sem buscar nada
+  Codigos de saida: 0 concluido | 1 erro inesperado | 2 parado pelo usuario | 3 slskd inacessivel
+                    4 configuracao invalida | 5 a mesma lista ja esta rodando | 130 interrompido (Ctrl+C)
+  Detalhes: docs/eventos-lote.md
 #>
 param(
   [string]$Lista = "lista.txt",
@@ -45,7 +54,14 @@ param(
   [switch]$PularForaDoCatalogo,       # nem busca no Soulseek as faixas cujo titulo nao existe no catalogo do artista
   [string]$SlskdUrl = "http://localhost:5030",
   [string]$BeetsLib = "/music/.beets_library.db",
-  [string]$BeetsDir = "/music"
+  [string]$BeetsDir = "/music",
+  # --- para o app (sem eles, o lote se comporta como sempre) ---
+  [string]$Eventos = "",              # arquivo JSONL com os eventos da execucao (docs/eventos-lote.md)
+  [string]$ArquivoParada = "",        # se este arquivo aparecer, o lote para com seguranca e grava os relatorios
+  [string]$IdExecucao = "",           # nome dos arquivos desta execucao em lotes\ (padrao: data-hora, ex. 20261007-161002)
+  [switch]$SoAnalisar,                # so le e analisa a lista (JSON na saida padrao) e sai, sem buscar nada
+  [switch]$AnalisarBiblioteca,        # com -SoAnalisar: confere tambem o que ja esta na biblioteca (precisa da stack no ar)
+  [string]$SaidaAnalise = ""          # com -SoAnalisar: grava o JSON neste arquivo em vez da saida padrao
 )
 
 $ErrorActionPreference = "Stop"
@@ -55,6 +71,83 @@ Set-Location $Root
 
 # funcoes de texto, comparacao e catalogo (sem rede): baixar-lista.lib.ps1
 . (Join-Path $PSScriptRoot "baixar-lista.lib.ps1")
+
+# ============================================================================
+# Execucao: codigos de saida, eventos (para o app), parada segura e trava da lista
+# ============================================================================
+$CodSaida = @{ Concluido = 0; Erro = 1; Parado = 2; SlskdFora = 3; Config = 4; JaRodando = 5; Interrompido = 130 }
+$script:CodigoSaida = 0
+$script:RunEnded = $false; $script:StopRequested = $false; $script:TravaCriada = $false
+$script:ArquivosExecucao = [ordered]@{}
+$Utf8SemBom = New-Object Text.UTF8Encoding $false
+function Resolve-NaRaiz([string]$p) { if (-not $p) { return $null }; if ([IO.Path]::IsPathRooted($p)) { return $p }; return (Join-Path $Root $p) }
+$EventosPath = Resolve-NaRaiz $Eventos
+$ParadaPath = Resolve-NaRaiz $ArquivoParada
+
+# Erro "esperado" com codigo de saida proprio (o trap mostra a mensagem e sai com o codigo)
+function Stop-Lote([int]$codigo, [string]$mensagem) { $script:CodigoSaida = $codigo; throw $mensagem }
+
+# Caminho relativo a pasta do Soulcrate, com "/" (como vai nos eventos)
+function Get-CaminhoRel([string]$p) {
+  if (-not $p) { return $null }
+  $full = [IO.Path]::GetFullPath($p)
+  $base = [IO.Path]::GetFullPath($Root).TrimEnd('\', '/') + [IO.Path]::DirectorySeparatorChar
+  if ($full.StartsWith($base, [StringComparison]::OrdinalIgnoreCase)) { $full = $full.Substring($base.Length) }
+  return ($full -replace '\\', '/')
+}
+
+# Um evento por linha (JSONL, UTF-8 sem BOM). Sem -Eventos, nao faz nada.
+function Write-Evento([string]$tipo, [Collections.IDictionary]$dados = @{}) {
+  if (-not $EventosPath) { return }
+  $e = [ordered]@{ v = 1; t = (Get-Date).ToString('yyyy-MM-ddTHH:mm:ss.fffzzz'); type = $tipo }
+  foreach ($k in $dados.Keys) { $e[$k] = $dados[$k] }
+  try { [IO.File]::AppendAllText($EventosPath, (ConvertTo-Json -InputObject $e -Depth 8 -Compress) + "`n", $Utf8SemBom) } catch {}
+}
+
+# Parada segura: o app cria o arquivo de -ArquivoParada; o laco principal confere a cada volta
+function Test-Parada {
+  if ($script:StopRequested) { return $true }
+  if ($ParadaPath -and (Test-Path -LiteralPath $ParadaPath)) {
+    $script:StopRequested = $true
+    Write-Host "Parada pedida: terminando o que esta em andamento e gravando os relatorios..." -ForegroundColor Yellow
+    Write-Evento 'run.stopping' ([ordered]@{ reason = 'user' })
+  }
+  return $script:StopRequested
+}
+
+# Trava da lista: impede duas execucoes da mesma lista (pelo app e pelo .bat) ao mesmo tempo
+function Enter-Trava {
+  if (Test-Path -LiteralPath $LockFile) {
+    $p = @(([string](Get-Content -LiteralPath $LockFile -TotalCount 1 -ErrorAction SilentlyContinue)) -split "`t")
+    $outro = 0; [void][int]::TryParse($p[0], [ref]$outro)
+    $proc = $null
+    if ($outro -gt 0 -and $outro -ne $PID) { $proc = Get-Process -Id $outro -ErrorAction SilentlyContinue }
+    if ($proc -and $proc.ProcessName -match '^(powershell|pwsh)$') {
+      Stop-Lote $CodSaida.JaRodando ("Esta lista ja esta sendo baixada por outro processo (PID {0}, desde {1}). Espere terminar ou pare aquele lote." -f $outro, $p[1])
+    }
+  }
+  [IO.File]::WriteAllText($LockFile, ("{0}`t{1}`t{2}`n" -f $PID, (Get-Date -Format s), $stamp), $Utf8SemBom)
+  $script:TravaCriada = $true
+}
+function Exit-Trava {
+  if (-not $script:TravaCriada) { return }
+  try { Remove-Item -LiteralPath $LockFile -Force -ErrorAction Stop } catch {}
+  $script:TravaCriada = $false
+}
+
+# Fim da execucao: solta a trava e grava o ultimo evento (run.end), uma vez so
+function Complete-Run([string]$motivo, [int]$codigo, [string]$mensagem = "") {
+  if ($script:RunEnded) { return }
+  $script:RunEnded = $true
+  Exit-Trava
+  if ($ParadaPath) { try { Remove-Item -LiteralPath $ParadaPath -Force -ErrorAction SilentlyContinue } catch {} }
+  if (-not $EventosPath) { return }
+  $resumo = [ordered]@{}
+  if ($items) { foreach ($g in @($items | Group-Object Status | Sort-Object Count -Descending)) { $resumo[[string]$g.Name] = [int]$g.Count } }
+  $arqs = [ordered]@{}
+  foreach ($k in @($script:ArquivosExecucao.Keys)) { $f = $script:ArquivosExecucao[$k]; if ($f -and (Test-Path -LiteralPath $f)) { $arqs[$k] = Get-CaminhoRel $f } }
+  Write-Evento 'run.end' ([ordered]@{ reason = $motivo; exitCode = $codigo; message = $mensagem; summary = $resumo; files = $arqs })
+}
 
 # ============================================================================
 # Configuracao (.env / slskd.yml)
@@ -69,7 +162,7 @@ if (-not $ApiKey) {
     if ($m) { $ApiKey = $m.Matches[0].Groups[1].Value }
   }
 }
-if (-not $ApiKey) { throw "API key do slskd nao encontrada (.env SLSKD_API_KEY_SOULBEET ou slskd\slskd.yml)." }
+if (-not $ApiKey -and -not $SoAnalisar) { Stop-Lote $CodSaida.Config "API key do slskd nao encontrada (.env SLSKD_API_KEY_SOULBEET ou slskd\slskd.yml)." }
 
 $DownloadsDir = $envVars["DOWNLOADS_DIR"]
 if (-not $DownloadsDir) { $DownloadsDir = "./downloads" }
@@ -77,25 +170,31 @@ if (-not [IO.Path]::IsPathRooted($DownloadsDir)) { $DownloadsDir = Join-Path $Ro
 $DownloadsDir = [IO.Path]::GetFullPath($DownloadsDir)
 
 if (-not [IO.Path]::IsPathRooted($Lista)) { $Lista = Join-Path $Root $Lista }
-if (-not (Test-Path -LiteralPath $Lista)) { throw "Arquivo de lista nao encontrado: $Lista" }
+if (-not $SoAnalisar -and -not (Test-Path -LiteralPath $Lista)) { Stop-Lote $CodSaida.Config "Arquivo de lista nao encontrado: $Lista" }
+if ($IdExecucao -and $IdExecucao -notmatch '^[A-Za-z0-9_\-]{1,64}$') { Stop-Lote $CodSaida.Config "-IdExecucao invalido: use so letras, numeros, - e _ (ate 64): $IdExecucao" }
 
-$stamp  = Get-Date -Format "yyyyMMdd-HHmmss"
-$logDir = Join-Path $Root "lotes"; New-Item -ItemType Directory -Force -Path $logDir | Out-Null
+$stamp  = $(if ($IdExecucao) { $IdExecucao } else { Get-Date -Format "yyyyMMdd-HHmmss" })
+$logDir = Join-Path $Root "lotes"
+if (-not $SoAnalisar) { New-Item -ItemType Directory -Force -Path $logDir | Out-Null }
 $BeetsLog  = Join-Path $logDir "beets-$stamp.log"
 # registro completo da execucao (tela inteira), para diagnosticar erros depois
 $RunLog = Join-Path $logDir "execucao-$stamp.log"
-try { Start-Transcript -LiteralPath $RunLog -Force | Out-Null } catch {}
+if (-not $SoAnalisar) { try { Start-Transcript -LiteralPath $RunLog -Force | Out-Null } catch {} }
 trap {
   Write-Host ""
   Write-Host "ERRO: $($_.Exception.Message)" -ForegroundColor Red
   if ($_.InvocationInfo) { Write-Host ("  em baixar-lista.ps1, linha {0}: {1}" -f $_.InvocationInfo.ScriptLineNumber, $_.InvocationInfo.Line.Trim()) -ForegroundColor Red }
   Write-Host "  (registro completo em $RunLog)" -ForegroundColor DarkGray
+  $codigo = $(if ($script:CodigoSaida) { $script:CodigoSaida } else { $CodSaida.Erro })
+  $motivo = $(switch ($codigo) { 3 { 'slskd_down' } 4 { 'config' } 5 { 'locked' } default { 'error' } })
+  Complete-Run $motivo $codigo $_.Exception.Message
   try { Stop-Transcript | Out-Null } catch {}
-  exit 1
+  exit $codigo
 }
 $DiagFile  = Join-Path $logDir "diagnostico-$stamp.txt"
 $listName  = [IO.Path]::GetFileNameWithoutExtension($Lista) -replace '[^\w\-]+', '_'
 $StateFile = Join-Path $logDir "estado-$listName.tsv"
+$LockFile  = Join-Path $logDir "estado-$listName.lock"
 
 # ============================================================================
 # API do slskd
@@ -292,61 +391,73 @@ function Set-SearchTitle($it, [string]$newBase) {
   foreach ($q in $orig.Queries) { if ($have -notcontains $q) { [void]$it.Stages.Add(@{ Kind = 'q'; Q = $q }) } }
 }
 
+# Uma linha do catalogo-<data>.txt (e o evento correspondente)
+function Add-ResultadoCatalogo($rep, $it, [string]$resultado, [string]$detalhe = "", [string[]]$parecidos = @()) {
+  [void]$rep.Add($(if ($detalhe) { "$resultado`t$($it.Line)`t$detalhe" } else { "$resultado`t$($it.Line)" }))
+  Write-Evento 'catalog.result' ([ordered]@{ key = [string]$it.Key; line = [string]$it.Line; result = $(if ($resultado -eq '?') { 'INDISPONIVEL' } else { $resultado })
+                                             searchLine = [string]$it.SearchLine; similar = [object[]]@($parecidos | ForEach-Object { [string]$_ }); detail = $detalhe })
+}
+
 function Invoke-CatalogCheck {
   $todo = @($items | Where-Object { $_.Status -eq "pendente" -and $_.Req.Artist -and $_.Req.BaseTokens.Count -gt 0 -and -not $_.Req.Remixer })
   if ($todo.Count -eq 0) { return }
   try { [Net.ServicePointManager]::SecurityProtocol = [Net.ServicePointManager]::SecurityProtocol -bor [Net.SecurityProtocolType]::Tls12 } catch {}
   Write-Host "Conferindo os titulos no catalogo do MusicBrainz ($($todo.Count) faixas; 1 consulta/s, cache de 7 dias; -SemCatalogo desliga)..." -ForegroundColor DarkGray
+  Write-Evento 'catalog.progress' ([ordered]@{ done = 0; total = $todo.Count })
   if ($null -eq (Invoke-MusicBrainz 'artistname:"daft punk"' 1)) {
     Write-Host "  (catalogo do MusicBrainz indisponivel agora; seguindo sem conferir)" -ForegroundColor DarkYellow
+    Write-Evento 'warning' ([ordered]@{ code = 'musicbrainz_unavailable'; message = 'catalogo do MusicBrainz indisponivel; seguindo sem conferir' })
     return
   }
   $rep = New-Object System.Collections.ArrayList
   $cnt = @{ ok = 0; corr = 0; fora = 0; sem = 0 }
   $i = 0
   foreach ($it in $todo) {
+    if (Test-Parada) { break }
     $i++
-    if (-not $script:MbOk) { [void]$rep.Add("?`t$($it.Line)`t(MusicBrainz parou de responder)"); $cnt.sem++; continue }
+    if ($i -gt 1) { Write-Evento 'catalog.progress' ([ordered]@{ done = $i - 1; total = $todo.Count }) }
+    if (-not $script:MbOk) { Add-ResultadoCatalogo $rep $it '?' '(MusicBrainz parou de responder)'; $cnt.sem++; continue }
     if ($i % 15 -eq 0) { Write-Host "  ... $i/$($todo.Count)" -ForegroundColor DarkGray }
     try {
       $req = $it.Req
       $tracks = Get-MbTracks $req.Artist
-      if ($null -eq $tracks) { $cnt.sem++; [void]$rep.Add("?`t$($it.Line)`t(catalogo indisponivel)"); continue }
+      if ($null -eq $tracks) { $cnt.sem++; Add-ResultadoCatalogo $rep $it '?' '(catalogo indisponivel)'; continue }
       $mine = @($tracks | Where-Object { Has-Artist $req (Normalize $_.A) })
       $res = Find-InCatalog $req $mine
       if ($res.Kind -ne 'exato') {
         $more = @(Get-MbStrict $req | Where-Object { Has-Artist $req (Normalize $_.A) })
         if ($more.Count) { $mine = @($mine + $more); $res = Find-InCatalog $req $mine }
       }
-      if ($mine.Count -eq 0) { $cnt.sem++; [void]$rep.Add("SEM DADOS`t$($it.Line)`t(artista nao encontrado no MusicBrainz: busca normal)"); continue }
+      if ($mine.Count -eq 0) { $cnt.sem++; Add-ResultadoCatalogo $rep $it 'SEM DADOS' '(artista nao encontrado no MusicBrainz: busca normal)'; continue }
       $cut = ([int]$MbTotal[(Normalize $req.Artist)] -gt @($tracks).Count)
       switch ($res.Kind) {
-        'exato' { $cnt.ok++; [void]$rep.Add("OK`t$($it.Line)") }
+        'exato' { $cnt.ok++; Add-ResultadoCatalogo $rep $it 'OK' }
         { $_ -eq 'fora' -and $cut } {
           # nome comum (varios artistas com o mesmo nome) e catalogo cortado em 300: ausencia nao prova nada
           $cnt.sem++
-          [void]$rep.Add("NAO CONFIRMADO`t$($it.Line)`t(catalogo de '$($req.Artist)' cortado: $($MbTotal[(Normalize $req.Artist)]) gravacoes com esse nome; busca normal)")
+          Add-ResultadoCatalogo $rep $it 'NAO CONFIRMADO' "(catalogo de '$($req.Artist)' cortado: $($MbTotal[(Normalize $req.Artist)]) gravacoes com esse nome; busca normal)"
           break
         }
         'fora' {
           $cnt.fora++; $it.Fora = $true
           $sg = $(if ($res.Sugs.Count) { "parecidos: " + ($res.Sugs -join ' | ') } else { "nenhum titulo parecido" })
           $it.CatNote = "titulo nao existe no catalogo de '$($req.Artist)' no MusicBrainz ($($mine.Count) faixas); $sg"
-          [void]$rep.Add("NAO EXISTE`t$($it.Line)`t$sg")
+          Add-ResultadoCatalogo $rep $it 'NAO EXISTE' $sg $res.Sugs
         }
         default {
           $cnt.corr++
           $old = $req.Base
           Set-SearchTitle $it $res.Base
           $it.Corrected = "titulo corrigido pelo catalogo: '$old' -> '$($res.Base)'"
-          [void]$rep.Add("CORRIGIDO`t$($it.Line)`t-> $($it.SearchLine)")
+          Add-ResultadoCatalogo $rep $it 'CORRIGIDO' "-> $($it.SearchLine)"
           Write-Host "  ~  $($it.Line)  ->  $($it.SearchLine)" -ForegroundColor DarkCyan
         }
       }
     } catch {
-      $cnt.sem++; [void]$rep.Add("?`t$($it.Line)`t(erro: $($_.Exception.Message))")
+      $cnt.sem++; Add-ResultadoCatalogo $rep $it '?' "(erro: $($_.Exception.Message))"
     }
   }
+  Write-Evento 'catalog.progress' ([ordered]@{ done = $i; total = $todo.Count })
   try {
     $hdr = @("# Conferencia dos titulos no catalogo do MusicBrainz ($stamp)",
              "# OK = existe | CORRIGIDO = grafia/titulo completado (a busca usa o titulo corrigido)",
@@ -532,6 +643,7 @@ function Start-Canary {
     [void]$SearchTimes.Add((Get-Date))
     $script:Canary = @{ Id = $id; Start = Get-Date; Q = $q; RunAt = $null; StopAt = $null; Refetched = $false }
     Write-Host "  ?  buscas sem resposta: conferindo se o servidor do Soulseek bloqueou (busca de teste: '$q')..." -ForegroundColor DarkYellow
+    Write-Evento 'search.check' ([ordered]@{ phase = 'start'; query = $q })
   } catch { $script:zeroStreak = 0 }
 }
 function Poll-Canary {
@@ -555,12 +667,15 @@ function Poll-Canary {
   if ($n -gt 0) {
     $script:lastNonEmptyAt = Get-Date
     Write-Host "     servidor respondendo normalmente ($n respostas no teste): as buscas vazias eram faixas que ninguem compartilha. Sem pausa." -ForegroundColor DarkGray
+    Write-Evento 'search.check' ([ordered]@{ phase = 'end'; query = $cn.Q; responses = $n; blocked = $false })
     foreach ($o in $waiting) { Finish-NotFound $o }
     return
   }
   # bloqueio confirmado: pausa e devolve para a fila o que so teve buscas vazias
   $script:PauseUntil = (Get-Date).AddMinutes($PausaBloqueioMin)
   Write-Host "  !! busca de teste tambem sem resposta: o servidor do Soulseek limitou as buscas. Pausando buscas por $PausaBloqueioMin min (downloads continuam)." -ForegroundColor Yellow
+  Write-Evento 'search.check' ([ordered]@{ phase = 'end'; query = $cn.Q; responses = 0; blocked = $true })
+  Write-Evento 'search.paused' ([ordered]@{ until = $script:PauseUntil.ToString('yyyy-MM-ddTHH:mm:sszzz'); minutes = $PausaBloqueioMin; reason = 'bloqueio' })
   foreach ($o in $waiting) { $o.Retried = $true; $o.PauseReset = $true; $o.Stage = 0; $o.Status = "pendente"; $o.NotBefore = $script:PauseUntil; $o.FirstSearchAt = $null }
   foreach ($o in $items) {
     if ($o.Status -eq "pendente" -and $o.Responses -eq 0 -and -not $o.PauseReset) { $o.PauseReset = $true; $o.Stage = 0; $o.NotBefore = $script:PauseUntil }
@@ -630,8 +745,10 @@ function Write-Diag($it) {
     if ($top.Count) { [void]$lines.Add("    arquivos mais parecidos:"); foreach ($d in $top) { [void]$lines.Add("      $($d.Text)") } }
     else { [void]$lines.Add("    nenhum arquivo com o titulo ou o artista apareceu") }
     $c = $ArtistCache[$it.Req.ArtistKey]
+    $sug = @(); $catArtista = $null
     if ($c -and $c.State -eq 'pronto') {
       if ($null -eq $c.Titles) { $c.Titles = @(Get-ArtistTitles $it.Req $c.Resp) }
+      $catArtista = @($c.Titles)
       if ($c.Titles.Count) {
         $sug = @(Get-TitleSuggestions $it.Req $c.Titles)
         if ($sug.Count) { [void]$lines.Add("    talvez seja: " + ($sug -join ' | ')) }
@@ -642,6 +759,21 @@ function Write-Diag($it) {
       }
     }
     Add-Content -LiteralPath $DiagFile -Encoding UTF8 -Value $lines
+    if ($EventosPath) {
+      $motivos = [ordered]@{}
+      foreach ($m in @($it.Reasons.GetEnumerator() | Sort-Object Value -Descending)) { $motivos[[string]$m.Key] = [int]$m.Value }
+      Write-Evento 'item.diagnostic' ([ordered]@{
+        key = [string]$it.Key; line = [string]$it.Line
+        searches = [object[]]@($it.Stages | ForEach-Object { [ordered]@{ kind = [string]$_.Kind; query = [string]$_.Q } })
+        skipped = [int]$it.Skipped; corrected = [string]$it.Corrected; catalog = [string]$it.CatNote; remixer = [bool]$it.Req.Remixer
+        responses = [int]$it.Responses; reasons = $motivos
+        closest = [object[]]@($top | ForEach-Object { [ordered]@{ reason = [string]$_.Reason; user = [string]$_.User; file = [string]$_.File; score = [int]$_.Score } })
+        suggestions = [object[]]@($sug | ForEach-Object { [string]$_ })
+        artistSearched = ($null -ne $catArtista)
+        artistCatalog = [object[]]@(@($catArtista) | Where-Object { $_ } | Select-Object -First 100 | ForEach-Object { [ordered]@{ title = [string]$_.Title; users = [int]$_.Users } })
+        artistCatalogTotal = @($catArtista | Where-Object { $_ }).Count
+      })
+    }
   } catch {}
 }
 
@@ -659,6 +791,7 @@ function Start-Download($it) {
       return
     } catch {
       Write-Host "     x nao enfileirou em $($c.User): $($_.Exception.Message)" -ForegroundColor DarkYellow
+      Write-Evento 'item.attemptFailed' ([ordered]@{ key = [string]$it.Key; user = [string]$c.User; attempt = $it.Idx + 1; reason = "nao enfileirou: $($_.Exception.Message)" })
       $it.Idx++
     }
   }
@@ -666,6 +799,7 @@ function Start-Download($it) {
 }
 function Next-Candidate($it, [string]$why) {
   Write-Host "     x $($it.Line): $why" -ForegroundColor DarkYellow
+  Write-Evento 'item.attemptFailed' ([ordered]@{ key = [string]$it.Key; user = $(if ($it.Cur) { [string]$it.Cur.User } else { $null }); attempt = $it.Idx + 1; reason = $why })
   if ($it.Cur) { $BadUsers[$it.Cur.User] = 1 + [int]$BadUsers[$it.Cur.User] }     # evita o mesmo usuario lento nas proximas faixas
   $it.Note = $why; $it.Idx++; Start-Download $it
 }
@@ -717,6 +851,7 @@ function Start-BeetsBatch {
   $script:beetsBatch = $batch
   $script:lastBeets = Get-Date
   Write-Host "  [beets] importando lote de $($batch.Count) faixa(s) em segundo plano..." -ForegroundColor DarkGray
+  Write-Evento 'beets.batch' ([ordered]@{ phase = 'start'; count = $batch.Count; keys = [object[]]@($batch | ForEach-Object { [string]$_.Key }) })
 }
 function Check-BeetsBatch([switch]$Wait) {
   if (-not $script:beetsJob) { return }
@@ -730,6 +865,7 @@ function Check-BeetsBatch([switch]$Wait) {
   foreach ($e in ($errs | Select-Object -First 3)) { Write-Host "  [beets] $e" -ForegroundColor DarkYellow }
   foreach ($b in $script:beetsBatch) { Finish $b $(if ($ok) { "importada" } else { "baixada (beets falhou)" }) "" }
   Write-Host ("  [beets] lote concluido: {0} faixa(s) {1}" -f $script:beetsBatch.Count, $(if ($ok) { "importadas" } else { "COM ERRO (veja $BeetsLog)" })) -ForegroundColor $(if ($ok) { 'Green' } else { 'Red' })
+  Write-Evento 'beets.batch' ([ordered]@{ phase = 'end'; count = $script:beetsBatch.Count; ok = [bool]$ok; errors = [object[]]@($errs | Select-Object -First 3 | ForEach-Object { [string]$_ }); log = (Get-CaminhoRel $BeetsLog) })
   $script:beetsJob = $null; $script:beetsBatch = @()
 }
 
@@ -747,29 +883,143 @@ function Finish($it, [string]$status, [string]$note) {
     "falhou"         { Write-Host "  x  FALHOU: $($it.Line)  ($($it.Note))" -ForegroundColor Red }
   }
 }
-function Show-Progress {
+# Contadores do andamento (usados na linha de progresso da tela e no evento "progress")
+function Get-Progresso {
   $g = @{}; foreach ($i in $items) { $g[$i.Status] = 1 + [int]$g[$i.Status] }
   $done = @($items | Where-Object { $FinalStatus -contains $_.Status }).Count
   $el = (Get-Date) - $t0
   $workDone = $done - $skipped
-  $eta = ""
+  $etaMin = $null
   if ($workDone -ge 3) {
     $rest = $items.Count - $done
-    $eta = " | faltam ~" + [int](($el.TotalMinutes / $workDone) * $rest) + " min"
+    $etaMin = [int](($el.TotalMinutes / $workDone) * $rest)
   }
-  $nFila = @($items | Where-Object { $_.Status -eq "baixando" -and $_.RemoteQueued }).Count
+  return [ordered]@{
+    done = $done; total = $items.Count
+    searching = ([int]$g["buscando"] + [int]$g["verificar"])
+    downloading = [int]$g["baixando"]
+    remoteQueued = @($items | Where-Object { $_.Status -eq "baixando" -and $_.RemoteQueued }).Count
+    waiting = ([int]$g["pendente"] + [int]$g["pronta"])
+    beets = ([int]$g["importar"] + [int]$g["importando"])
+    ok = ([int]$g["importada"] + [int]$g["baixada"])
+    notFound = [int]$g["nao encontrada"]
+    failed = ([int]$g["falhou"] + [int]$g["baixada (beets falhou)"])
+    etaMin = $etaMin
+    searchesPausedUntil = $(if ((Get-Date) -lt $script:PauseUntil) { $script:PauseUntil.ToString('yyyy-MM-ddTHH:mm:sszzz') } else { $null })
+    searchWindowFull = ($SearchTimes.Count -ge $BuscasPorJanela)
+  }
+}
+function Show-Progress {
+  $p = Get-Progresso
+  $eta = $(if ($null -ne $p.etaMin) { " | faltam ~" + $p.etaMin + " min" } else { "" })
+  $nFila = $p.remoteQueued
   Write-Host ("[{0:HH:mm}] {1}/{2} concluidas | buscando {3} | baixando {4} | aguardando {5} | beets {6} | ok {7} | nao achadas {8} | falhas {9}{10}" -f (Get-Date),
-    $done, $items.Count, ([int]$g["buscando"] + [int]$g["verificar"]), ("{0}{1}" -f [int]$g["baixando"], $(if ($nFila) { " ($nFila na fila de outros usuarios)" } else { "" })), ([int]$g["pendente"] + [int]$g["pronta"]),
-    ([int]$g["importar"] + [int]$g["importando"]), ([int]$g["importada"] + [int]$g["baixada"]),
-    [int]$g["nao encontrada"], ([int]$g["falhou"] + [int]$g["baixada (beets falhou)"]), $eta) -ForegroundColor Cyan
+    $p.done, $p.total, $p.searching, ("{0}{1}" -f $p.downloading, $(if ($nFila) { " ($nFila na fila de outros usuarios)" } else { "" })), $p.waiting,
+    $p.beets, $p.ok, $p.notFound, $p.failed, $eta) -ForegroundColor Cyan
   if ((Get-Date) -lt $script:PauseUntil) { Write-Host ("         buscas pausadas ate {0:HH:mm} (protecao contra bloqueio do servidor)" -f $script:PauseUntil) -ForegroundColor Yellow }
   elseif ($SearchTimes.Count -ge $BuscasPorJanela) { Write-Host "         limite de $BuscasPorJanela buscas por 220 s atingido; aguardando" -ForegroundColor DarkGray }
+}
+
+# Eventos por faixa: compara o estado de cada faixa com o ultimo publicado e emite so o que mudou
+# (item.status enquanto anda, item.final quando termina)
+function Sync-EventosItens {
+  if (-not $EventosPath) { return }
+  foreach ($it in $items) {
+    $cur = $it.Cur
+    $sig = "{0}|{1}|{2}|{3}|{4}" -f $it.Status, $it.Stage, $it.Idx, [bool]$it.RemoteQueued, $(if ($cur) { $cur.User } else { "" })
+    if ($it.EvSig -eq $sig) { continue }
+    $it.EvSig = $sig
+    if ($FinalStatus -contains $it.Status) {
+      Write-Evento 'item.final' ([ordered]@{ key = [string]$it.Key; line = [string]$it.Line; status = [string]$it.Status; note = [string]$it.Note
+                                             via = [string]$it.Via; local = $(if ($it.Local) { Get-CaminhoRel $it.Local } else { $null })
+                                             user = $(if ($cur) { [string]$cur.User } else { $null }); format = $(if ($cur) { @('FLAC','WAV/AIFF','MP3 320','MP3 256/VBR')[$cur.Tier] } else { $null }) })
+      continue
+    }
+    $e = [ordered]@{ key = [string]$it.Key; line = [string]$it.Line; status = [string]$it.Status }
+    if ($it.SearchLine) { $e.searchLine = [string]$it.SearchLine }
+    if ($it.Status -in @('pendente', 'buscando') -and $it.Stages -and $it.Stage -lt $it.Stages.Count) {
+      $e.search = [ordered]@{ kind = [string]$it.Stages[$it.Stage].Kind; query = [string]$it.Stages[$it.Stage].Q; stage = $it.Stage + 1; stages = $it.Stages.Count }
+    }
+    if ($it.Status -eq 'pronta') { $e.candidates = @($it.Cands).Count }
+    if ($cur -and $it.Status -eq 'baixando') {
+      $e.user = [string]$cur.User; $e.format = @('FLAC','WAV/AIFF','MP3 320','MP3 256/VBR')[$cur.Tier]; $e.attempt = $it.Idx + 1; $e.remoteQueued = [bool]$it.RemoteQueued
+    }
+    Write-Evento 'item.status' $e
+  }
+}
+
+# Avisos de ritmo das buscas (so na mudanca) e progresso periodico, para o app
+$script:EvJanelaCheia = $false; $script:EvUltimoProgresso = [datetime]::MinValue
+function Sync-EventosAndamento([switch]$Forcar) {
+  if (-not $EventosPath) { return }
+  $agora = Get-Date
+  $cheia = ($agora -ge $script:PauseUntil -and -not $script:Canary -and @($SearchTimes | Where-Object { ($agora - $_).TotalSeconds -le 220 }).Count -ge $BuscasPorJanela)
+  if ($cheia -ne $script:EvJanelaCheia) {
+    $script:EvJanelaCheia = $cheia
+    Write-Evento 'search.windowFull' ([ordered]@{ full = $cheia; limit = $BuscasPorJanela; windowSeconds = 220 })
+  }
+  if ($Forcar -or ($agora - $script:EvUltimoProgresso).TotalSeconds -ge 5) {
+    $script:EvUltimoProgresso = $agora
+    Write-Evento 'progress' (Get-Progresso)
+  }
+}
+
+# ============================================================================
+# -SoAnalisar: le e analisa a lista sem buscar nada (pre-visualizacao no editor do app).
+# Usa a mesma leitura/limpeza/separacao do lote. Saida: um JSON (docs/eventos-lote.md).
+# ============================================================================
+function Invoke-Analise {
+  try { [Console]::OutputEncoding = $Utf8SemBom } catch {}       # JSON sem BOM na saida padrao
+  $r = [ordered]@{ v = 1; ok = $true; list = $Lista }
+  try {
+    if (-not (Test-Path -LiteralPath $Lista)) { throw "Arquivo de lista nao encontrado: $Lista" }
+    $det = Read-ListaDetalhada $Lista
+    $state = Load-State
+    $skipStatus = @("importada", "baixada", "baixada (beets falhou)", "ja na biblioteca")
+    if (-not $Retentar) { $skipStatus += @("nao encontrada", "falhou") }
+    $lib = $null
+    if ($AnalisarBiblioteca) { $lib = Get-Library }
+    $seen = @{}; $linhas = New-Object System.Collections.ArrayList
+    $cnt = @{ unique = 0; dup = 0; done = 0; lib = 0 }
+    foreach ($d in $det) {
+      $req = Parse-Line $d.Line
+      $k = Normalize $d.Line
+      $avisos = New-Object System.Collections.ArrayList
+      if ($d.Line.IndexOf(" - ") -le 0) { [void]$avisos.Add("sem ' - ' entre artista e titulo: a linha inteira vira o titulo e o artista nao e conferido") }
+      elseif ($req.BaseTokens.Count -eq 0) { [void]$avisos.Add("titulo vazio") }
+      if ($req.Remixer) { [void]$avisos.Add("o artista da linha e o remixer: o artista original sera aceito livremente") }
+      $e = [ordered]@{ sourceLine = $d.SourceLine; line = [string]$d.Line; key = $k; artist = [string]$req.Artist; title = [string]$req.Base; mix = [string]$req.Mix
+                       original = [bool]$req.IsOriginal; remixer = [bool]$req.Remixer; queries = [object[]]@($req.Queries | ForEach-Object { [string]$_ })
+                       status = 'nova'; duplicateOf = $null; previous = $null; warnings = [object[]]$avisos.ToArray() }
+      if (-not $k) { $e.status = 'ignorada' }
+      elseif ($seen.ContainsKey($k)) { $e.status = 'repetida'; $e.duplicateOf = $seen[$k]; $cnt.dup++ }
+      else {
+        $seen[$k] = $d.SourceLine; $cnt.unique++
+        if ($state.ContainsKey($k)) { $e.previous = [string]$state[$k] }
+        if ($state.ContainsKey($k) -and $skipStatus -contains $state[$k]) { $e.status = 'ja feita'; $cnt.done++ }
+        elseif ($lib -and (In-Library $lib $req)) { $e.status = 'ja na biblioteca'; $cnt.lib++ }
+      }
+      [void]$linhas.Add($e)
+    }
+    $r.total = $det.Count; $r.unique = $cnt.unique; $r.duplicates = $cnt.dup; $r.alreadyDone = $cnt.done
+    $r.libraryChecked = [bool]$lib; $r.inLibrary = $(if ($lib) { $cnt.lib } else { $null })
+    $r.toProcess = $cnt.unique - $cnt.done - $cnt.lib
+    $r.lines = [object[]]$linhas.ToArray()
+  } catch {
+    $r.ok = $false; $r.error = $_.Exception.Message
+    $script:CodigoSaida = $CodSaida.Config
+  }
+  $json = ConvertTo-Json -InputObject $r -Depth 6 -Compress
+  if ($SaidaAnalise) { [IO.File]::WriteAllText((Resolve-NaRaiz $SaidaAnalise), $json, $Utf8SemBom) }
+  else { [Console]::Out.WriteLine($json); [Console]::Out.Flush() }
 }
 
 # ============================================================================
 # Main
 # ============================================================================
-$raw = Read-Lista $Lista
+if ($SoAnalisar) { Invoke-Analise; exit $script:CodigoSaida }
+
+try { $raw = Read-Lista $Lista } catch { Stop-Lote $CodSaida.Config $_.Exception.Message }
 $ArtistLineCount = @{}
 foreach ($l in $raw) { $k0 = (Parse-Line $l).ArtistKey; if ($k0) { $ArtistLineCount[$k0] = 1 + [int]$ArtistLineCount[$k0] } }
 $seenKeys = @{}; $items = New-Object System.Collections.ArrayList
@@ -782,16 +1032,36 @@ foreach ($l in $raw) {
     Responses = 0; Diag = (New-Object System.Collections.ArrayList); Reasons = @{}; Cands = @(); Idx = 0; Cur = $null; Started = $null
     Note = ""; Local = ""; Stages = $null; Retried = $false; NotBefore = $null; Via = ""; SearchIsArtist = $false; PauseReset = $false
     FirstSearchAt = $null; RespCache = $null; LostOnce = $false; Skipped = 0; Corrected = ""; CatNote = ""; Fora = $false; SearchLine = ""
-    OrigReq = $null; RunAt = $null; StopAt = $null; Refetched = $false; RemoteQueued = $false; ActiveAt = $null
+    OrigReq = $null; RunAt = $null; StopAt = $null; Refetched = $false; RemoteQueued = $false; ActiveAt = $null; EvSig = ""
   })
   $items[$items.Count - 1].Stages = New-Stages $items[$items.Count - 1].Req
 }
-if ($items.Count -eq 0) { throw "A lista esta vazia: $Lista" }
+if ($items.Count -eq 0) { Stop-Lote $CodSaida.Config "A lista esta vazia: $Lista" }
 Write-Host "Lista: $Lista  ($($items.Count) faixas unicas)" -ForegroundColor Cyan
+
+# so uma execucao por lista (o .bat e o app usam a mesma trava)
+Enter-Trava
+$script:ArquivosExecucao = [ordered]@{
+  result = (Join-Path $logDir "resultado-$stamp.txt"); notDownloaded = (Join-Path $logDir "nao-baixadas-$stamp.txt")
+  diagnostic = $DiagFile; catalog = $CatReport; beetsLog = $BeetsLog; runLog = $RunLog; state = $StateFile; events = $EventosPath
+}
+if ($EventosPath) {
+  $opcoes = [ordered]@{}
+  foreach ($n in @('Paralelo', 'Buscas', 'BuscasPorJanela', 'Tentativas', 'FilaMaxMin', 'FilaUltimoMin', 'DownloadMaxMin', 'LoteBeets', 'PausaBloqueioMin',
+                   'AceitarMp3Menor', 'AceitarWav', 'Retentar', 'NaoPularExistentes', 'SemBeets', 'SemBuscaArtista', 'TituloAproximado',
+                   'NaoTolerarGrafia', 'SemCatalogo', 'PularForaDoCatalogo', 'SlskdUrl')) {
+    $v = Get-Variable -Name $n -ValueOnly
+    $opcoes[$n] = $(if ($v -is [Management.Automation.SwitchParameter]) { $v.IsPresent } else { $v })
+  }
+  $arqs = [ordered]@{}; foreach ($k in @($script:ArquivosExecucao.Keys)) { $arqs[$k] = Get-CaminhoRel $script:ArquivosExecucao[$k] }
+  Write-Evento 'run.start' ([ordered]@{ id = $stamp; pid = $PID; list = (Get-CaminhoRel $Lista); listName = $listName; total = $items.Count
+                                        options = $opcoes; files = $arqs; powershell = $PSVersionTable.PSVersion.ToString() })
+}
 
 # o slskd pode levar alguns segundos para subir (ex.: logo depois do subir.bat): espera ate 2 min
 $okSlskd = $false; $lastErr = ""
 for ($t = 1; $t -le 12; $t++) {
+  if (Test-Parada) { break }
   try { [void](Invoke-Slskd GET "/application"); $okSlskd = $true; break }
   catch {
     $lastErr = $_.Exception.Message
@@ -800,7 +1070,9 @@ for ($t = 1; $t -le 12; $t++) {
     Start-Sleep -Seconds 10
   }
 }
-if (-not $okSlskd) { throw "Nao consegui falar com o slskd em $SlskdUrl (a stack esta no ar? API key correta?). Detalhe: $lastErr" }
+if (-not $okSlskd -and -not $script:StopRequested) {
+  Stop-Lote $(if ($lastErr -match '401|403|Unauthorized|Forbidden') { $CodSaida.Config } else { $CodSaida.SlskdFora }) "Nao consegui falar com o slskd em $SlskdUrl (a stack esta no ar? API key correta?). Detalhe: $lastErr"
+}
 
 # Compartilhamento: o slskd le a lista de arquivos compartilhados de um cache e so reescaneia quando
 # pedido. Se o cache foi criado com music\ vazia, ele segue anunciando "0 arquivos" mesmo com a
@@ -831,6 +1103,8 @@ foreach ($it in $items) {
 }
 Write-Host ("Pulando: {0} ja feitas em execucoes anteriores, {1} ja na biblioteca. A processar: {2}" -f $nPrev, $nLib, ($items.Count - $nPrev - $nLib)) -ForegroundColor Cyan
 if ($nPrev -gt 0 -and -not $Retentar) { Write-Host "  (use -Retentar para tentar de novo as que falharam antes)" -ForegroundColor DarkGray }
+Write-Evento 'run.skip' ([ordered]@{ alreadyDone = $nPrev; inLibrary = $nLib; toProcess = ($items.Count - $nPrev - $nLib); libraryChecked = [bool]$lib })
+Sync-EventosItens
 
 # 2) confere os titulos no catalogo (corrige grafia; o que nao existe vai para o fim da fila)
 if (-not $SemCatalogo) {
@@ -846,6 +1120,7 @@ if (-not $SemCatalogo) {
     [void]$ord.Add($x)
   }
   $items = $ord
+  Sync-EventosItens
 }
 $skipped = @($items | Where-Object { $FinalStatus -contains $_.Status }).Count
 Write-Host "Downloads: $Paralelo em paralelo | buscas: $Buscas (max $BuscasPorJanela a cada 220 s) | beets em lotes de $LoteBeets | Ctrl+C para parar (rode de novo para continuar)" -ForegroundColor DarkGray
@@ -862,9 +1137,10 @@ $script:lastBeets = Get-Date
 $script:beetsJob = $null; $script:beetsBatch = @()
 $lastProgress = Get-Date
 $errStreak = 0
+$script:LoopTerminou = $false; $script:SlskdCaiu = $false; $script:Falha = $false
 
 try {
-  while ($true) {
+  while (-not (Test-Parada)) {
     $open = @($items | Where-Object { $FinalStatus -notcontains $_.Status })
     if ($open.Count -eq 0 -and -not $script:beetsJob) { break }
 
@@ -940,7 +1216,8 @@ try {
     } catch {
       $errStreak++
       Write-Host "  !  erro falando com o slskd ($errStreak): $($_.Exception.Message) -- tentando de novo em 15s" -ForegroundColor Yellow
-      if ($errStreak -ge 20) { Write-Host "  !  slskd fora do ar ha muito tempo; parando. Rode de novo para continuar." -ForegroundColor Red; break }
+      Write-Evento 'warning' ([ordered]@{ code = 'slskd_unreachable'; message = $_.Exception.Message; streak = $errStreak; maxStreak = 20 })
+      if ($errStreak -ge 20) { Write-Host "  !  slskd fora do ar ha muito tempo; parando. Rode de novo para continuar." -ForegroundColor Red; $script:SlskdCaiu = $true; break }
       Start-Sleep -Seconds 15
       continue
     }
@@ -953,10 +1230,14 @@ try {
       if ($nImp -gt 0 -and ($nImp -ge $LoteBeets -or $busy -eq 0 -or ((Get-Date) - $script:lastBeets).TotalSeconds -ge 90)) { Start-BeetsBatch }
     }
 
+    Sync-EventosItens
+    Sync-EventosAndamento
     if (((Get-Date) - $lastProgress).TotalSeconds -ge 30) { Show-Progress; $lastProgress = Get-Date }
     Start-Sleep -Milliseconds 1500
   }
+  $script:LoopTerminou = $true
 }
+catch { $script:Falha = $true; throw }
 finally {
   if ($script:beetsJob) { Write-Host "Aguardando o lote do beets terminar..." -ForegroundColor DarkGray; Check-BeetsBatch -Wait }
   try { [void][Win32.Power]::SetThreadExecutionState([uint32]"0x80000000") } catch {}
@@ -980,5 +1261,16 @@ finally {
   if ($BadUsers.Count) { Write-Host ("Usuarios que travaram (evitados nas faixas seguintes): " + (($BadUsers.GetEnumerator() | Sort-Object Value -Descending | Select-Object -First 5 | ForEach-Object { "$($_.Key) x$($_.Value)" }) -join ', ')) -ForegroundColor DarkGray }
   if ($fmtOnly) { Write-Host "$fmtOnly faixa(s) existem, mas so em WAV/AIFF ou MP3 abaixo de 320: rode as nao baixadas com -AceitarWav -AceitarMp3Menor" -ForegroundColor Yellow }
   if ($fail.Count) { Write-Host "Para tentar de novo so as que faltaram:  baixar-lista.bat lotes\nao-baixadas-$stamp.txt -AceitarMp3Menor -AceitarWav" -ForegroundColor Yellow }
+
+  # ---------------------------------------------------------------- fim (codigo de saida e run.end)
+  # Com erro, quem fecha e o trap (ele sabe a mensagem); no Ctrl+C, o PowerShell so roda este finally
+  Sync-EventosItens
+  if (-not $script:Falha) {
+    if ($script:StopRequested) { $script:CodigoSaida = $CodSaida.Parado; Complete-Run 'user' $script:CodigoSaida }
+    elseif ($script:SlskdCaiu) { $script:CodigoSaida = $CodSaida.SlskdFora; Complete-Run 'slskd_down' $script:CodigoSaida 'slskd fora do ar ha muito tempo' }
+    elseif ($script:LoopTerminou) { $script:CodigoSaida = $CodSaida.Concluido; Complete-Run 'completed' $script:CodigoSaida }
+    else { $script:CodigoSaida = $CodSaida.Interrompido; Complete-Run 'interrupted' $script:CodigoSaida 'interrompido (Ctrl+C)' }
+  }
 }
 try { Stop-Transcript | Out-Null } catch {}
+exit $script:CodigoSaida
