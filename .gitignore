@@ -41,3 +41,6 @@ desktop.ini
 .idea/
 __pycache__/
 *.pyc
+
+# ===================== Testes =========================================
+tests/resultado-pester-*.xml
