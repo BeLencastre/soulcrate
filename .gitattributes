@@ -10,3 +10,6 @@ Dockerfile text eol=lf
 *.sh text eol=lf
 
 * text=auto
+
+# Fixtures do protocolo do lote: bytes exatos como o script grava (sem conversao de fim de linha)
+app/tests/fixtures/** -text
