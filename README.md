@@ -46,12 +46,14 @@ Uma stack Docker que junta três ferramentas open source, com um perfil de taggi
 - [Rekordbox e pendrive](#rekordbox-e-pendrive)
 - [Manutenção da biblioteca](#manutenção-da-biblioteca)
 - [Estrutura do projeto](#estrutura-do-projeto)
+- [Versões](#versões)
 - [Personalização](#personalização)
 - [Solução de problemas](#solução-de-problemas)
 - [Atualização](#atualização)
 - [Backup](#backup)
 - [Aviso](#aviso)
 - [Créditos](#créditos)
+- [Licença](#licença)
 
 ---
 
@@ -674,6 +676,51 @@ soulcrate/
 ├── navidrome/                  # banco e cache do Navidrome
 └── lotes/                      # relatórios do download em lote
 ```
+
+
+
+## Versões
+
+Versões testadas juntas (outubro de 2026). As marcadas como **fixa** estão travadas no `docker-compose.yml` ou no `soulbeet/Dockerfile`. As outras vêm junto com a imagem base do Soulbeet ou são resolvidas pelo `pip` a partir das fixas. Veja [Atualização](#atualização) para trocar de versão.
+
+**Serviços (contêineres)**
+
+| Componente                       | Versão                                                                    | Onde é definida                    |
+| -------------------------------- | ------------------------------------------------------------------------- | ---------------------------------- |
+| [slskd](https://github.com/slskd/slskd)          | `0.26.0` (fixa)                                           | `docker-compose.yml`               |
+| [Navidrome](https://github.com/navidrome/navidrome) | `0.64.2` (fixa)                                        | `docker-compose.yml`               |
+| [Soulbeet](https://github.com/terry90/soulbeet)  | imagem `docccccc/soulbeet:full`, travada no digest `sha256:c419f11e…` (build de 15/08/2026, posterior à v0.6.1) (fixa) | `soulbeet/Dockerfile` |
+
+**Análise de áudio e tags (dentro da imagem do Soulbeet)**
+
+| Componente                          | Versão                  | Observação                                                             |
+| ----------------------------------- | ----------------------- | ---------------------------------------------------------------------- |
+| Python                              | `3.11.2`                | o da imagem base (distroless, Debian 12)                               |
+| [beets](https://github.com/beetbox/beets) | `2.11.0` (fixa)   | restrição no `Dockerfile`; usado por `keepmix.py` (`beets.plugins`, `beets.util`) |
+| [mediafile](https://github.com/beetbox/mediafile) | `0.17.0`  | usado por `keepmix.py` (`MediaFile`); vem com o beets                  |
+| [beetcamp](https://github.com/snejus/beetcamp) | `0.25.0` (fixa) | plugin `bandcamp`                                                    |
+| [librosa](https://github.com/librosa/librosa) | `0.11.0` (fixa) | plugin `autobpm`                                                     |
+| [resampy](https://github.com/bmcfee/resampy) | `0.4.3` (fixa)   | plugin `autobpm`                                                       |
+| numpy / lap                         | `2.2.6` / `0.5.13` (fixas) | mantidas iguais às da imagem base                                   |
+| numba / llvmlite / scipy / soundfile | `0.68.0` / `0.50.0` / `1.17.1` / `0.14.0` | dependências do librosa                     |
+| [libkeyfinder](https://github.com/mixxxdj/libkeyfinder) | `v2.2.6` (fixa) | compilada no build                                      |
+| [keyfinder-cli](https://github.com/evanpurkhiser/keyfinder-cli) | commit `c8a0c6f` (fixa) | compilado no build; plugin `keyfinder`         |
+| mbtwopass                           | o da imagem do Soulbeet | em `/opt/beets-plugins`                                                |
+
+Plugins do beets ativos (`soulbeet/config/config.yaml`): `musicbrainz`, `mbtwopass`, `chroma`, `bandcamp`, `keepmix`, `autobpm`, `keyfinder`, `lastgenre`, `fetchart`, `embedart`, `scrub`.
+
+**Estágios de build** (só existem durante o `docker compose build`): `debian:bookworm-slim` e `python:3.11-slim-bookworm`.
+
+**No seu PC**
+
+| Componente      | Versão testada       | Mínimo                                                         |
+| --------------- | -------------------- | -------------------------------------------------------------- |
+| Docker Engine   | `29.8.2`             | Docker Desktop com Compose v2 (`docker compose`, sem hífen)    |
+| Docker Compose  | `5.5.1`              | v2 ou mais novo (o que vem no Docker Desktop)                  |
+| PowerShell      | `5.1` (Windows)      | 5.1 no Windows, ou `pwsh` 7+ no Linux/macOS para o `baixar-lista.ps1` |
+
+> [!TIP]
+> O VS Code pode sublinhar `from beets...` e `from mediafile...` no `keepmix.py` porque esses pacotes só existem dentro do contêiner, não no seu PC. Não é erro. Para o editor reconhecê-los, rode `pip install beets==2.11.0` num ambiente virtual local.
 
 
 
