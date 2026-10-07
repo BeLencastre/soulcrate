@@ -1,0 +1,158 @@
+# =============================================================================
+#  beets config.yaml — perfil DJ (House / Techno -> Rekordbox -> XDJ)
+#  Montado em /config/config.yaml (BEETS_CONFIG). O Soulbeet chama:
+#     beet import -q -s -l <lib.db> -d <pasta escolhida na UI>
+# =============================================================================
+
+directory: /music
+library: /data/beets-library.db   # o Soulbeet sobrepõe com -l por pasta
+
+pluginpath:
+  - /opt/beets-plugins            # mbtwopass (vem na imagem do Soulbeet; NAO remover)
+  - /data/beets-plugins           # keepmix.py
+
+# ATENÇÃO: definir "plugins" SUBSTITUI a lista padrão da imagem.
+# musicbrainz e mbtwopass são obrigatórios para o Soulbeet continuar taggeando.
+plugins:
+  - musicbrainz
+  - mbtwopass
+  - chroma        # fingerprint AcoustID (bom para rips sem tag)
+  - bandcamp      # beetcamp: muito catálogo de house/techno só existe lá
+  - keepmix       # preserva "(Extended Mix)", "(Original Mix)", "(Dub Mix)"...
+  - autobpm       # BPM automático (librosa)
+  - keyfinder     # tom harmônico (keyfinder-cli) -> initial_key / TKEY
+  - lastgenre     # gênero para a pasta raiz
+  - fetchart
+  - embedart
+  - scrub
+
+# --- Gravação de tags --------------------------------------------------------
+# ID3v2.3: a versão mais compatível com Rekordbox e com a linha CDJ/XDJ.
+id3v23: yes
+
+import:
+  write: yes
+  move: yes                 # tira de /downloads e organiza em /music
+  copy: no
+  resume: no
+  quiet_fallback: asis      # sem match no MusicBrainz/Bandcamp? importa com as tags originais
+  duplicate_action: skip
+  timid: no
+  log: /data/beets-import.log
+  languages: [en]
+
+# --- Matching: evitar que um "Radio Edit" substitua o "Extended Mix" ---------
+match:
+  strong_rec_thresh: 0.04          # padrão (rigoroso)
+  track_length_grace: 5            # segundos tolerados sem penalidade
+  track_length_max: 30
+  distance_weights:
+    track_title: 5.0               # padrão 3.0 — título (com mix) pesa mais
+    track_length: 5.0              # padrão 2.0 — edit 3:30 vs extended 6:45 = distância alta
+  preferred:
+    media: ['Digital Media|File']
+
+# =============================================================================
+#  Preservação de título (crítico para DJ)
+# =============================================================================
+# O beets NÃO tem opção nativa para "nunca alterar o título". O plugin keepmix
+# lê o título ORIGINAL do arquivo antes do autotag e, se ele tinha um sufixo de
+# mixagem que o título novo perdeu, reaplica no formato "Título (Extended Mix)".
+# Se o match trouxe um sufixo diferente (ex.: "Radio Edit"), o do arquivo vence.
+keepmix:
+  keywords:
+    - mix          # Extended Mix, Original Mix, Club Mix, Dub Mix, Vocal Mix...
+    - remix
+    - dub
+    - edit
+    - rework
+    - re-edit
+    - version
+    - vip
+    - instrumental
+    - bootleg
+    - remaster
+    - remastered
+
+# Nada de "limpar" o título com regras de substituição: só caracteres ilegais
+# em sistemas de arquivo (pendrives FAT32/exFAT do XDJ). Parênteses ficam.
+replace:
+  '[\\/]': '-'
+  '^\.': _
+  '[\x00-\x1f]': ''
+  '[<>:"\?\*\|]': ''
+  '\.$': ''
+  '\s+$': ''
+  '^\s+': ''
+asciify_paths: no
+max_filename_length: 200
+
+# =============================================================================
+#  Estrutura de pastas:  Gênero / Artista / Título
+# =============================================================================
+# beets >= 2.11 (versão da imagem Soulbeet) usa o campo multivalor "genres";
+# %first pega só o primeiro gênero para o nome da pasta.
+paths:
+  singleton: '%if{$genres,%first{$genres},_Sem Genero}/$artist/$title'
+  default:   '%if{$genres,%first{$genres},_Sem Genero}/$albumartist/$title'
+  comp:      '%if{$genres,%first{$genres},_Sem Genero}/Various Artists/$artist - $title'
+
+# =============================================================================
+#  Análise: BPM e Tom
+# =============================================================================
+autobpm:
+  auto: yes
+  force: no          # mantém o BPM que já vem da Beatport/loja
+  quiet: yes
+  beat_track_kwargs:
+    start_bpm: 125   # referência para house/techno (evita ler 62 ou 250 BPM)
+
+keyfinder:
+  auto: yes
+  bin: /usr/local/bin/keyfinder-cli
+  overwrite: no      # mantém o tom original se o arquivo já tiver
+
+# =============================================================================
+#  Gênero (pasta raiz)
+# =============================================================================
+lastgenre:
+  auto: yes
+  source: track
+  count: 1             # um gênero só -> nome de pasta limpo
+  canonical: yes
+  prefer_specific: yes # "Tech House" em vez de "House", "Melodic Techno" em vez de "Electronic"
+  whitelist: yes
+  force: no            # NÃO sobrescreve o gênero que já veio no arquivo (Beatport/Bandcamp)
+  keep_existing: yes
+  fallback: ''
+
+# =============================================================================
+#  Arte e limpeza
+# =============================================================================
+fetchart:
+  auto: yes
+  minwidth: 500
+  maxwidth: 1000
+  enforce_ratio: 10px
+  cover_format: JPEG
+  sources: [filesystem, coverart, itunes, amazon, albumart]
+
+embedart:
+  auto: yes
+  ifempty: yes        # se a faixa já tem capa embutida, preserva a original
+  maxwidth: 600       # capa leve: carrega rápido no display do XDJ
+  quality: 85
+  remove_art_file: no
+
+scrub:
+  auto: yes           # remove tags-lixo; reescreve só os campos do beets (BPM, tom e capa são mantidos)
+
+musicbrainz:
+  searchlimit: 10
+
+bandcamp:
+  include_digital_only_tracks: true
+  search_max: 5
+  genre:
+    capitalize: true
+    maximum: 1

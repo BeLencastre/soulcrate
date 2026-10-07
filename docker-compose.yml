@@ -1,0 +1,120 @@
+# =============================================================================
+#  Soulcrate — slskd + Soulbeet (beets) + Navidrome
+#  Foco: House / Techno -> Rekordbox -> XDJ
+# =============================================================================
+#  REGRA CRÍTICA: /downloads e /music usam EXATAMENTE o mesmo bind mount
+#  (mesma origem no host, mesmo caminho no contêiner, mesmo modo rw) no slskd
+#  e no Soulbeet. O slskd informa à API o caminho "/downloads/..." e o Soulbeet
+#  precisa enxergar o arquivo nesse mesmo caminho para importar com o beets.
+#
+#  Dica de performance: deixe DOWNLOADS_DIR e MUSIC_DIR no MESMO disco/partição.
+#  Assim o "move" do beets vira um rename instantâneo em vez de cópia + delete.
+# =============================================================================
+
+name: soulcrate
+
+# Âncoras reutilizáveis ------------------------------------------------------
+x-common-env: &common-env
+  PUID: ${PUID}
+  PGID: ${PGID}
+  TZ: ${TZ}
+
+x-downloads-volume: &downloads-volume
+  type: bind
+  source: ${DOWNLOADS_DIR}
+  target: /downloads
+
+x-music-volume: &music-volume
+  type: bind
+  source: ${MUSIC_DIR}
+  target: /music
+
+services:
+  # ---------------------------------------------------------------------------
+  # slskd — cliente Soulseek (Web UI + API)
+  # ---------------------------------------------------------------------------
+  slskd:
+    image: slskd/slskd:0.26.0          # versão fixa: atualize de propósito (veja "Atualização" no README)
+    container_name: slskd
+    restart: unless-stopped
+    user: "${PUID}:${PGID}"        # slskd recusa PUID/PGID junto com user: -> só user: aqui
+    environment:
+      TZ: ${TZ}
+      SLSKD_UMASK: "002"
+      SLSKD_REMOTE_CONFIGURATION: "true"
+      # Diretórios (caminhos INTERNOS do contêiner)
+      SLSKD_DOWNLOADS_DIR: /downloads
+      SLSKD_INCOMPLETE_DIR: /incomplete   # parciais fora de /downloads: o Soulbeet nunca vê arquivo pela metade
+      SLSKD_SHARED_DIR: /music            # compartilhar a biblioteca evita ban por "leech"
+      # Credenciais
+      SLSKD_SLSK_USERNAME: ${SLSK_USERNAME}
+      SLSKD_SLSK_PASSWORD: ${SLSK_PASSWORD}
+      SLSKD_USERNAME: ${SLSKD_WEB_USER}
+      SLSKD_PASSWORD: ${SLSKD_WEB_PASSWORD}
+      SLSKD_SLSK_LISTEN_PORT: "2234"     # 50300 cai em faixa reservada pelo Windows/Hyper-V
+    ports:
+      - "5030:5030"      # Web UI / API (HTTP)
+      - "2234:2234"      # Porta de escuta Soulseek (faça port-forward no roteador)
+    volumes:
+      - ./slskd:/app                          # slskd.yml (API key), banco e logs
+      - *downloads-volume                     # IDÊNTICO ao Soulbeet
+      - *music-volume                         # IDÊNTICO ao Soulbeet
+      - type: bind
+        source: ${INCOMPLETE_DIR}
+        target: /incomplete
+
+  # ---------------------------------------------------------------------------
+  # Soulbeet — orquestra buscas no slskd e importa com o beets
+  # Imagem estendida (soulbeet:full + keyfinder-cli + librosa/autobpm + beetcamp)
+  # ---------------------------------------------------------------------------
+  soulbeet:
+    build:
+      context: ./soulbeet
+      dockerfile: Dockerfile
+    image: local/soulbeet-dj:latest
+    container_name: soulbeet
+    restart: unless-stopped
+    user: "${PUID}:${PGID}"        # Soulbeet não documenta PUID/PGID; garante que o beets grave como você
+    environment:
+      <<: *common-env
+      DATABASE_URL: sqlite:/data/soulbeet.db
+      DOWNLOAD_PATH: /downloads          # mesmo caminho que o slskd usa
+      SECRET_KEY: ${SOULBEET_SECRET_KEY}
+      NAVIDROME_URL: http://navidrome:4533
+      BEETS_CONFIG: /config/config.yaml
+      BEETS_ALBUM_MODE: "false"          # DJ baixa faixa a faixa -> modo singleton
+      NUMBA_CACHE_DIR: /data/.numba-cache # cache do librosa (BPM mais rápido após a 1ª faixa)
+    ports:
+      - "9765:9765"
+    volumes:
+      - ./soulbeet/data:/data
+      - ./soulbeet/config:/config                          # config.yaml do beets
+      - ./soulbeet/beets-plugins:/data/beets-plugins:ro    # plugin keepmix.py
+      - *downloads-volume                                  # IDÊNTICO ao slskd
+      - *music-volume                                      # IDÊNTICO ao slskd
+    depends_on:
+      - slskd
+      - navidrome
+
+  # ---------------------------------------------------------------------------
+  # Navidrome — o login do Soulbeet usa as credenciais do Navidrome.
+  # Bônus: player web/Subsonic para ouvir a biblioteca antes do set.
+  # ---------------------------------------------------------------------------
+  navidrome:
+    image: deluan/navidrome:0.64.2     # versão fixa
+    container_name: navidrome
+    restart: unless-stopped
+    user: "${PUID}:${PGID}"
+    environment:
+      <<: *common-env
+      ND_MUSICFOLDER: /music
+      ND_SCANSCHEDULE: 15m
+      ND_LOGLEVEL: info
+    ports:
+      - "4533:4533"
+    volumes:
+      - ./navidrome:/data
+      - type: bind
+        source: ${MUSIC_DIR}
+        target: /music
+        read_only: true      # Navidrome só lê; mesmo caminho /music do Soulbeet

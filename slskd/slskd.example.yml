@@ -1,0 +1,15 @@
+# slskd.example.yml — MODELO. Copie para slskd.yml (montado em /app/slskd.yml)
+# e troque a chave abaixo por uma aleatoria (ex.: openssl rand -hex 32).
+# Diretórios e credenciais vêm das variáveis de ambiente do docker-compose.
+# Aqui só definimos a API Key que o Soulbeet usará.
+
+web:
+  authentication:
+    api_keys:
+      soulbeet:
+        # A mesma chave vai no .env -> SLSKD_API_KEY_SOULBEET
+        key: TROQUE_POR_UMA_CHAVE_ALEATORIA
+        # Chaves extras são ReadOnly por padrão; o Soulbeet precisa enfileirar downloads.
+        role: ReadWrite
+        # Restringe o uso às redes privadas (rede interna do Docker + LAN).
+        cidr: 172.16.0.0/12,10.0.0.0/8,192.168.0.0/16

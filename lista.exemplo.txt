@@ -1,0 +1,3 @@
+# Uma faixa por linha:  Artista - Titulo (Mix)
+# Linhas com # sao ignoradas. Se não escrever o mix, o script prefere Original/Extended e evita Remix/Edit.
+# Para um remix especifico, escreva o nome do remix entre parênteses.
