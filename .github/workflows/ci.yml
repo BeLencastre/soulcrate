@@ -1,0 +1,64 @@
+name: CI
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  powershell:
+    name: Scripts (${{ matrix.shell == 'pwsh' && 'PowerShell 7' || 'Windows PowerShell 5.1' }})
+    runs-on: windows-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        shell: [powershell, pwsh]
+    defaults:
+      run:
+        shell: ${{ matrix.shell }}
+    steps:
+      - uses: actions/checkout@v4
+
+      # o slskd falso dos testes de integracao roda em Node.js
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: app/.nvmrc
+
+      - name: Instalar o Pester
+        run: |
+          Set-PSRepository PSGallery -InstallationPolicy Trusted
+          Install-Module Pester -MinimumVersion 5.5.0 -Scope CurrentUser -Force -SkipPublisherCheck
+          Get-Module -ListAvailable Pester | Select-Object -First 1 Name, Version
+
+      - name: Testes (Pester)
+        run: ./tests/Invoke-Testes.ps1 -CI
+
+      - name: Resultado dos testes
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: pester-${{ matrix.shell }}
+          path: tests/resultado-pester-*.xml
+          if-no-files-found: ignore
+
+  app:
+    name: App (lint, tipos e testes)
+    runs-on: windows-latest
+    defaults:
+      run:
+        working-directory: app
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: app/.nvmrc
+          cache: npm
+          cache-dependency-path: app/package-lock.json
+      - run: npm ci
+      - run: npm run lint
+      - run: npm run format:check
+      - run: npm run typecheck
+      - run: npm test

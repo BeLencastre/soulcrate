@@ -44,3 +44,11 @@ __pycache__/
 
 # ===================== Testes =========================================
 tests/resultado-pester-*.xml
+
+# ===================== App (Electron) =================================
+app/node_modules/
+app/out/
+app/dist/
+app/coverage/
+# estado do app na pasta do Soulcrate (manifesto dos arquivos da stack)
+.soulcrate/
