@@ -5,12 +5,12 @@ Perguntas que precisavam de resposta antes de construir o app ([especificação,
 | Spike | Pergunta | Situação | Conclusão em uma linha |
 | --- | --- | --- | --- |
 | [SP1](sp1-deteccao-docker.md) | Como detectar Docker instalado, aberto e pronto? | Concluído | `docker desktop status --format json` + `docker version`; WSL só para diagnóstico |
-| [SP2](sp2-abrir-docker-desktop.md) | Como abrir o Docker Desktop e esperar a engine? | Concluído em parte | `docker desktop start --timeout`, com o executável como plano B; partida a frio não exercitada |
+| [SP2](sp2-abrir-docker-desktop.md) | Como abrir o Docker Desktop e esperar a engine? | Implementado na Fase 1; partida a frio não exercitada | `docker desktop start --detach` + espera pela engine, com o executável como plano B; falta testar com o Docker Desktop de verdade fechado |
 | [SP3](sp3-processo-destacado.md) | O lote sobrevive ao app fechar? Dá para reconectar? | Concluído | Sim, iniciando por um PowerShell lançador com `Start-Process`; `detached: true` **não funciona** com o PowerShell |
 | [SP4](sp4-tail-jsonl.md) | Ler o JSONL enquanto é escrito, sem perder nem duplicar? | Concluído | Leitura por offset + `fs.watch` + timer; 3.000 eventos sem perda |
 | [SP5](sp5-navidrome-admin.md) | Criar o primeiro admin do Navidrome pela API? | Concluído | Sim: `POST /auth/createAdmin` |
 | [SP6](sp6-soulbeet-config.md) | Configurar o Soulbeet sem a tela dele? | Concluído | Sim: login com a conta do Navidrome, `POST /api/config` e `POST /api/folders` |
-| [SP7](sp7-webcontentsview.md) | As Web UIs dentro do app guardam o login? | Pendente | Depende do esqueleto do Electron (Fase 0); plano de teste escrito |
+| [SP7](sp7-webcontentsview.md) | As Web UIs dentro do app guardam o login? | Concluído com servidores de teste | Uma partição persistente por serviço; login sobrevive ao app; falta conferir com os três serviços reais |
 | [SP8](sp8-caminhos.md) | Que caminhos de pasta funcionam no Docker Desktop? | Concluído | Espaço e acento funcionam; OneDrive e discos diferentes viram avisos |
 
 Os scripts usados estão em [`codigo/`](codigo/). São código de investigação: servem para reproduzir os resultados e não entram no app sem revisão.

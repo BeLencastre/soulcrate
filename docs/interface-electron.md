@@ -1,8 +1,8 @@
 # Especificação: interface desktop do Soulcrate (Electron)
 
-> Status: **"Antes" concluído, exceto §4.4 (produto e design)** · Versão do documento: 0.2 · Outubro de 2026
+> Status: **"Antes" concluído, exceto §4.4 (produto e design) · Fases 0 e 1 implementadas** · Versão do documento: 0.3 · Outubro de 2026
 >
-> A §4 registra o que foi feito em cada item. As decisões da [§10](#10-decisões-em-aberto) que as investigações resolveram estão marcadas como decididas.
+> A §4 registra o que foi feito em cada item e a §5 traz, em cada fase implementada, um "Como ficou". As decisões da [§10](#10-decisões-em-aberto) que as investigações resolveram estão marcadas como decididas.
 >
 > Este documento descreve o plano completo para criar o app desktop do Soulcrate: o que precisa mudar no projeto **antes**, como o app é construído **durante** a implementação e o que fica para **depois** do lançamento.
 
@@ -234,7 +234,7 @@ Cada spike gera uma nota curta em `docs/spikes/` com a conclusão. Nenhum códig
 - **SP4:** leitura por offset + `fs.watch` + timer: 3.000 eventos sem perda, repetição nem quebra.
 - **SP5:** `POST /auth/createAdmin` no Navidrome funciona.
 - **SP6:** o Soulbeet é configurável pela API (`/api/auth/login`, `/api/config`, `/api/folders`); `POST /api/folders` não é idempotente.
-- **SP7:** **pendente**, precisa do esqueleto do Electron; plano de teste escrito.
+- **SP7:** uma partição persistente **por serviço**: o login sobrevive ao app e os cookies de um serviço não aparecem no outro. Testado com servidores locais; falta conferir com os três serviços reais.
 - **SP8:** espaço e acento funcionam; virou regras do `validar-config.ps1`.
 
 ### 4.4 Produto e design
@@ -262,7 +262,7 @@ Cada spike gera uma nota curta em `docs/spikes/` com a conclusão. Nenhum códig
 
 - [x] P1–P10 implementados; `.bat` sem regressão (comparação da tela e dos arquivos). Implementado na branch `feat/preparacao-interface`, falta mesclar.
 - [x] S1, S3 e S4 implementados; S2 decidido e implementado (`BIND_ADDR`).
-- [x] Spikes SP1–SP4 concluídos (SP2 sem a partida a frio). SP5, SP6 e SP8 também; SP7 pendente.
+- [x] Spikes SP1–SP4 concluídos (SP2 sem a partida a frio). SP5, SP6 e SP8 também; SP7 concluído com servidores de teste (falta o login real dos três serviços).
 - [ ] Wireframes e vocabulário aprovados (§4.4, fora do escopo desta etapa).
 - [x] Pasta `app/` criada com esqueleto e CI configurado. **Falta ver o CI verde no GitHub** (depende do push).
 
@@ -285,6 +285,16 @@ Cada fase termina com algo utilizável e testável. A ordem prioriza o que mais 
 
 **Aceite:** o instalador gerado no CI instala, abre e fecha o app num Windows limpo.
 
+**Como ficou.** Implementada em `app/` (guia em [`app/README.md`](../app/README.md)).
+
+- `electron-vite` 5, Electron 44, React 19, React Router, Tailwind CSS 4, Radix, TanStack Query e Zustand, em TypeScript estrito. Fontes (Archivo e JetBrains Mono) empacotadas, sem CDN, para a CSP restrita.
+- Navegação lateral com as seis telas do protótipo. Início, Serviços e Configurações vêm na Fase 1; Baixar lista, Histórico e Biblioteca mostram o estado vazio "chega em uma próxima versão".
+- Segurança de base (§6.1) desde o primeiro commit, e testada ponta a ponta: sem Node no renderer, sem `ipcRenderer` cru, CSP no build, permissões negadas, navegação e `window.open` bloqueados, remetente conferido em todo canal de IPC.
+- Contrato tipado em [`src/shared/ipc.ts`](../app/src/shared/ipc.ts) com `app:getInfo` (o handler de exemplo) e todos os da Fase 1. Textos da interface num só arquivo (`src/shared/mensagens.ts`).
+- `electron-log` com filtro de segredos; "Ajuda → Abrir pasta de logs" no menu (a barra fica escondida, Alt a mostra).
+- Identidade visual dos protótipos: tema escuro, âmbar como cor de ação, ícone e ícones de bandeja gerados por `npm run icones` a partir do logo.
+- **Instalador:** `npm run dist` gera o NSIS (por usuário, sem assinatura). O CI gera, instala em silêncio, abre o app com `--smoke-test` (janela, preload e IPC) e desinstala; o instalador sai como artefato. A prova "num Windows limpo" fica por conta desse job e da matriz manual da [§7](#7-estratégia-de-testes): localmente só o app desempacotado foi aberto, o instalador não foi executado.
+
 ### Fase 1: Ambiente e stack
 
 **Entregas**
@@ -306,6 +316,17 @@ Cada fase termina com algo utilizável e testável. A ordem prioriza o que mais 
 - Com o Docker fechado, o app explica o problema e abre o Docker com um clique.
 - Ligar, desligar e reconstruir funcionam e refletem o estado real em até 5 s.
 - Derrubar um contêiner por fora (`docker stop slskd`) aparece como erro na tela e na bandeja.
+
+**Como ficou.** Implementada; os três critérios de aceite têm teste ponta a ponta contra um dublê do `docker` (`app/tests/e2e/fase-1.spec.ts`).
+
+- **`DockerService` e `HealthService`:** detecção na ordem do [SP1](spikes/sp1-deteccao-docker.md) e abertura do Docker Desktop como no [SP2](spikes/sp2-abrir-docker-desktop.md). A sondagem é a cada 5 s com a janela visível e a cada 30 s escondida; com a engine de pé basta o `compose ps` (cerca de 1 s). Também refaz a detecção ao voltar da suspensão do PC. Antes da primeira sondagem a tela diz "Verificando…", em vez de afirmar "Docker fechado" sem ter medido.
+- **Início:** as cinco etapas, com os estados do protótipo (`Fechado`, `Abrindo… 18 s`, `Desligada`, `Ligando`...), Ligar, Desligar e Reconstruir, interfaces web e o painel "Log da stack" recolhível. Ligar valida a configuração (S4, em TypeScript, com os mesmos casos do `validar-config.ps1`) antes do `docker compose up -d --build`, mostra o log ao vivo e destaca `plugins ok` e `lastgenre ok`. **Reconstruir** é `up -d --build --force-recreate` (refaz a imagem com o cache das camadas e recria os contêineres).
+- **Erros do catálogo (§6.3):** Docker ausente, fora do PATH, fechado e que não ficou pronto em 3 min; porta em uso (com o número da porta, lido da mensagem do Docker); configuração inválida (lista o que falta, sem iniciar nada); serviço que não respondeu; falha da operação (com "Copiar detalhes" e "Abrir log", sem segredos).
+- **Serviços:** as verificações do `status.bat` (contêineres, endpoints de saúde, plugins do beets, pastas compartilhadas, últimas importações), cada uma verde, amarela ou vermelha com a explicação, e os logs de cada contêiner ao vivo (`slskd`, `soulbeet`, `navidrome`, todos), com "Seguir", "Copiar" e "Reiniciar". Ficaram para depois: a porta 2234 (Fase 2) e a contagem de arquivos compartilhados pela API do slskd (Fase 5).
+- **Web UIs integradas:** `WebContentsView` por serviço, com **uma partição de sessão por serviço**, sem preload e presa à porta do próprio serviço ([SP7](spikes/sp7-webcontentsview.md)); "Abrir no navegador" ao lado. Se o serviço não está no ar, a tela mostra o erro em vez de uma página em branco.
+- **Bandeja:** ícone cinza, verde, amarelo ou vermelho conforme a stack, tooltip e menu (Abrir, Ligar, Desligar, as três Web UIs, Sair). Fechar a janela minimiza para a bandeja (D7), com o aviso na primeira vez; a opção está em Configurações. `Sair` encerra o app e os processos filhos, e a stack continua ligada.
+- **Pasta do Soulcrate:** o app a localiza (a escolhida em Configurações, `SOULCRATE_DIR`, a do repositório em desenvolvimento ou `%USERPROFILE%\Soulcrate`). Copiar os recursos da stack para uma pasta nova é do assistente (Fase 2). A tela Configurações já mostra a pasta, confere o `.env` e o `slskd.yml` e deixa escolher outra pasta.
+- **Não verificado ainda:** a partida a frio do Docker Desktop (o Docker da máquina de desenvolvimento não foi fechado) e o login real de cada Web UI. Ligar, desligar e reconstruir foram exercitados só contra o dublê; a leitura do estado (`version`, `compose version`, `compose ps`) foi conferida contra o Docker real, com a stack desligada.
 
 ### Fase 2: Assistente de configuração
 

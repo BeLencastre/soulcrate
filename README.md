@@ -567,7 +567,7 @@ soulcrate/
 ├── lotes/                      # relatórios do download em lote
 ├── docs/                       # especificação do app, protocolo do lote, regras da configuração
 ├── tests/                      # testes (Pester) e o slskd falso usado por eles
-└── app/                        # app desktop (Electron), em construção
+└── app/                        # app desktop (Electron), em construção: Fases 0 e 1 prontas (veja app/README.md)
 ```
 
 Para desenvolver ou rodar os testes, veja o [`CONTRIBUTING.md`](CONTRIBUTING.md).

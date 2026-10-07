@@ -8,6 +8,7 @@ Rode antes de abrir um pull request. O CI roda os mesmos testes no Windows Power
 powershell -File tests\Invoke-Testes.ps1                 # scripts (Pester 5+; a integração precisa do Node.js)
 powershell -File tests\Invoke-Testes.ps1 -SemIntegracao  # só os rápidos
 cd app && npm ci && npm run check                        # app: lint, formatação, tipos e testes
+cd app && npm run test:e2e                                # app: ponta a ponta (abre o app de verdade, com um dublê do docker)
 ```
 
 | Arquivo | O que cobre |
@@ -55,5 +56,5 @@ Mudanças que quebram compatibilidade (parâmetro removido, formato de evento al
 ## Versões e changelog
 
 - A **stack** tem a versão no arquivo [`VERSION`](VERSION) (SemVer). Mude-a quando mudar algo em `docker-compose.yml`, `soulbeet/`, `slskd/slskd.example.yml`, `.env.example` ou nos scripts.
-- O **app** terá a versão própria em `app/package.json`.
+- O **app** tem a versão própria em `app/package.json` (independente da versão da stack).
 - Registre as mudanças visíveis em [`CHANGELOG.md`](CHANGELOG.md), na seção "Não lançado".
