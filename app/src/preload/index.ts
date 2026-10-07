@@ -1,0 +1,62 @@
+// Preload: expõe `window.soulcrate` (API mínima e tipada, §3.2). Nenhum `ipcRenderer` cru chega ao renderer:
+// só as funções abaixo, cada uma ligada a um canal conhecido de `IpcInvoke`.
+import { contextBridge, ipcRenderer, type IpcRendererEvent } from 'electron';
+import { CANAL_EVENTOS, type CanalIpc, type IpcInvoke, type MainEvent, type SoulcrateApi } from '../shared/ipc';
+
+function chamar<K extends CanalIpc>(canal: K, ...args: IpcInvoke[K]['args']): Promise<IpcInvoke[K]['result']> {
+  return ipcRenderer.invoke(canal, ...args) as Promise<IpcInvoke[K]['result']>;
+}
+
+const api: SoulcrateApi = {
+  app: {
+    getInfo: () => chamar('app:getInfo'),
+    openLogsFolder: () => chamar('app:openLogsFolder'),
+    copyText: (texto) => chamar('app:copyText', texto),
+    openExternal: (url) => chamar('app:openExternal', url),
+    getSettings: () => chamar('app:getSettings'),
+    setSettings: (parcial) => chamar('app:setSettings', parcial),
+    answerClosePrompt: (resposta) => chamar('app:answerClosePrompt', resposta),
+  },
+  env: {
+    check: () => chamar('env:check'),
+    startDockerDesktop: () => chamar('env:startDockerDesktop'),
+  },
+  stack: {
+    status: () => chamar('stack:status'),
+    up: (opts) => (opts ? chamar('stack:up', opts) : chamar('stack:up')),
+    down: () => chamar('stack:down'),
+    restartService: (servico) => chamar('stack:restartService', servico),
+    runChecks: () => chamar('stack:runChecks'),
+    openService: (servico, onde) => chamar('stack:openService', servico, onde),
+  },
+  project: {
+    get: () => chamar('project:get'),
+    pickFolder: () => chamar('project:pickFolder'),
+    openFolder: () => chamar('project:openFolder'),
+    openFile: (arquivo) => chamar('project:openFile', arquivo),
+  },
+  config: {
+    check: () => chamar('config:check'),
+  },
+  logs: {
+    subscribe: (alvo) => chamar('logs:subscribe', alvo),
+    unsubscribe: (id) => chamar('logs:unsubscribe', id),
+  },
+  webui: {
+    show: (servico, limites) => chamar('webui:show', servico, limites),
+    setBounds: (limites) => chamar('webui:setBounds', limites),
+    hide: () => chamar('webui:hide'),
+    goBack: () => chamar('webui:goBack'),
+    reload: () => chamar('webui:reload'),
+    openInBrowser: (servico) => chamar('webui:openInBrowser', servico),
+  },
+  onEvent: (ouvinte) => {
+    const aoReceber = (_e: IpcRendererEvent, evento: MainEvent) => ouvinte(evento);
+    ipcRenderer.on(CANAL_EVENTOS, aoReceber);
+    return () => {
+      ipcRenderer.removeListener(CANAL_EVENTOS, aoReceber);
+    };
+  },
+};
+
+contextBridge.exposeInMainWorld('soulcrate', api);
