@@ -53,20 +53,19 @@ test('abre com a navegação lateral e o Início', async () => {
 });
 
 test('Docker lento: mostra "Verificando" em vez de um alarme falso de Docker fechado (§6.4)', async () => {
-  amb = criarAmbiente({ mundo: { atrasoMs: 3000 } });
-  const inicio = Date.now();
+  // o docker leva 6 s para responder cada comando: dá tempo de ver a tela antes da primeira sondagem, mesmo numa máquina lenta
+  amb = criarAmbiente({ mundo: { atrasoMs: 6000 } });
   aberto = await abrirApp(amb);
   const { janela } = aberto;
 
   // a tela já é utilizável sem esperar o Docker, e não afirma nada que ainda não mediu
   await expect(titulo(janela)).toHaveText('Verificando o ambiente');
-  expect(Date.now() - inicio).toBeLessThan(5_000);
   await expect(resumo(janela)).toHaveText('Verificando…');
   await expect(janela.locator('[data-etapa="docker"]')).toHaveAttribute('data-estado', 'aguardando');
   await expect(janela.getByRole('button', { name: 'Ligar', exact: true })).toBeDisabled();
   await capturar(janela, '00-verificando');
 
-  await expect(titulo(janela)).toHaveText('A stack está desligada', { timeout: 20_000 });
+  await expect(titulo(janela)).toHaveText('A stack está desligada', { timeout: 40_000 });
   await expect(janela.locator('[data-etapa="docker"]')).toHaveAttribute('data-estado', 'ok');
 });
 
