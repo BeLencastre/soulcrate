@@ -45,7 +45,7 @@ jobs:
           if-no-files-found: ignore
 
   app:
-    name: App (lint, tipos e testes)
+    name: App (lint, tipos, testes e ponta a ponta)
     runs-on: windows-latest
     defaults:
       run:
@@ -62,3 +62,67 @@ jobs:
       - run: npm run format:check
       - run: npm run typecheck
       - run: npm test
+
+      # o app de verdade (Electron) contra um dublê do docker: nada aqui toca em Docker nem na stack
+      - name: Testes ponta a ponta (Playwright)
+        run: npm run test:e2e
+
+      - name: Capturas de tela dos testes
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-resultados
+          path: app/test-results/
+          if-no-files-found: ignore
+          retention-days: 7
+
+  instalador:
+    name: Instalador (gera, instala, abre e fecha)
+    runs-on: windows-latest
+    defaults:
+      run:
+        working-directory: app
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: app/.nvmrc
+          cache: npm
+          cache-dependency-path: app/package-lock.json
+      - run: npm ci
+
+      - name: Gerar o instalador (NSIS, sem assinatura)
+        run: npm run dist
+        env:
+          CSC_IDENTITY_AUTO_DISCOVERY: 'false'
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: instalador-windows
+          path: app/dist/Soulcrate-Setup-*.exe
+          retention-days: 14
+
+      # Critério de aceite da Fase 0: o instalador instala, abre e fecha. O `--smoke-test` abre a janela, confere
+      # o preload e o IPC (window.soulcrate.app.getInfo) e sai com 0.
+      - name: Instalar, abrir e fechar
+        shell: pwsh
+        run: |
+          $setup = Get-ChildItem dist -Filter 'Soulcrate-Setup-*.exe' | Select-Object -First 1
+          $instalacao = Start-Process $setup.FullName -ArgumentList '/S' -Wait -PassThru
+          if ($instalacao.ExitCode -ne 0) { throw "O instalador saiu com código $($instalacao.ExitCode)" }
+          $exe = Join-Path $env:LOCALAPPDATA 'Programs\Soulcrate\Soulcrate.exe'
+          if (-not (Test-Path $exe)) { throw "O app não foi instalado em $exe" }
+          # o instalador abre o app sozinho no fim: fecha esse antes do teste
+          Get-Process Soulcrate -ErrorAction SilentlyContinue | Stop-Process -Force
+          $app = Start-Process $exe -ArgumentList '--smoke-test' -Wait -PassThru
+          if ($app.ExitCode -ne 0) { throw "O app instalado saiu com código $($app.ExitCode)" }
+          Write-Host 'Instalou, abriu e fechou.'
+
+      - name: Desinstalar
+        if: always()
+        continue-on-error: true
+        shell: pwsh
+        run: |
+          Get-Process Soulcrate -ErrorAction SilentlyContinue | Stop-Process -Force
+          $un = Join-Path $env:LOCALAPPDATA 'Programs\Soulcrate\Uninstall Soulcrate.exe'
+          if (Test-Path $un) { Start-Process $un -ArgumentList '/S' -Wait }
