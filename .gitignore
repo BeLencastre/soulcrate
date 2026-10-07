@@ -50,5 +50,7 @@ app/node_modules/
 app/out/
 app/dist/
 app/coverage/
+app/test-results/
+app/playwright-report/
 # estado do app na pasta do Soulcrate (manifesto dos arquivos da stack)
 .soulcrate/

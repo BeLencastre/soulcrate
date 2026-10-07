@@ -3,4 +3,6 @@ tests/fixtures/
 node_modules/
 out/
 dist/
+test-results/
+playwright-report/
 package-lock.json

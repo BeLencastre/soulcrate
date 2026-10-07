@@ -1,0 +1,32 @@
+# Instalador do Windows (NSIS). Fase 0: instalação por usuário, sem assinatura.
+# Recursos da stack (extraResources), atualização automática e assinatura entram na Fase 7.
+appId: br.com.soulcrate.app
+productName: Soulcrate
+copyright: Soulcrate
+directories:
+  output: dist
+  buildResources: resources
+files:
+  - out/**
+  - package.json
+# ícones da bandeja e da janela ficam em arquivos soltos: a bandeja do Windows lê do disco, não de dentro do asar
+extraResources:
+  - from: resources/tray
+    to: tray
+  - from: resources/icon.png
+    to: icon.png
+asar: true
+win:
+  target:
+    - target: nsis
+      arch: [x64]
+  icon: resources/icon.ico
+  # sem certificado: o instalador sai sem assinatura (o SmartScreen avisa; veja a §10 da especificação)
+  signExecutable: false
+nsis:
+  oneClick: true
+  perMachine: false
+  createStartMenuShortcut: true
+  createDesktopShortcut: false
+  deleteAppDataOnUninstall: false
+  artifactName: Soulcrate-Setup-${version}.${ext}
