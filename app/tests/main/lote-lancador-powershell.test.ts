@@ -2,7 +2,7 @@
 // acentos e apóstrofos chegam intactos ao script, que a saída vai para arquivos e que o lote continua rodando depois que
 // o lançador sai (é isso que deixa o app fechar sem matar o lote).
 import { spawnSync } from 'node:child_process';
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, realpathSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
@@ -74,8 +74,8 @@ describe.skipIf(!temPowerShell)('lançador do lote (PowerShell de verdade)', () 
       ArquivoParada: arq.parada,
       Paralelo: 8,
       AceitarWav: true,
-      Raiz: dir,
-      Cwd: dir,
+      Raiz: realpathSync.native(dir),
+      Cwd: realpathSync.native(dir),
     });
 
     // a saída do script foi para os arquivos, não para um pipe do app

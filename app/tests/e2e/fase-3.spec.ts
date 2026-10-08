@@ -6,7 +6,7 @@
 //   - parar pelo botão sempre gera resultado-*.txt e nao-baixadas-*.txt;
 //   - tentar iniciar a mesma lista duas vezes (app + .bat) é recusado com mensagem clara.
 import { spawn, spawnSync } from 'node:child_process';
-import { existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync, readdirSync, realpathSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { expect, test, type Page } from '@playwright/test';
 import { semBom } from '../../src/shared/texto';
@@ -160,6 +160,7 @@ const resultadoDe = (projeto: string): string[] => {
   if (!arq) throw new Error(`sem resultado em ${lotes}`);
   // o caminho da pasta de teste (que muda a cada execução) e o BOM do PowerShell 5.1 não fazem parte do resultado
   return semBom(readFileSync(join(lotes, arq), 'utf8'))
+    .replaceAll(realpathSync.native(projeto), '<projeto>')
     .replaceAll(projeto, '<projeto>')
     .split(/\r?\n/)
     .filter(Boolean)
