@@ -66,7 +66,9 @@ function responder(texto) {
     files,
     hasFreeUploadSlot: !lentos.has(username),
     queueLength: lentos.has(username) ? 50 : 0,
-    uploadSpeed: 1000,
+    // o usuario "com erro" e o mais rapido: o script o tenta primeiro, de forma deterministica
+    // (sem isso os candidatos empatam e a ordem depende da estabilidade do Sort-Object: estavel no PS 7, nao no 5.1)
+    uploadSpeed: comErro.has(username) ? 2000 : 1000,
   }));
 }
 
