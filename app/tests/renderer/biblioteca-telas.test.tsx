@@ -95,8 +95,11 @@ const FAIXAS: FaixaDaBiblioteca[] = [
   faixa(5, { artista: 'Vendex', titulo: 'Plague', tom: null, arquivo: 'Hard Techno/Vendex/Plague.flac' }),
 ];
 
+/** sempre "ontem, 12:00" no horário local, a qualquer hora em que o teste rode (o CI roda de madrugada em UTC) */
+const ONTEM_AO_MEIO_DIA = new Date(new Date().setDate(new Date().getDate() - 1)).setHours(12, 0, 0, 0);
+
 const PARADOS: ParadoEmDownloads[] = [
-  { nome: 'f_hard', arquivos: ['Vengeance Of The Masked.mp3'], total: 1, modificadoEm: Date.now() - 20 * 3_600_000 },
+  { nome: 'f_hard', arquivos: ['Vengeance Of The Masked.mp3'], total: 1, modificadoEm: ONTEM_AO_MEIO_DIA },
 ];
 
 function leitura(extra: Partial<LeituraBiblioteca> = {}): LeituraBiblioteca {
@@ -602,9 +605,7 @@ describe('manutenção', () => {
     ]) {
       expect(within(card).getByText(t)).toBeInTheDocument();
     }
-    expect(
-      within(card).getByText('1 pasta parada desde ontem, ' + (/\d\d:\d\d/.exec(card.textContent ?? '')?.[0] ?? '')),
-    ).toBeInTheDocument();
+    expect(within(card).getByText('1 pasta parada desde ontem, 12:00')).toBeInTheDocument();
   });
 
   it('update: mostra o que o beets faria; confirma só com o token da prévia', async () => {
