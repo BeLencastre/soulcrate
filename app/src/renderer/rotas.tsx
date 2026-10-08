@@ -5,6 +5,9 @@ import { Assistente } from './paginas/Assistente';
 import { Configuracoes } from './paginas/Configuracoes';
 import { EmBreve } from './paginas/EmBreve';
 import { Inicio } from './paginas/Inicio';
+import { DetalheDaExecucao } from './paginas/historico/Detalhe';
+import { DiagnosticoDasFaltas } from './paginas/historico/Diagnostico';
+import { Historico } from './paginas/historico/Historico';
 import { Execucao } from './paginas/lote/Execucao';
 import { Lista } from './paginas/lote/Lista';
 import { Opcoes } from './paginas/lote/Opcoes';
@@ -53,7 +56,23 @@ export const roteador = createHashRouter([
         path: 'historico',
         element: (
           <Pagina>
-            <EmBreve nome={msg.nav.historico} />
+            <Historico />
+          </Pagina>
+        ),
+      },
+      {
+        path: 'historico/:runId',
+        element: (
+          <Pagina>
+            <DetalheDaExecucao />
+          </Pagina>
+        ),
+      },
+      {
+        path: 'historico/:runId/faltas',
+        element: (
+          <Pagina>
+            <DiagnosticoDasFaltas />
           </Pagina>
         ),
       },

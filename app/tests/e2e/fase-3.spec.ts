@@ -13,11 +13,14 @@ import { semBom } from '../../src/shared/texto';
 import {
   abertos,
   abrirApp,
+  abrirListaDosRecentes,
   ambienteDoLote,
   criarAmbiente,
   fecharApp,
   iniciarSlskdFalso,
   notificacoes,
+  opcoesDeTeste,
+  pararLotesRodando,
   registrarAberturas,
   TODOS_NO_AR,
   type Ambiente,
@@ -45,28 +48,6 @@ test.afterEach(async () => {
   amb?.limpar();
   for (const a of ambientesExtras.splice(0)) a.limpar();
 });
-
-/** Cria o arquivo-sinal de qualquer lote ainda vivo no ambiente e espera as travas sumirem. */
-async function pararLotesRodando(a: Ambiente | undefined): Promise<void> {
-  if (!a) return;
-  const lotes = join(a.projeto, 'lotes');
-  if (!existsSync(lotes)) return;
-  for (const f of readdirSync(lotes)) {
-    const m = /^estado-.+\.lock$/.exec(f);
-    if (!m) continue;
-    const id = readFileSync(join(lotes, f), 'utf8').split('\t')[2]?.trim();
-    if (id) writeFileSync(join(lotes, `parar-${id}.flag`), 'x');
-  }
-  for (let i = 0; i < 30 && readdirSync(lotes).some((f) => f.endsWith('.lock')); i++) {
-    await new Promise((r) => setTimeout(r, 500));
-  }
-  // o que não parou com o arquivo-sinal (o script preso numa espera) é encerrado à força: é só um teste
-  for (const f of readdirSync(lotes).filter((n) => n.endsWith('.lock'))) {
-    const pid = Number(readFileSync(join(lotes, f), 'utf8').split('\t')[0]);
-    if (pid > 0) spawnSync('taskkill', ['/PID', String(pid), '/T', '/F']);
-  }
-  await new Promise((r) => setTimeout(r, 500));
-}
 
 const ARTISTAS = [
   'Alfa',
@@ -137,22 +118,6 @@ const remoto = (i: number, usuario = i % 2 ? 'u2' : 'u1'): ArquivoRemoto => ({
   usuario,
   arquivo: `@@${usuario}\\Music\\${ARTISTAS[i]}\\${faixa(i)}.flac`,
 });
-
-const abrirListaDosRecentes = async (janela: Page, nome: string) => {
-  await janela.getByRole('link', { name: 'Baixar lista' }).click();
-  await janela
-    .getByTestId('lista-recentes')
-    .getByRole('button', { name: new RegExp(nome.replace('.', '\\.')) })
-    .click();
-  await expect(janela.getByTestId('nome-da-lista')).toHaveText(nome);
-};
-
-/** Sem MusicBrainz (não há rede nos testes) e sem beets (não há stack): "Só baixar" + "Não conferir os títulos". */
-const opcoesDeTeste = async (janela: Page) => {
-  await janela.getByRole('link', { name: 'Revisar opções' }).click();
-  await janela.locator('[data-receita="soBaixar"]').click();
-  await janela.getByRole('switch', { name: /Não conferir os títulos no MusicBrainz/ }).click();
-};
 
 const resultadoDe = (projeto: string): string[] => {
   const lotes = join(projeto, 'lotes');

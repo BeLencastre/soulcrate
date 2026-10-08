@@ -103,9 +103,14 @@ export function faixaDoPainel(e: EstadoLote, agora: number): FaixaDoPainel | nul
 
 /** O cartão de erro do fim que não foi "concluído" nem "parado pelo usuário"; null nos outros casos. */
 export function erroDoFim(fim: RunEnd | null, lista: string | null): AppError | null {
-  if (!fim || FIM_SEM_ERRO.includes(fim.reason)) return null;
-  const detalhes = fim.message || null;
-  switch (fim.reason) {
+  return fim ? erroDoMotivo(fim.reason, fim.message, lista) : null;
+}
+
+/** O mesmo cartão a partir do motivo e da mensagem do fim (o histórico guarda só isso de cada execução). */
+export function erroDoMotivo(reason: MotivoFim, message: string, lista: string | null): AppError | null {
+  if (FIM_SEM_ERRO.includes(reason)) return null;
+  const detalhes = message || null;
+  switch (reason) {
     case 'slskd_down':
       return criarErro('lote.slskd-fora', { detalhes });
     case 'config':

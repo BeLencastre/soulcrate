@@ -150,3 +150,15 @@ export const IconeParar = (p: Props) => (
     <rect x="5" y="5" width="14" height="14" rx="2" />
   </Base>
 );
+
+export const IconePasta = (p: Props) => (
+  <Base {...p}>
+    <path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+  </Base>
+);
+export const IconeArquivo = (p: Props) => (
+  <Base {...p}>
+    <path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z" />
+    <path d="M14 3v5h5" />
+  </Base>
+);

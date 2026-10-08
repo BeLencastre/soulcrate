@@ -560,10 +560,9 @@ soulcrate/                      # repositório (código)
 │   ├── fix-metadata.py         # corrige metadados de pacotes da imagem base (lastgenre)
 │   ├── config/config.yaml      # configuração do beets (perfil DJ)
 │   └── beets-plugins/keepmix.py
-├── downloads/ incomplete/ music/ navidrome/   # só .gitkeep
 ├── docs/                       # especificação do app, protocolo do lote, regras da configuração
 ├── tests/                      # testes (Pester) e o slskd falso usado por eles
-└── app/                        # app desktop (Electron), em construção: Fases 0 e 1 prontas (veja app/README.md)
+└── app/                        # app desktop (Electron), em construção: Fases 0 a 4 prontas (veja app/README.md)
 
 %USERPROFILE%\Soulcrate/        # instalação (configuração, segredos e bancos)
 ├── .env                        # inclui DOWNLOADS_DIR, INCOMPLETE_DIR e MUSIC_DIR

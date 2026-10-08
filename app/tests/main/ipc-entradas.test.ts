@@ -1,10 +1,15 @@
 import { describe, expect, it } from 'vitest';
 import {
+  exigirArquivoRelatorio,
+  exigirChaveDeFaixa,
+  exigirCriterioDeLimpeza,
   exigirEntrada,
   exigirEntradaPasta,
   exigirFinalidade,
   exigirLogin,
+  exigirOpcoesDaCorrecao,
   exigirOpcoesSetup,
+  exigirTituloEscolhido,
 } from '../../src/main/ipc-entradas';
 import { entradaVazia, type ConfigEntrada } from '../../src/shared/configuracao';
 
@@ -62,5 +67,53 @@ describe('demais entradas', () => {
   it('finalidade da pasta', () => {
     expect(exigirFinalidade('music')).toBe('music');
     expect(() => exigirFinalidade('system32')).toThrow();
+  });
+});
+
+describe('Fase 4: histórico e diagnóstico', () => {
+  it('arquivo do relatório: os conhecidos, mais o log do beets', () => {
+    for (const a of ['resultado', 'nao-baixadas', 'diagnostico', 'catalogo', 'log', 'beets']) {
+      expect(exigirArquivoRelatorio(a)).toBe(a);
+    }
+    expect(() => exigirArquivoRelatorio('../../.env')).toThrow();
+    expect(() => exigirArquivoRelatorio(undefined)).toThrow();
+  });
+
+  it('chave da faixa: texto curto, sem caractere de controle', () => {
+    expect(exigirChaveDeFaixa('vendex abaddon')).toBe('vendex abaddon');
+    for (const ruim of ['', 'a'.repeat(401), 'a\nb', 'a\0b', 5, null, {}]) {
+      expect(() => exigirChaveDeFaixa(ruim), String(ruim)).toThrow();
+    }
+  });
+
+  it('título escolhido: texto não vazio, curto, sem controle', () => {
+    expect(exigirTituloEscolhido('Plague (Kyar Remix)')).toBe('Plague (Kyar Remix)');
+    for (const ruim of ['', '   ', 'a'.repeat(301), 'a\r\nb', 7]) {
+      expect(() => exigirTituloEscolhido(ruim), String(ruim)).toThrow();
+    }
+  });
+
+  it('opções da correção: só `atualizarLista`, booleano', () => {
+    expect(exigirOpcoesDaCorrecao({ atualizarLista: true })).toEqual({ atualizarLista: true });
+    expect(() => exigirOpcoesDaCorrecao({ atualizarLista: 'sim' })).toThrow();
+    expect(() => exigirOpcoesDaCorrecao(null)).toThrow();
+  });
+
+  it('critério de limpeza: idade em dias ou quantas manter, inteiros dentro do limite', () => {
+    expect(exigirCriterioDeLimpeza({ tipo: 'idade', dias: 90 })).toEqual({ tipo: 'idade', dias: 90 });
+    expect(exigirCriterioDeLimpeza({ tipo: 'manter', quantas: 0 })).toEqual({ tipo: 'manter', quantas: 0 });
+    for (const ruim of [
+      { tipo: 'idade', dias: 0 },
+      { tipo: 'idade', dias: 1.5 },
+      { tipo: 'idade', dias: 99999 },
+      { tipo: 'idade' },
+      { tipo: 'manter', quantas: -1 },
+      { tipo: 'manter', quantas: '3' },
+      { tipo: 'tudo' },
+      'tudo',
+      null,
+    ]) {
+      expect(() => exigirCriterioDeLimpeza(ruim), JSON.stringify(ruim)).toThrow();
+    }
   });
 });

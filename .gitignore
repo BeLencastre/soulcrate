@@ -7,29 +7,26 @@ slskd/slskd.yml
 # o modelo publicado e slskd/slskd.example.yml
 
 # ===================== Biblioteca e downloads =========================
-# (as pastas ficam no repo via .gitkeep: o docker-compose exige que existam)
-music/*
-!music/.gitkeep
-downloads/*
-!downloads/.gitkeep
-incomplete/*
-!incomplete/.gitkeep
+# Ficam fora do repositório (na instalação, MUSIC_DIR / DOWNLOADS_DIR / INCOMPLETE_DIR).
+music/
+downloads/
+incomplete/
 lista.txt
 *.csv
 
 # ===================== Dados dos servicos =============================
-navidrome/*
-!navidrome/.gitkeep
+navidrome/
 slskd/*
 !slskd/slskd.example.yml
-soulbeet/data/*
-!soulbeet/data/.gitkeep
+soulbeet/data/
 
 # ===================== Relatorios e logs ==============================
 lotes/
 *.log
 diagnostico*.txt
 diagnostico*.bat
+# fixtures reais do script (o diagnostico-exemplo.txt cai na regra acima)
+!app/tests/fixtures/**
 *.bak
 
 # ===================== Sistema / editores =============================

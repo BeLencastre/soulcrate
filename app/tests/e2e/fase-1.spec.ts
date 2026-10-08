@@ -47,7 +47,7 @@ test('abre com a navegação lateral e o Início', async () => {
   await capturar(janela, '01-inicio-desligada');
 
   // telas das próximas fases mostram o estado vazio do protótipo
-  await nav.getByRole('link', { name: 'Histórico' }).click();
+  await nav.getByRole('link', { name: 'Biblioteca' }).click();
   await expect(janela.getByRole('heading', { name: 'Esta tela chega em uma próxima versão' })).toBeVisible();
   await capturar(janela, '02-em-breve');
 });
@@ -275,6 +275,7 @@ test.describe('segurança do renderer (§6.1)', () => {
       'logs',
       'onEvent',
       'project',
+      'reports',
       'setup',
       'stack',
       'webui',
