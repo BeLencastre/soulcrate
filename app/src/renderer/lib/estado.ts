@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useQuery, useQueryClient, type QueryClient } from '@tanstack/react-query';
 import { create } from 'zustand';
+import type { SetupEstado } from '@shared/configuracao';
 import type { AppError } from '@shared/erros';
 import type { MainEvent, MarcadorBuild, OperacaoTipo, OperationId, WebUiEstado } from '@shared/ipc';
 import type { ServicoId } from '@shared/servicos';
@@ -61,6 +62,9 @@ interface EstadoUi {
   logAberto: boolean;
   dialogoBandeja: boolean;
   webui: Partial<Record<ServicoId, WebUiEstado>>;
+  /** a pós-configuração (assistente e "Aplicar e reiniciar"); null enquanto nada rodou nesta sessão */
+  setup: SetupEstado | null;
+  definirSetup(estado: SetupEstado | null): void;
   definirLogAberto(aberto: boolean): void;
   dispensarOperacao(): void;
   abrirDialogoBandeja(aberto: boolean): void;
@@ -72,6 +76,8 @@ export const useUi = create<EstadoUi>((set) => ({
   logAberto: false,
   dialogoBandeja: false,
   webui: {},
+  setup: null,
+  definirSetup: (estado) => set({ setup: estado }),
   definirLogAberto: (aberto) => set({ logAberto: aberto }),
   dispensarOperacao: () => set({ operacao: null }),
   abrirDialogoBandeja: (aberto) => set({ dialogoBandeja: aberto }),
@@ -103,6 +109,9 @@ export const useUi = create<EstadoUi>((set) => ({
         break;
       case 'webui.state':
         set((s) => ({ webui: { ...s.webui, [e.estado.servico]: e.estado } }));
+        break;
+      case 'setup.state':
+        set({ setup: e.estado });
         break;
       case 'app.closePrompt':
         set({ dialogoBandeja: true });

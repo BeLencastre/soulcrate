@@ -1,6 +1,18 @@
 /* eslint-disable @typescript-eslint/no-invalid-void-type -- `void` é o resultado dos canais que não devolvem nada */
 // Contrato de IPC entre o renderer e o main (Apêndice C da especificação), tipado nos dois lados.
 // O renderer só enxerga `window.soulcrate` (preload, via contextBridge). Segredos nunca atravessam este contrato.
+import type {
+  ConfigEntrada,
+  ConfigPublica,
+  EntradaPasta,
+  LoginNavidrome,
+  OpcoesSetup,
+  PortaStatus,
+  ResultadoGravacao,
+  ResultadoPasta,
+  ResultadoValidacao,
+  SetupEstado,
+} from './configuracao.js';
 import type { AppError } from './erros.js';
 import type { ServicoId } from './servicos.js';
 import type { ConfigStatus, DockerStatus, ProjetoStatus, StackStatus } from './stack.js';
@@ -105,6 +117,9 @@ export interface WebUiEstado {
   erro: string | null;
 }
 
+/** Para que serve a pasta que o usuário vai escolher no seletor do sistema. */
+export type FinalidadePasta = 'project' | 'music' | 'downloads' | 'incomplete';
+
 // ---------------------------------------------------------------- Requisições (renderer → main)
 
 export interface SoulcrateApi {
@@ -141,6 +156,27 @@ export interface SoulcrateApi {
   config: {
     /** confere o .env e o slskd.yml agora */
     check(): Promise<ConfigStatus>;
+    /** o que a pasta do Soulcrate já tem configurado, sem segredos; null sem pasta */
+    read(): Promise<ConfigPublica | null>;
+    /** confere o formulário (pastas, disco, OneDrive, campos) sem gravar nada */
+    validate(entrada: ConfigEntrada): Promise<ResultadoValidacao>;
+    /** grava o .env e o slskd.yml (gera as chaves, faz backup). Senhas em branco mantêm as que já existem */
+    write(entrada: ConfigEntrada): Promise<ResultadoGravacao>;
+    /** abre o seletor de pasta do sistema; null se o usuário cancelou */
+    pickFolder(finalidade: FinalidadePasta, inicial?: string): Promise<string | null>;
+  };
+  setup: {
+    /** passo 1 do assistente: copia a stack para uma pasta nova (ou confere uma existente) e passa a usá-la */
+    prepareFolder(entrada: EntradaPasta): Promise<ResultadoPasta>;
+    /** pasta proposta para uma instalação nova (`Soulcrate` no perfil do usuário) */
+    defaultFolder(): Promise<string>;
+    /** liga a stack e termina a configuração sozinho (Navidrome, Soulbeet, porta 2234) */
+    start(opcoes: OpcoesSetup): Promise<SetupEstado>;
+    status(): Promise<SetupEstado>;
+    retry(): Promise<SetupEstado>;
+    /** o Navidrome já tinha administrador: segue com o login que o usuário informou (não é guardado) */
+    provideNavidromeLogin(login: LoginNavidrome): Promise<SetupEstado>;
+    checkPort(): Promise<PortaStatus>;
   };
   logs: {
     subscribe(alvo: AlvoLog): Promise<SubscriptionId>;
@@ -168,6 +204,7 @@ export type MainEvent =
   | { type: 'logs.lines'; id: SubscriptionId; linhas: LinhaLog[] }
   | { type: 'logs.end'; id: SubscriptionId; motivo: string | null }
   | { type: 'webui.state'; estado: WebUiEstado }
+  | { type: 'setup.state'; estado: SetupEstado }
   | { type: 'app.closePrompt' }
   | { type: 'app.navigate'; rota: string };
 
@@ -195,6 +232,17 @@ export interface IpcInvoke {
   'project:openFolder': { args: []; result: void };
   'project:openFile': { args: [arquivo: '.env' | 'slskd/slskd.yml']; result: void };
   'config:check': { args: []; result: ConfigStatus };
+  'config:read': { args: []; result: ConfigPublica | null };
+  'config:validate': { args: [entrada: ConfigEntrada]; result: ResultadoValidacao };
+  'config:write': { args: [entrada: ConfigEntrada]; result: ResultadoGravacao };
+  'config:pickFolder': { args: [finalidade: FinalidadePasta, inicial?: string]; result: string | null };
+  'setup:prepareFolder': { args: [entrada: EntradaPasta]; result: ResultadoPasta };
+  'setup:defaultFolder': { args: []; result: string };
+  'setup:start': { args: [opcoes: OpcoesSetup]; result: SetupEstado };
+  'setup:status': { args: []; result: SetupEstado };
+  'setup:retry': { args: []; result: SetupEstado };
+  'setup:provideNavidromeLogin': { args: [login: LoginNavidrome]; result: SetupEstado };
+  'setup:checkPort': { args: []; result: PortaStatus };
   'logs:subscribe': { args: [alvo: AlvoLog]; result: SubscriptionId };
   'logs:unsubscribe': { args: [id: SubscriptionId]; result: void };
   'webui:show': { args: [servico: ServicoId, limites: Limites]; result: void };

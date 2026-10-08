@@ -26,11 +26,17 @@ const LINHAS_DE_DETALHE = 40;
 export class OperacoesService {
   private atual: OperacaoIniciada | null = null;
   private pararAtual: (() => void) | null = null;
+  private fimDaAtual: Promise<AppError | null> | null = null;
 
   constructor(private readonly dep: DependenciasOperacoes) {}
 
   get emAndamento(): OperacaoIniciada | null {
     return this.atual;
+  }
+
+  /** Espera a operação em andamento terminar (o erro, ou null se deu certo); sem operação, devolve null já. */
+  aguardar(): Promise<AppError | null> {
+    return this.fimDaAtual ?? Promise.resolve(null);
   }
 
   ligar(opcoes: { rebuild?: boolean } = {}): OperacaoIniciada {
@@ -60,7 +66,7 @@ export class OperacoesService {
     const op: OperacaoIniciada = { id: this.dep.novoId(), tipo };
     this.atual = op;
     this.dep.emitir({ type: 'operation.start', id: op.id, tipo });
-    void (async () => {
+    this.fimDaAtual = (async () => {
       let erro: AppError | null = null;
       try {
         erro = await trabalho(op.id);
@@ -76,6 +82,7 @@ export class OperacoesService {
             : { type: 'operation.end', id: op.id, ok: true },
         );
       }
+      return erro;
     })();
     return op;
   }

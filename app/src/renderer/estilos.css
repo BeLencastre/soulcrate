@@ -273,6 +273,154 @@
   .row:hover {
     background: #181b1e;
   }
+
+  /* formulários (protótipos "Assistente de configuração" e "Configurações") */
+  .inp {
+    width: 100%;
+    height: 42px;
+    padding: 0 12px;
+    border-radius: 6px;
+    border: 1px solid var(--color-borda-forte);
+    background: var(--color-fundo);
+    color: var(--color-texto);
+    font-size: 14px;
+  }
+  .inp:focus {
+    border-color: var(--color-ambar);
+  }
+  .inp[aria-invalid='true'] {
+    border-color: #8a3434;
+  }
+  .inp[data-aviso='true'] {
+    border-color: #7a4a22;
+  }
+  .inp::placeholder {
+    color: var(--color-texto-apagado);
+  }
+  .fl {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    font-size: 14px;
+    font-weight: 600;
+  }
+  .hint {
+    font-size: 13px;
+    font-weight: 400;
+    color: var(--color-texto-suave);
+    line-height: 1.5;
+  }
+  .opt {
+    display: flex;
+    gap: 14px;
+    padding: 18px;
+    border-radius: 8px;
+    border: 1px solid var(--color-borda-forte);
+    background: var(--color-cartao);
+    cursor: pointer;
+  }
+  .opt:hover {
+    border-color: #4a4f57;
+  }
+  .opt:has(:checked) {
+    border-color: var(--color-ambar);
+  }
+  .rad {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    min-height: 40px;
+    padding: 0 14px;
+    border: 1px solid var(--color-borda-forte);
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 14px;
+  }
+  .rad:hover {
+    border-color: #4a4f57;
+  }
+  .rad:has(:checked) {
+    border-color: var(--color-ambar);
+  }
+  .sw {
+    appearance: none;
+    -webkit-appearance: none;
+    flex: none;
+    width: 42px;
+    height: 24px;
+    margin: 0;
+    border-radius: 12px;
+    background: var(--color-borda-forte);
+    position: relative;
+    cursor: pointer;
+  }
+  .sw::after {
+    content: '';
+    position: absolute;
+    top: 4px;
+    left: 4px;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: var(--color-texto-suave);
+    transition: left 0.15s;
+  }
+  .sw:checked {
+    background: var(--color-ambar);
+  }
+  .sw:checked::after {
+    left: 22px;
+    background: var(--color-sobre-ambar);
+  }
+  .passo {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    width: 100%;
+    min-height: 44px;
+    padding: 0 12px;
+    border: 0;
+    border-radius: 6px;
+    background: transparent;
+    text-align: left;
+    cursor: pointer;
+    font-size: 14px;
+    color: var(--color-texto-suave);
+  }
+  .passo:hover:not(:disabled) {
+    background: #1a1d21;
+  }
+  .passo:disabled {
+    cursor: not-allowed;
+    opacity: 0.6;
+  }
+  .passo[aria-current='step'] {
+    background: #1f2226;
+    color: #fff;
+  }
+  .sub {
+    display: flex;
+    align-items: center;
+    width: 100%;
+    min-height: 40px;
+    padding: 0 12px;
+    border: 0;
+    border-radius: 6px;
+    background: transparent;
+    color: var(--color-texto-suave);
+    font-size: 14px;
+    font-weight: 600;
+    text-align: left;
+    cursor: pointer;
+  }
+  .sub:hover {
+    background: #1a1d21;
+    color: var(--color-texto);
+  }
+  .sub[aria-current='page'] {
+    background: #1f2226;
+    color: #fff;
+  }
 }
 
 @keyframes pulso {

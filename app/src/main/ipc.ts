@@ -1,6 +1,6 @@
 // Handlers de IPC (main): um por canal de `IpcInvoke`. Todo canal confere quem chamou (só a janela principal,
 // só em páginas do app) e valida os argumentos: o renderer não é confiável (§6.1).
-import { join } from 'node:path';
+import { isAbsolute, join } from 'node:path';
 import { clipboard, dialog, ipcMain, shell, type BrowserWindow, type IpcMainInvokeEvent } from 'electron';
 import type {
   AlvoLog,
@@ -14,14 +14,19 @@ import type {
 } from '@shared/ipc';
 import { msg } from '@shared/mensagens';
 import { ehServicoId, type ServicoId } from '@shared/servicos';
+import type { ConfigPublica } from '@shared/configuracao';
 import type { ConfigStatus, ProjetoStatus } from '@shared/stack';
+import { exigirEntrada, exigirEntradaPasta, exigirFinalidade, exigirLogin, exigirOpcoesSetup } from './ipc-entradas';
 import { ehUrlDoApp, podeAbrirNoNavegador } from './seguranca';
 import type { AppSettingsService } from './services/app-settings';
 import type { ChecksService } from './services/checks-service';
+import type { ConfigService } from './services/config-service';
 import type { HealthService } from './services/health-service';
 import type { LogsService } from './services/logs-service';
 import type { OperacoesService } from './services/operacoes-service';
+import type { PastaService } from './services/pasta-service';
 import { ehPastaDoSoulcrate } from './services/project-service';
+import type { SetupService } from './services/setup-service';
 import type { WebUiService } from './services/webui-service';
 
 export interface ContextoIpc {
@@ -33,6 +38,11 @@ export interface ContextoIpc {
   checks: ChecksService;
   logs: LogsService;
   webui: WebUiService;
+  config: ConfigService;
+  pasta: PastaService;
+  setup: SetupService;
+  /** pasta proposta para uma instalação nova */
+  pastaPadrao: string;
   projeto(): ProjetoStatus;
   validarConfig(dir: string): ConfigStatus;
   existeArquivo(caminho: string): boolean;
@@ -65,6 +75,11 @@ function exigirAlvoLog(alvo: unknown): AlvoLog {
 }
 
 export function registrarIpc(ctx: ContextoIpc): void {
+  const exigirDir = (): string => {
+    const dir = ctx.projeto().dir;
+    if (!dir) throw new Error('Escolha a pasta do Soulcrate primeiro.');
+    return dir;
+  };
   const confiavel = (e: IpcMainInvokeEvent): boolean => {
     const win = ctx.janela();
     if (!win || win.isDestroyed() || e.sender !== win.webContents) return false;
@@ -169,6 +184,44 @@ export function registrarIpc(ctx: ContextoIpc): void {
     void ctx.health.atualizar({ forcar: true });
     return r;
   });
+
+  tratar('config:read', (): ConfigPublica | null => {
+    const dir = ctx.projeto().dir;
+    return dir ? ctx.config.ler(dir) : null;
+  });
+  tratar('config:validate', (_e, entrada) => ctx.config.validar(exigirDir(), exigirEntrada(entrada)));
+  tratar('config:write', async (_e, entrada) => {
+    const r = ctx.config.gravar(exigirDir(), exigirEntrada(entrada));
+    await ctx.health.atualizar({ forcar: true });
+    return r;
+  });
+  tratar('config:pickFolder', async (_e, finalidade, inicial) => {
+    const win = ctx.janela();
+    const opcoes = {
+      title: msg.assistente.escolher[exigirFinalidade(finalidade)],
+      properties: ['openDirectory' as const, 'createDirectory' as const],
+      ...(typeof inicial === 'string' && isAbsolute(inicial) ? { defaultPath: inicial } : {}),
+    };
+    const r = win ? await dialog.showOpenDialog(win, opcoes) : await dialog.showOpenDialog(opcoes);
+    const dir = r.filePaths[0];
+    return r.canceled || !dir ? null : dir;
+  });
+
+  // ------------------------------------------------------------ assistente e pós-configuração
+  tratar('setup:prepareFolder', async (_e, entrada) => {
+    const r = ctx.pasta.preparar(exigirEntradaPasta(entrada));
+    if (r.ok && r.dir) {
+      ctx.settings.set({ pastaDoProjeto: r.dir });
+      await ctx.health.atualizar({ forcar: true });
+    }
+    return r;
+  });
+  tratar('setup:defaultFolder', () => ctx.pastaPadrao);
+  tratar('setup:start', (_e, opcoes) => ctx.setup.iniciar(exigirOpcoesSetup(opcoes)));
+  tratar('setup:status', () => ctx.setup.atual());
+  tratar('setup:retry', () => ctx.setup.tentarDeNovo());
+  tratar('setup:provideNavidromeLogin', (_e, login) => ctx.setup.informarLoginNavidrome(exigirLogin(login)));
+  tratar('setup:checkPort', () => ctx.setup.verificarPorta());
 
   // ------------------------------------------------------------ logs e Web UIs
   tratar('logs:subscribe', (e, alvo) => ctx.logs.assinar(e.sender.id, exigirAlvoLog(alvo)));
