@@ -110,8 +110,18 @@ jobs:
           $setup = Get-ChildItem dist -Filter 'Soulcrate-Setup-*.exe' | Select-Object -First 1
           $instalacao = Start-Process $setup.FullName -ArgumentList '/S' -Wait -PassThru
           if ($instalacao.ExitCode -ne 0) { throw "O instalador saiu com código $($instalacao.ExitCode)" }
-          $exe = Join-Path $env:LOCALAPPDATA 'Programs\Soulcrate\Soulcrate.exe'
-          if (-not (Test-Path $exe)) { throw "O app não foi instalado em $exe" }
+          # a pasta por usuário depende do nome do pacote: procura o executável em vez de supor o caminho
+          $exe = $null
+          for ($i = 0; $i -lt 30 -and -not $exe; $i++) {
+            $exe = Get-ChildItem (Join-Path $env:LOCALAPPDATA 'Programs') -Recurse -Filter 'Soulcrate.exe' -ErrorAction SilentlyContinue |
+              Select-Object -First 1 -ExpandProperty FullName
+            if (-not $exe) { Start-Sleep -Seconds 2 }
+          }
+          if (-not $exe) {
+            Get-ChildItem (Join-Path $env:LOCALAPPDATA 'Programs') -ErrorAction SilentlyContinue | Out-String | Write-Host
+            throw 'O app não foi instalado em %LOCALAPPDATA%\Programs'
+          }
+          Write-Host "Instalado em $exe"
           # o instalador abre o app sozinho no fim: fecha esse antes do teste
           Get-Process Soulcrate -ErrorAction SilentlyContinue | Stop-Process -Force
           $app = Start-Process $exe -ArgumentList '--smoke-test' -Wait -PassThru
@@ -124,5 +134,6 @@ jobs:
         shell: pwsh
         run: |
           Get-Process Soulcrate -ErrorAction SilentlyContinue | Stop-Process -Force
-          $un = Join-Path $env:LOCALAPPDATA 'Programs\Soulcrate\Uninstall Soulcrate.exe'
+          $un = Get-ChildItem (Join-Path $env:LOCALAPPDATA 'Programs') -Recurse -Filter 'Uninstall*.exe' -ErrorAction SilentlyContinue |
+            Select-Object -First 1 -ExpandProperty FullName
           if (Test-Path $un) { Start-Process $un -ArgumentList '/S' -Wait }
