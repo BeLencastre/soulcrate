@@ -1,5 +1,6 @@
 // Validação do que o renderer envia ao main nos canais da Fase 2: o renderer não é confiável (§6.1), então cada
 // entrada é conferida campo a campo, com tipo e tamanho, antes de chegar aos serviços.
+import { ehTarefaDeManutencao, type TarefaManutencao } from '@shared/biblioteca';
 import type { ConfigEntrada, EntradaPasta, LoginNavidrome, OpcoesSetup, PastasConfig } from '@shared/configuracao';
 import type { ArquivoRelatorio, CriterioLimpeza } from '@shared/historico';
 import type { FinalidadePasta } from '@shared/ipc';
@@ -177,4 +178,32 @@ export function exigirCriterioDeLimpeza(bruto: unknown): CriterioLimpeza {
     return { tipo: 'manter', quantas: o.quantas };
   }
   throw new Error('Critério de limpeza desconhecido.');
+}
+
+// ---------------------------------------------------------------- Fase 5: biblioteca
+
+/** O texto do filtro do beets (a quebra em termos e a validação são do `BibliotecaService`). */
+export function exigirFiltro(valor: unknown): string {
+  if (typeof valor !== 'string' || valor.length > LIMITE_TEXTO) throw new Error('Filtro inválido.');
+  return valor;
+}
+
+export function exigirToken(valor: unknown): string {
+  if (typeof valor !== 'string' || valor.length === 0 || valor.length > 100) throw new Error('Confirmação inválida.');
+  return valor;
+}
+
+export function exigirTarefa(valor: unknown): TarefaManutencao {
+  if (!ehTarefaDeManutencao(valor)) throw new Error('Tarefa de manutenção desconhecida.');
+  return valor;
+}
+
+/** O token é opcional (só `update` e `move` o exigem; o serviço decide). */
+export function exigirTokenOuNulo(valor: unknown): string | null {
+  return valor === null || valor === undefined ? null : exigirToken(valor);
+}
+
+export function exigirIdDeFaixa(valor: unknown): number {
+  if (typeof valor !== 'number' || !Number.isSafeInteger(valor) || valor < 0) throw new Error('Faixa inválida.');
+  return valor;
 }

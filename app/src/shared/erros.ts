@@ -1,5 +1,6 @@
 // Catálogo de erros conhecidos (§6.3): título, explicação em linguagem simples e a ação oferecida.
 // Erro inesperado nunca mostra só a pilha: sempre "Copiar detalhes" e "Abrir log".
+import type { MotivoFiltro } from './biblioteca.js';
 import { msg } from './mensagens.js';
 import type { OperacaoStack } from './stack.js';
 
@@ -17,6 +18,7 @@ export type ErroCodigo =
   | 'setup.falhou'
   | 'porta.em-uso'
   | 'servico.inacessivel'
+  | 'slskd.chave-recusada'
   | 'operacao.falhou'
   | 'lote.lista-rodando'
   | 'lote.stack-fora'
@@ -25,6 +27,11 @@ export type ErroCodigo =
   | 'lote.config'
   | 'lote.erro'
   | 'lote.interrompido'
+  | 'biblioteca.stack-fora'
+  | 'biblioteca.ocupada'
+  | 'biblioteca.filtro-invalido'
+  | 'biblioteca.mudou'
+  | 'biblioteca.falhou'
   | 'inesperado';
 
 /** Ações que um erro pode oferecer; o renderer liga cada uma a um comportamento. */
@@ -40,7 +47,8 @@ export type AcaoErroId =
   | 'abrirLog'
   | 'abrirYml'
   | 'verExecucao'
-  | 'abrirPastaLotes';
+  | 'abrirPastaLotes'
+  | 'ligarStack';
 
 export interface AcaoErro {
   id: AcaoErroId;
@@ -75,6 +83,10 @@ export interface ContextoErro {
   lista?: string;
   /** desde quando a lista está rodando, como a trava registrou (lote.lista-rodando) */
   desde?: string;
+  /** por que o filtro foi recusado (biblioteca.filtro-invalido) */
+  motivo?: MotivoFiltro;
+  /** o que o beets estava fazendo (biblioteca.falhou): "ler a biblioteca", "remover as faixas" */
+  tarefa?: string;
 }
 
 export function criarErro(codigo: ErroCodigo, ctx: ContextoErro = {}): AppError {
@@ -179,6 +191,13 @@ export function criarErro(codigo: ErroCodigo, ctx: ContextoErro = {}): AppError 
         acoes: [acao('verServicos', A.verServicos, true), acao('tentarDeNovo', A.tentarDeNovo)],
         detalhes,
       };
+    case 'slskd.chave-recusada':
+      return {
+        codigo,
+        ...e.slskdChaveRecusada,
+        acoes: [acao('abrirConfiguracoes', A.abrirConfiguracoes, true), acao('copiarDetalhes', A.copiarDetalhes)],
+        detalhes,
+      };
     case 'operacao.falhou':
       return {
         codigo,
@@ -240,6 +259,37 @@ export function criarErro(codigo: ErroCodigo, ctx: ContextoErro = {}): AppError 
         acoes: [
           acao('copiarDetalhes', A.copiarDetalhes, true),
           acao('abrirPastaLotes', A.abrirPastaLotes),
+          acao('abrirLog', A.abrirLog),
+        ],
+        detalhes,
+      };
+    case 'biblioteca.stack-fora':
+      return {
+        codigo,
+        ...e.bibliotecaStackFora,
+        acoes: [acao('ligarStack', A.ligarStack, true), acao('verServicos', A.verServicos)],
+        detalhes,
+      };
+    case 'biblioteca.ocupada':
+      return { codigo, ...e.bibliotecaOcupada, acoes: [acao('verExecucao', A.verExecucao, true)], detalhes };
+    case 'biblioteca.filtro-invalido':
+      return {
+        codigo,
+        titulo: e.bibliotecaFiltro.titulo,
+        mensagem: e.bibliotecaFiltro.mensagem[ctx.motivo ?? 'vazio'],
+        acoes: [],
+        detalhes,
+      };
+    case 'biblioteca.mudou':
+      return { codigo, ...e.bibliotecaMudou, acoes: [], detalhes };
+    case 'biblioteca.falhou':
+      return {
+        codigo,
+        titulo: e.bibliotecaFalhou.titulo(ctx.tarefa ?? 'falar com o beets'),
+        mensagem: e.bibliotecaFalhou.mensagem,
+        acoes: [
+          acao('tentarDeNovo', A.tentarDeNovo, true),
+          acao('copiarDetalhes', A.copiarDetalhes),
           acao('abrirLog', A.abrirLog),
         ],
         detalhes,

@@ -85,6 +85,18 @@ const api: SoulcrateApi = {
     listState: (runId) => chamar('reports:listState', runId),
     resetList: (runId) => chamar('reports:resetList', runId),
   },
+  library: {
+    list: () => chamar('library:list'),
+    previewRemove: (filtro) => chamar('library:previewRemove', filtro),
+    remove: (filtro, token) => chamar('library:remove', filtro, token),
+    previewMaintenance: (tarefa) => chamar('library:previewMaintenance', tarefa),
+    maintenance: (tarefa, token) => chamar('library:maintenance', tarefa, token),
+    running: () => chamar('library:running'),
+    revealTrack: (id) => chamar('library:revealTrack', id),
+    openMusicFolder: () => chamar('library:openMusicFolder'),
+    sharing: () => chamar('library:sharing'),
+    rescanSharing: () => chamar('library:rescanSharing'),
+  },
   logs: {
     subscribe: (alvo) => chamar('logs:subscribe', alvo),
     unsubscribe: (id) => chamar('logs:unsubscribe', id),

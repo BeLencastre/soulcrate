@@ -5,6 +5,7 @@ import type { TarefaEstado, TarefaSetupId } from './configuracao.js';
 import type { EtapaDetalhe, EtapaEstado, EtapaId, MotivoResumo, OperacaoStack, ResumoStack } from './stack.js';
 import type { ServicoId } from './servicos.js';
 import { servicoPorId } from './servicos.js';
+import type { MotivoFiltro } from './biblioteca.js';
 import type { MotivoFim } from './eventos-lote.js';
 import type { ResumoFim } from './lote-estado.js';
 import type { OpcaoId } from './opcoes-lote.js';
@@ -1237,11 +1238,195 @@ export const msg = {
     },
   },
 
+  biblioteca: {
+    rotulo: 'Biblioteca',
+    titulo: 'O caixote',
+    /** `D:\Musica\Soulcrate\music · 1.204 faixas` */
+    subtitulo: (pasta: string, n: number) => `${pasta} · ${n.toLocaleString('pt-BR')} ${plural(n, 'faixa', 'faixas')}`,
+    abrirMusic: 'Abrir music no Explorer',
+    atualizar: 'Atualizar',
+    carregando: 'Lendo a biblioteca…',
+    lendo: 'Lendo a biblioteca com o beets. Com milhares de faixas, leva alguns segundos.',
+    ignoradas: (n: number) =>
+      `${n} ${plural(n, 'linha da saída do beets não foi entendida e ficou de fora', 'linhas da saída do beets não foram entendidas e ficaram de fora')}.`,
+    indicadores: {
+      grupo: 'Filtrar por pendência',
+      bpm: 'Sem BPM',
+      tom: 'Sem tom',
+      gen: 'Em _Sem Genero',
+      dl: 'Parados em downloads/',
+    },
+    buscar: 'Buscar na biblioteca',
+    placeholderBusca: 'Artista ou título',
+    contagem: (visiveis: number, total: number) =>
+      `${visiveis.toLocaleString('pt-BR')} de ${total.toLocaleString('pt-BR')}`,
+    tabela: 'Faixas da biblioteca',
+    colunas: {
+      artista: 'Artista',
+      titulo: 'Título',
+      bpm: 'BPM',
+      tom: 'Tom',
+      genero: 'Gênero',
+      formato: 'Formato',
+      acoes: 'Ações',
+    },
+    sem: 'sem',
+    semGenero: '_Sem Genero',
+    mostrarNoExplorer: (titulo: string) => `Mostrar ${titulo} no Explorer`,
+    removerFaixa: (titulo: string) => `Remover ${titulo}`,
+    naoAchouArquivo: 'O arquivo não está mais em music/. Use "Sincronizar com o disco" para o beets esquecer a faixa.',
+    vazioFiltro: 'Nenhuma faixa com esse filtro.',
+    vazioBiblioteca: {
+      titulo: 'A biblioteca está vazia',
+      corpo:
+        'Ainda não há faixas no beets. Baixe uma lista (ou uma faixa pelo Soulbeet) e elas aparecem aqui, já com BPM, tom e gênero.',
+      irParaLista: 'Baixar uma lista',
+    },
+    parados: {
+      titulo: 'Parados em downloads/',
+      resumo: (itens: number, arquivos: number) =>
+        `${arquivos} ${plural(arquivos, 'arquivo', 'arquivos')} em ${itens} ${plural(itens, 'pasta que o beets não importou', 'pastas que o beets não importou')}.`,
+      /** `1 arquivo: Vengeance Of The Masked.mp3`, `15 arquivos: a.flac, b.flac e mais 13` */
+      detalhe: (arquivos: string[], total: number) => {
+        const mais = total > arquivos.length ? ` e mais ${total - arquivos.length}` : '';
+        return `${total} ${plural(total, 'arquivo', 'arquivos')}: ${arquivos.join(', ')}${mais}`;
+      },
+      item: (nome: string, arquivos: string[], total: number) =>
+        `downloads/${nome}/ tem ${total} ${plural(total, 'arquivo', 'arquivos')} que o beets não importou: ${arquivos.join(', ')}${total > arquivos.length ? ` e mais ${total - arquivos.length}` : ''}`,
+      desde: (momento: string) => `parado desde ${momento}`,
+      nenhum: 'Nada parado em downloads/: o beets importou tudo.',
+      importarAgora: 'Importar agora',
+    },
+    manutencao: {
+      titulo: 'Manutenção',
+      rodando: 'Rodando agora',
+      verProgresso: 'Ver andamento',
+      tomEBpm: {
+        titulo: 'Recalcular tom e BPM',
+        descricao: 'Só das faixas sem · keyfinder e autobpm',
+      },
+      importLeftovers: {
+        titulo: 'Importar o que sobrou em downloads/',
+        descricao: (itens: number, desde: string | null) =>
+          itens === 0
+            ? 'Nada parado em downloads/'
+            : `${itens} ${plural(itens, 'pasta parada', 'pastas paradas')}${desde ? ` desde ${desde}` : ''}`,
+      },
+      update: {
+        titulo: 'Sincronizar com o disco',
+        descricao: 'Depois de apagar ou editar arquivos fora do app · update',
+      },
+      move: {
+        titulo: 'Reorganizar pastas',
+        descricao: 'Depois de mudar o padrão de pastas · move',
+      },
+    },
+    compartilhamento: {
+      titulo: 'Compartilhamento',
+      /** vem depois do número: `1.204` + `arquivos anunciados no Soulseek` */
+      anunciados: (n: number) => `${plural(n, 'arquivo anunciado', 'arquivos anunciados')} no Soulseek`,
+      desconhecido: 'Não consegui ler quantos arquivos o slskd anuncia.',
+      varrendo: 'O slskd está varrendo a biblioteca…',
+      zero: 'O slskd anuncia 0 arquivos: quem não compartilha nada costuma ser recusado ou ficar no fim da fila. Reescaneie.',
+      dica: 'Compartilhar ajuda sua reputação na rede: quem não compartilha costuma ser despriorizado.',
+      reescanear: 'Reescanear',
+      pedido: 'Pedi a varredura ao slskd. O número sobe conforme ela avança.',
+      stackFora: 'Ligue a stack para ver o compartilhamento.',
+    },
+    rekordbox: {
+      titulo: 'Rekordbox',
+      instrucao:
+        'Em Preferências › Avançado › Gerenciamento de banco de dados, adicione esta pasta como monitorada. As faixas novas aparecem sozinhas.',
+      pastaMonitorada: 'Pasta para monitorar no Rekordbox',
+      copiar: 'Copiar',
+      copiado: 'Copiado',
+    },
+    remover: {
+      rotulo: 'Ação destrutiva',
+      titulo: 'Remover da biblioteca e do disco',
+      filtro: 'Filtro do beets',
+      dicaFiltro:
+        'Mesmo filtro dos comandos do beets. id:… pega só esta faixa; troque por artist:"…" para várias. Antes de apagar, o app lista tudo o que ele pega.',
+      conferindo: 'Conferindo o filtro…',
+      sera: 'Será apagado',
+      resumo: (faixas: number) =>
+        `${faixas} ${plural(faixas, 'faixa', 'faixas')} · ${faixas} ${plural(faixas, 'arquivo', 'arquivos')}`,
+      eMais: (n: number) => `e mais ${n} ${plural(n, 'faixa', 'faixas')}`,
+      nenhuma: 'O filtro não pega nenhuma faixa. Nada será apagado.',
+      aviso: 'O arquivo é apagado de vez, sem passar pela Lixeira. O app não consegue desfazer isto.',
+      massa: (faixas: number, porcento: number) =>
+        `Atenção: este filtro pega ${faixas} faixas (${porcento}% da biblioteca). Confira se é isso mesmo.`,
+      digitar: (n: number) => `Digite ${n} para confirmar`,
+      conferi: (n: number) => `Conferi a lista acima: pode apagar ${n} ${plural(n, 'arquivo', 'arquivos')}`,
+      cancelar: 'Cancelar',
+      apagar: (n: number) => `Apagar ${n} ${plural(n, 'faixa', 'faixas')}`,
+      apagando: 'Apagando…',
+      feito: 'Removida',
+      feitoTitulo: (f: { artista: string; titulo: string }[]) =>
+        f.length === 1 && f[0]
+          ? `${f[0].artista ? `${f[0].artista} – ` : ''}${f[0].titulo} saiu da biblioteca`
+          : `${f.length} faixas saíram da biblioteca`,
+      aposRemover:
+        'Para baixar a faixa certa, coloque a linha numa lista nova. Na mesma lista, use as opções Tentar de novo e Baixar mesmo o que já está na biblioteca.',
+      voltar: 'Voltar à biblioteca',
+      novaLista: 'Nova lista com esta faixa',
+      erroNovaLista: 'Não consegui criar a lista',
+    },
+    dialogo: {
+      previa: 'Conferindo o que o beets faria…',
+      rodando: 'Rodando',
+      concluido: 'Concluído',
+      concluidoCorpo: 'A tarefa terminou. A biblioteca foi lida de novo.',
+      fechar: 'Fechar',
+      cancelar: 'Cancelar',
+      emSegundoPlano:
+        'Pode fechar esta janela: a tarefa continua e o andamento fica no cartão Manutenção. Não desligue a stack até ela terminar.',
+      saida: 'Saída do beets',
+      tomEBpm: {
+        titulo: 'Recalcular tom e BPM',
+        corpo: (semBpm: number, semTom: number) =>
+          `O beets calcula o tom (keyfinder) e o BPM (autobpm) só das faixas que não têm. O que já tem fica como está. Hoje há ${semBpm} ${plural(semBpm, 'faixa', 'faixas')} sem BPM e ${semTom} sem tom. As tags são gravadas nos arquivos e a análise pode demorar.`,
+        nada: 'Todas as faixas já têm tom e BPM: não há o que calcular.',
+        confirmar: 'Recalcular',
+      },
+      importLeftovers: {
+        titulo: 'Importar o que sobrou em downloads/',
+        corpo:
+          'O beets importa estas pastas com as tags que os arquivos já têm (import -q -s) e as move para music/. Só entram aqui arquivos parados há mais de 10 minutos: o que acabou de chegar o lote e o Soulbeet importam sozinhos.',
+        nada: 'Nada parado em downloads/: o beets importou tudo.',
+        confirmar: 'Importar',
+      },
+      update: {
+        titulo: 'Sincronizar com o disco',
+        corpo:
+          'O beets (update) confere cada faixa com o arquivo no disco: esquece as que você apagou fora do app e relê as tags das que você editou. Nenhum arquivo é apagado.',
+        nada: 'O banco e o disco estão iguais: não há o que sincronizar.',
+        resumo: (afetadas: number, esquecidas: number) => {
+          const partes: string[] = [];
+          if (esquecidas > 0)
+            partes.push(
+              `${esquecidas} ${plural(esquecidas, 'faixa será esquecida', 'faixas serão esquecidas')} (o arquivo não existe mais)`,
+            );
+          const lidas = afetadas - esquecidas;
+          if (lidas > 0)
+            partes.push(`${lidas} ${plural(lidas, 'faixa terá as tags relidas', 'faixas terão as tags relidas')}`);
+          return partes.join(' · ');
+        },
+        confirmar: 'Sincronizar',
+      },
+      move: {
+        titulo: 'Reorganizar pastas',
+        corpo:
+          'O beets (move) leva cada arquivo para o lugar que o padrão de pastas do config.yaml manda (Gênero/Artista/Título). Os arquivos mudam de pasta; nenhum é apagado.',
+        nada: 'Todos os arquivos já estão onde o padrão de pastas manda.',
+        resumo: (n: number) => `${n} ${plural(n, 'arquivo será movido', 'arquivos serão movidos')}`,
+        confirmar: 'Reorganizar',
+      },
+      maisLinhas: (n: number) => `e mais ${n} ${plural(n, 'linha', 'linhas')}`,
+    },
+  },
+
   emBreve: {
-    rotulo: 'Em breve',
-    titulo: 'Esta tela chega em uma próxima versão',
-    corpo: (nome: string) =>
-      `${nome} ainda não está disponível no app. Os .bat e a linha de comando continuam funcionando.`,
     irParaInicio: 'Ir para o Início',
   },
 
@@ -1289,6 +1474,7 @@ export const msg = {
       'setup.falhou': 'Erro · configuração',
       'porta.em-uso': 'Erro · rede',
       'servico.inacessivel': 'Erro · serviço',
+      'slskd.chave-recusada': 'Erro · configuração',
       'operacao.falhou': 'Erro · stack',
       'lote.lista-rodando': 'Erro · lote',
       'lote.stack-fora': 'Erro · lote',
@@ -1297,6 +1483,11 @@ export const msg = {
       'lote.config': 'Erro · lote',
       'lote.erro': 'Erro · lote',
       'lote.interrompido': 'Erro · lote',
+      'biblioteca.stack-fora': 'Erro · biblioteca',
+      'biblioteca.ocupada': 'Erro · biblioteca',
+      'biblioteca.filtro-invalido': 'Erro · filtro',
+      'biblioteca.mudou': 'Erro · biblioteca',
+      'biblioteca.falhou': 'Erro · biblioteca',
       inesperado: 'Erro inesperado',
     } satisfies Record<ErroCodigo, string>,
     inesperado: { titulo: 'Algo deu errado', mensagem: 'O app não conseguiu terminar o que você pediu.' },
@@ -1392,6 +1583,42 @@ export const msg = {
     loteErro: {
       titulo: 'O lote terminou com erro',
       mensagem: 'Aconteceu um erro durante o lote. Os detalhes e o log da execução dizem onde.',
+    },
+    slskdChaveRecusada: {
+      titulo: 'O slskd recusou a API key',
+      mensagem:
+        'A chave do .env (SLSKD_API_KEY_SOULBEET) e a do slskd.yml precisam ser idênticas. Confira em Configurações; se mudar a chave, use Aplicar e reiniciar para o slskd reler o arquivo.',
+    },
+    bibliotecaStackFora: {
+      titulo: 'A biblioteca só abre com a stack no ar',
+      mensagem:
+        'Quem lê e mexe na biblioteca é o beets, que roda dentro do contêiner do Soulbeet. Ligue a stack e volte aqui.',
+    },
+    bibliotecaOcupada: {
+      titulo: 'Há um lote rodando',
+      mensagem:
+        'Mexer na biblioteca enquanto o lote importa faixas pode travar o banco do beets ou apagar o que está chegando. Espere o lote terminar (ou pare-o) e tente de novo.',
+    },
+    bibliotecaFiltro: {
+      titulo: 'Esse filtro não serve',
+      mensagem: {
+        vazio:
+          'Escreva o que procurar, por exemplo title:"Northern Power". Sem filtro, o beets pegaria a biblioteca inteira.',
+        aspas: 'Faltou fechar as aspas do filtro.',
+        opcao:
+          'Termos que começam com "-" são opções do beets, não filtros. Para excluir, use ^ (por exemplo ^artist:Azyr).',
+        longo: 'Um dos termos do filtro é grande demais.',
+        muitos: 'O filtro tem termos demais. Escreva só o necessário para achar a faixa.',
+      } satisfies Record<MotivoFiltro, string>,
+    },
+    bibliotecaMudou: {
+      titulo: 'A biblioteca mudou desde a pré-visualização',
+      mensagem:
+        'As faixas que o filtro pega já não são as que você conferiu (ou a confirmação expirou). Nada foi apagado: confira a lista de novo.',
+    },
+    bibliotecaFalhou: {
+      titulo: (tarefa: string) => `Não consegui ${tarefa}`,
+      mensagem: 'O beets devolveu um erro. As últimas linhas da saída estão nos detalhes.',
     },
     operacaoFalhou: {
       titulo: (op: OperacaoStack | 'reiniciando') =>

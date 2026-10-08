@@ -1,13 +1,14 @@
 // Componentes de base da identidade (protótipo "Estados e componentes"): botão, rótulo, chip de estado, LED, cartão.
 import type { ButtonHTMLAttributes, HTMLAttributes, ReactNode } from 'react';
 
-type Variante = 'padrao' | 'primario' | 'fantasma' | 'perigo';
+type Variante = 'padrao' | 'primario' | 'fantasma' | 'perigo' | 'destrutivo';
 
 const CLASSE_VARIANTE: Record<Variante, string> = {
   padrao: 'btn',
   primario: 'btn btn-p',
   fantasma: 'btn btn-g',
   perigo: 'btn btn-d',
+  destrutivo: 'btn btn-x',
 };
 
 export function classeBotao(variante: Variante = 'padrao', pequeno = false): string {

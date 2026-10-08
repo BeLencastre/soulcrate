@@ -5,11 +5,16 @@ import {
   exigirCriterioDeLimpeza,
   exigirEntrada,
   exigirEntradaPasta,
+  exigirFiltro,
   exigirFinalidade,
+  exigirIdDeFaixa,
   exigirLogin,
   exigirOpcoesDaCorrecao,
   exigirOpcoesSetup,
+  exigirTarefa,
   exigirTituloEscolhido,
+  exigirToken,
+  exigirTokenOuNulo,
 } from '../../src/main/ipc-entradas';
 import { entradaVazia, type ConfigEntrada } from '../../src/shared/configuracao';
 
@@ -114,6 +119,39 @@ describe('Fase 4: histórico e diagnóstico', () => {
       null,
     ]) {
       expect(() => exigirCriterioDeLimpeza(ruim), JSON.stringify(ruim)).toThrow();
+    }
+  });
+});
+
+describe('Fase 5: biblioteca', () => {
+  it('filtro: texto de até 1024 caracteres (a validação do conteúdo é do serviço)', () => {
+    expect(exigirFiltro('title:"Northern Power"')).toBe('title:"Northern Power"');
+    for (const ruim of ['a'.repeat(1025), 5, null, undefined, {}]) {
+      expect(() => exigirFiltro(ruim), String(ruim)).toThrow();
+    }
+  });
+
+  it('token: texto curto e não vazio; nulo só onde a tarefa dispensa', () => {
+    expect(exigirToken('abc-123')).toBe('abc-123');
+    for (const ruim of ['', 'a'.repeat(101), 7, null]) expect(() => exigirToken(ruim), String(ruim)).toThrow();
+    expect(exigirTokenOuNulo(null)).toBeNull();
+    expect(exigirTokenOuNulo(undefined)).toBeNull();
+    expect(exigirTokenOuNulo('abc')).toBe('abc');
+    expect(() => exigirTokenOuNulo('')).toThrow();
+  });
+
+  it('tarefa: só as quatro de manutenção, nunca um comando do beets', () => {
+    for (const t of ['update', 'move', 'tomEBpm', 'importLeftovers']) expect(exigirTarefa(t)).toBe(t);
+    for (const ruim of ['ls', 'remove', 'modify', 'shell', '', null, 4]) {
+      expect(() => exigirTarefa(ruim), String(ruim)).toThrow();
+    }
+  });
+
+  it('id da faixa: inteiro seguro, não negativo (o renderer nunca manda caminho)', () => {
+    expect(exigirIdDeFaixa(0)).toBe(0);
+    expect(exigirIdDeFaixa(1204)).toBe(1204);
+    for (const ruim of [-1, 1.5, NaN, Infinity, '3', '../x', null, 2 ** 60]) {
+      expect(() => exigirIdDeFaixa(ruim), String(ruim)).toThrow();
     }
   });
 });

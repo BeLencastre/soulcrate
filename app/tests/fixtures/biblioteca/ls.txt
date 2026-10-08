@@ -1,0 +1,4 @@
+1	Azyr	No Escape	150	F#m	Hard Techno	WAVE	128kbps	/music/Hard Techno/Azyr/No Escape.wav
+3	Azyr	Power (Extended Mix)	152	Gm	Hard Techno	WAVE	128kbps	/music/Hard Techno/Azyr/Power (Extended Mix).wav
+4	Cloudy	Yeah (Cloudy Remix)	0	Dm	Electro, Techno/House, Dance	WAVE	128kbps	/music/Electro, Techno_House, Dance/Cloudy/Yeah (Cloudy Remix).wav
+2	Vendex	Vengeance Of The Masked	0			WAVE	128kbps	/music/_Sem Genero/Vendex/Vengeance Of The Masked.wav

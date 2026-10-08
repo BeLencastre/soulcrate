@@ -9,6 +9,7 @@ import type { MainEvent, MarcadorBuild, OperacaoTipo, OperationId, WebUiEstado }
 import type { ServicoId } from '@shared/servicos';
 import { statusInicial, type StackStatus } from '@shared/stack';
 import { api } from './api';
+import { CHAVE_BIBLIOTECA, useManutencao } from './biblioteca';
 import { CHAVE_HISTORICO } from './historico';
 import { useExecucao, useRascunho } from './lote-store';
 
@@ -135,6 +136,14 @@ export function ligarEventos(qc: QueryClient, navegar: (rota: string) => void): 
       if (e.type === 'batch.events' && e.eventos.some((ev) => ev.type === 'run.start' || ev.type === 'run.end')) {
         void qc.invalidateQueries({ queryKey: CHAVE_HISTORICO });
       }
+      // o lote terminou: ele importou faixas, então a biblioteca (e os "parados em downloads/") mudaram
+      if (e.type === 'batch.events' && e.eventos.some((ev) => ev.type === 'run.end')) {
+        void qc.invalidateQueries({ queryKey: CHAVE_BIBLIOTECA });
+      }
+    } else if (e.type === 'library.start' || e.type === 'library.log' || e.type === 'library.end') {
+      useManutencao.getState().aoEvento(e);
+      // a tarefa terminou: a tabela e os indicadores (sem BPM, parados...) mudaram
+      if (e.type === 'library.end') void qc.invalidateQueries({ queryKey: CHAVE_BIBLIOTECA });
     } else if (e.type === 'app.openList') {
       void useRascunho.getState().abrir(e.nome);
       navegar('/lista');
@@ -148,5 +157,6 @@ export function useLigarEventos(navegar: (rota: string) => void): void {
   // um lote iniciado antes de o app fechar continua rodando: volta a mostrá-lo no painel (§5, Fase 3, "Reconexão")
   useEffect(() => {
     void useExecucao.getState().reconectar();
+    void useManutencao.getState().reconectar();
   }, []);
 }

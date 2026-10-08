@@ -2,6 +2,15 @@
 // Contrato de IPC entre o renderer e o main (Apêndice C da especificação), tipado nos dois lados.
 // O renderer só enxerga `window.soulcrate` (preload, via contextBridge). Segredos nunca atravessam este contrato.
 import type {
+  ResultadoCompartilhamento,
+  ResultadoLeitura,
+  ResultadoManutencao,
+  ResultadoPreviaManutencao,
+  ResultadoPreviaRemocao,
+  ResultadoRemocao,
+  TarefaManutencao,
+} from './biblioteca.js';
+import type {
   ConfigEntrada,
   ConfigPublica,
   EntradaPasta,
@@ -257,6 +266,28 @@ export interface SoulcrateApi {
     listState(runId: string): Promise<EstadoDaLista | null>;
     resetList(runId: string): Promise<boolean>;
   };
+  library: {
+    /** a biblioteca inteira (`beet ls`) e o que está parado em downloads/; exige a stack no ar */
+    list(): Promise<ResultadoLeitura>;
+    /** o que um `remove -d` apagaria com este filtro (`beet ls`), mais o token que a remoção exige */
+    previewRemove(filtro: string): Promise<ResultadoPreviaRemocao>;
+    /** `remove -d -f`, só com o token da prévia do mesmo filtro e se as faixas ainda são as mesmas */
+    remove(filtro: string, token: string): Promise<ResultadoRemocao>;
+    /** `update -p` e `move -p`; as outras tarefas só confirmam */
+    previewMaintenance(tarefa: TarefaManutencao): Promise<ResultadoPreviaManutencao>;
+    /** começa a tarefa e devolve o id na hora; o andamento chega por `library.log` e `library.end` */
+    maintenance(tarefa: TarefaManutencao, token: string | null): Promise<ResultadoManutencao>;
+    /** a tarefa que está rodando agora, para a tela reencontrá-la depois de navegar */
+    running(): Promise<{ id: string; tarefa: TarefaManutencao } | null>;
+    /** "Mostrar no Explorer" para uma faixa da última leitura (o renderer só fala em id) */
+    revealTrack(id: number): Promise<boolean>;
+    /** abre `music/` no Explorer */
+    openMusicFolder(): Promise<void>;
+    /** quantos arquivos o slskd anuncia no Soulseek */
+    sharing(): Promise<ResultadoCompartilhamento>;
+    /** pede ao slskd uma nova varredura de `music/` */
+    rescanSharing(): Promise<ResultadoCompartilhamento>;
+  };
   logs: {
     subscribe(alvo: AlvoLog): Promise<SubscriptionId>;
     unsubscribe(id: SubscriptionId): Promise<void>;
@@ -288,6 +319,10 @@ export type MainEvent =
   | { type: 'batch.events'; runId: string; desde: number; eventos: EventoLote[] }
   /** linhas novas do log bruto; `desde` é o índice (absoluto) da primeira */
   | { type: 'batch.log'; runId: string; desde: number; linhas: string[] }
+  /** a manutenção da biblioteca (Fase 5): começou, uma linha da saída do beets, terminou */
+  | { type: 'library.start'; id: string; tarefa: TarefaManutencao }
+  | { type: 'library.log'; id: string; linha: string }
+  | { type: 'library.end'; id: string; tarefa: TarefaManutencao; ok: boolean; error?: AppError }
   | { type: 'app.closePrompt' }
   | { type: 'app.navigate'; rota: string }
   /** o app foi aberto com um .txt/.csv ("Abrir com"): vira uma lista na pasta do Soulcrate */
@@ -359,6 +394,16 @@ export interface IpcInvoke {
   'reports:cleanup': { args: [criterio: CriterioLimpeza]; result: ResultadoLimpeza };
   'reports:listState': { args: [runId: string]; result: EstadoDaLista | null };
   'reports:resetList': { args: [runId: string]; result: boolean };
+  'library:list': { args: []; result: ResultadoLeitura };
+  'library:previewRemove': { args: [filtro: string]; result: ResultadoPreviaRemocao };
+  'library:remove': { args: [filtro: string, token: string]; result: ResultadoRemocao };
+  'library:previewMaintenance': { args: [tarefa: TarefaManutencao]; result: ResultadoPreviaManutencao };
+  'library:maintenance': { args: [tarefa: TarefaManutencao, token: string | null]; result: ResultadoManutencao };
+  'library:running': { args: []; result: { id: string; tarefa: TarefaManutencao } | null };
+  'library:revealTrack': { args: [id: number]; result: boolean };
+  'library:openMusicFolder': { args: []; result: void };
+  'library:sharing': { args: []; result: ResultadoCompartilhamento };
+  'library:rescanSharing': { args: []; result: ResultadoCompartilhamento };
   'logs:subscribe': { args: [alvo: AlvoLog]; result: SubscriptionId };
   'logs:unsubscribe': { args: [id: SubscriptionId]; result: void };
   'webui:show': { args: [servico: ServicoId, limites: Limites]; result: void };

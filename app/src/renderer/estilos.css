@@ -157,6 +157,16 @@
     color: #ffb0b0;
     border-color: #8a3434;
   }
+  .btn-x {
+    background: #c23b3b;
+    border-color: #c23b3b;
+    color: #fff;
+  }
+  .btn-x:hover:not(:disabled) {
+    background: #d64848;
+    border-color: #d64848;
+    color: #fff;
+  }
   .btn-sm {
     min-height: 32px;
     padding: 0 12px;
@@ -405,6 +415,50 @@
   }
   .ico-btn:disabled {
     opacity: 0.4;
+    cursor: not-allowed;
+  }
+  .ico-d:hover:not(:disabled) {
+    background: #2a1515;
+    color: #ff8a8a;
+  }
+
+  /* tela Biblioteca: indicadores que filtram a tabela e ações de manutenção */
+  .ind {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    padding: 14px 16px;
+    border-radius: 8px;
+    border: 1px solid var(--color-borda);
+    background: var(--color-cartao);
+    text-align: left;
+    cursor: pointer;
+  }
+  .ind:hover {
+    border-color: #4a4f57;
+  }
+  .ind[aria-pressed='true'] {
+    border-color: var(--color-ambar);
+    background: #1f1a10;
+  }
+  .act {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    width: 100%;
+    min-height: 52px;
+    padding: 8px 14px;
+    border: 0;
+    border-radius: 6px;
+    background: transparent;
+    text-align: left;
+    cursor: pointer;
+  }
+  .act:hover:not(:disabled) {
+    background: var(--color-campo);
+  }
+  .act:disabled {
+    opacity: 0.45;
     cursor: not-allowed;
   }
 

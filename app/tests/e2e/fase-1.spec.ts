@@ -46,10 +46,10 @@ test('abre com a navegação lateral e o Início', async () => {
   await expect(janela.locator('[data-etapa="stack"]')).toHaveAttribute('data-estado', 'desligada');
   await capturar(janela, '01-inicio-desligada');
 
-  // telas das próximas fases mostram o estado vazio do protótipo
+  // a Biblioteca (Fase 5) lê o beets, que mora no contêiner: com a stack desligada ela explica e oferece ligar
   await nav.getByRole('link', { name: 'Biblioteca' }).click();
-  await expect(janela.getByRole('heading', { name: 'Esta tela chega em uma próxima versão' })).toBeVisible();
-  await capturar(janela, '02-em-breve');
+  await expect(janela.getByRole('heading', { name: 'A biblioteca só abre com a stack no ar' })).toBeVisible();
+  await capturar(janela, '02-biblioteca-stack-desligada');
 });
 
 test('Docker lento: mostra "Verificando" em vez de um alarme falso de Docker fechado (§6.4)', async () => {
@@ -271,6 +271,7 @@ test.describe('segurança do renderer (§6.1)', () => {
       'batch',
       'config',
       'env',
+      'library',
       'lists',
       'logs',
       'onEvent',

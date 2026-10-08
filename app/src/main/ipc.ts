@@ -25,7 +25,9 @@ import {
   exigirBytes,
   exigirEntrada,
   exigirEntradaPasta,
+  exigirFiltro,
   exigirFinalidade,
+  exigirIdDeFaixa,
   exigirInicioDeLote,
   exigirLogin,
   exigirModelo,
@@ -34,11 +36,15 @@ import {
   exigirOpcoesDaCorrecao,
   exigirOpcoesSetup,
   exigirRunId,
+  exigirTarefa,
   exigirTextoDaLista,
   exigirTituloEscolhido,
+  exigirToken,
+  exigirTokenOuNulo,
 } from './ipc-entradas';
 import { ehUrlDoApp, podeAbrirNoNavegador } from './seguranca';
 import type { AppSettingsService } from './services/app-settings';
+import type { BibliotecaService } from './services/biblioteca-service';
 import type { ChecksService } from './services/checks-service';
 import type { ConfigService } from './services/config-service';
 import type { HealthService } from './services/health-service';
@@ -50,6 +56,7 @@ import type { PastaService } from './services/pasta-service';
 import type { RelatoriosService } from './services/relatorios-service';
 import { ehPastaDoSoulcrate } from './services/project-service';
 import type { SetupService } from './services/setup-service';
+import type { SlskdService } from './services/slskd-service';
 import type { WebUiService } from './services/webui-service';
 
 export interface ContextoIpc {
@@ -67,11 +74,15 @@ export interface ContextoIpc {
   listas: ListasService;
   lote: LoteService;
   relatorios: RelatoriosService;
+  biblioteca: BibliotecaService;
+  slskd: SlskdService;
   /** pasta proposta para uma instalação nova */
   pastaPadrao: string;
   projeto(): ProjetoStatus;
   validarConfig(dir: string): ConfigStatus;
   existeArquivo(caminho: string): boolean;
+  /** `music/` e `downloads/` no disco do PC, já resolvidas a partir do .env */
+  pastasDoDisco(dir: string): { musica: string; downloads: string };
   versaoDaStack(): string | null;
   versaoDoApp: string;
   emitir(evento: MainEvent): void;
@@ -321,6 +332,31 @@ export function registrarIpc(ctx: ContextoIpc): void {
   tratar('reports:cleanup', (_e, criterio) => ctx.relatorios.limpar(exigirCriterioDeLimpeza(criterio)));
   tratar('reports:listState', (_e, runId) => ctx.relatorios.estadoDaLista(exigirRunId(runId)));
   tratar('reports:resetList', (_e, runId) => ctx.relatorios.reprocessarLista(exigirRunId(runId)));
+
+  // ------------------------------------------------------------ biblioteca e manutenção (Fase 5)
+  tratar('library:list', () => ctx.biblioteca.ler());
+  tratar('library:previewRemove', (_e, filtro) => ctx.biblioteca.previaRemocao(exigirFiltro(filtro)));
+  tratar('library:remove', (_e, filtro, token) => ctx.biblioteca.remover(exigirFiltro(filtro), exigirToken(token)));
+  tratar('library:previewMaintenance', (_e, tarefa) => ctx.biblioteca.previaManutencao(exigirTarefa(tarefa)));
+  tratar('library:maintenance', (_e, tarefa, token) =>
+    ctx.biblioteca.manutencao(exigirTarefa(tarefa), exigirTokenOuNulo(token)),
+  );
+  tratar('library:running', () => ctx.biblioteca.emAndamento);
+  tratar('library:revealTrack', (_e, id) => {
+    const caminho = ctx.biblioteca.caminhoDaFaixa(exigirIdDeFaixa(id));
+    if (!caminho || !ctx.existeArquivo(caminho)) return false;
+    shell.showItemInFolder(caminho);
+    return true;
+  });
+  tratar('library:openMusicFolder', async () => {
+    const dir = ctx.projeto().dir;
+    if (!dir) throw new Error('Escolha a pasta do Soulcrate primeiro.');
+    const musica = ctx.pastasDoDisco(dir).musica;
+    const erro = await shell.openPath(musica);
+    if (erro) throw new Error(erro);
+  });
+  tratar('library:sharing', () => ctx.slskd.compartilhamento());
+  tratar('library:rescanSharing', () => ctx.slskd.reescanear());
 
   // ------------------------------------------------------------ logs e Web UIs
   tratar('logs:subscribe', (e, alvo) => ctx.logs.assinar(e.sender.id, exigirAlvoLog(alvo)));

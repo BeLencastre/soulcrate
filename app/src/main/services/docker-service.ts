@@ -149,9 +149,33 @@ export class DockerService {
     });
   }
 
-  /** `docker compose exec -T <serviço> ...` (sem TTY: o status.bat rodava num console, o app não). */
-  exec(dir: string, servico: string, comando: readonly string[], timeoutMs = 20_000): Promise<ResultadoProcesso> {
-    return this.docker(['compose', 'exec', '-T', servico, ...comando], { cwd: dir, timeoutMs });
+  /**
+   * `docker compose exec -T <serviço> ...` (sem TTY: o status.bat rodava num console, o app não). `workdir` é o `-w`
+   * (o baixar-lista.ps1 roda o beets em `/data`).
+   */
+  exec(
+    dir: string,
+    servico: string,
+    comando: readonly string[],
+    timeoutMs = 20_000,
+    workdir?: string,
+  ): Promise<ResultadoProcesso> {
+    return this.docker(['compose', 'exec', '-T', ...(workdir ? ['-w', workdir] : []), servico, ...comando], {
+      cwd: dir,
+      timeoutMs,
+    });
+  }
+
+  /** O mesmo `exec`, mas com a saída linha a linha e sem limite de tempo (a manutenção da biblioteca demora). */
+  execStream(
+    dir: string,
+    servico: string,
+    comando: readonly string[],
+    aoLinha: (linha: string) => void,
+    workdir?: string,
+  ): ProcessoVivo {
+    const args = ['compose', 'exec', '-T', ...(workdir ? ['-w', workdir] : []), servico, ...comando];
+    return this.dep.executor.iniciar('docker', args, { cwd: dir, aoLinha: (l) => aoLinha(l) });
   }
 
   /** `docker compose logs -f --tail 200` de um serviço ou de todos. */
