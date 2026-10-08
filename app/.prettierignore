@@ -1,0 +1,8 @@
+# fixtures: bytes exatos como o baixar-lista.ps1 grava
+tests/fixtures/
+node_modules/
+out/
+dist/
+test-results/
+playwright-report/
+package-lock.json

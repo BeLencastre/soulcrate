@@ -9,16 +9,20 @@ if not exist slskd\slskd.yml (
   copy /Y slskd\slskd.example.yml slskd\slskd.yml >nul
   echo [ok] slskd\slskd.yml criado a partir de slskd\slskd.example.yml
 )
-REM Recusa subir com os valores de exemplo (senhas e chaves conhecidas)
-findstr /R /C:"PREENCHA_" /C:"=seu_usuario_soulseek" /C:"=sua_senha_soulseek" /C:"=troque-" .env >nul && (
-  echo [!] O .env ainda tem valores de exemplo. Preencha a conta Soulseek, a senha da Web UI e as chaves.
-  notepad .env
+REM Confere o .env e o slskd.yml: valores de exemplo, campos vazios, pastas, chaves iguais
+REM (regras em docs\validacao-configuracao.md). Avisos aparecem, mas nao impedem de subir.
+powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0validar-config.ps1"
+if errorlevel 2 (
+  echo.
+  echo [!] Corrija o slskd\slskd.yml: a API key precisa ser a mesma de SLSKD_API_KEY_SOULBEET do .env.
+  notepad slskd\slskd.yml
   pause
   exit /b 1
 )
-findstr /C:"TROQUE_POR_UMA_CHAVE_ALEATORIA" slskd\slskd.yml >nul && (
-  echo [!] Troque a API key de exemplo em slskd\slskd.yml pela mesma chave de SLSKD_API_KEY_SOULBEET do .env.
-  notepad slskd\slskd.yml
+if errorlevel 1 (
+  echo.
+  echo [!] Corrija o .env e rode o subir.bat de novo.
+  notepad .env
   pause
   exit /b 1
 )

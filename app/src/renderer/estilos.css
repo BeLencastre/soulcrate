@@ -1,0 +1,299 @@
+@import '@fontsource-variable/archivo/wdth.css';
+@import '@fontsource-variable/jetbrains-mono/index.css';
+@import 'tailwindcss';
+
+/* Identidade visual dos protótipos (soulcrate-prototipos): tema escuro, âmbar como cor de ação. */
+@theme {
+  --font-sans: 'Archivo Variable', 'Segoe UI', system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono Variable', ui-monospace, monospace;
+
+  --color-fundo: #0e0f11;
+  --color-painel: #121417;
+  --color-cartao: #15171a;
+  --color-cartao-2: #1b1e22;
+  --color-log: #111316;
+  --color-campo: #1c1f23;
+  --color-campo-hover: #262a2f;
+
+  --color-borda: #2a2e34;
+  --color-borda-fraca: #24272c;
+  --color-borda-forte: #30343b;
+
+  --color-texto: #ece9e3;
+  --color-texto-forte: #f4f1ea;
+  --color-texto-suave: #a3a7ae;
+  --color-texto-claro: #b4b8bf;
+  --color-texto-mudo: #868b93;
+  --color-texto-apagado: #6e737c;
+
+  --color-ambar: #f2b53a;
+  --color-ambar-claro: #ffc658;
+  --color-sobre-ambar: #1a1204;
+
+  --color-led-verde: #47c58a;
+  --color-led-cinza: #3a3e45;
+  --color-led-azul: #62a8ff;
+  --color-led-vermelho: #ff6161;
+  --color-led-laranja: #ff8b4a;
+
+  --color-chip-neutro: #b4b8bf;
+  --color-chip-neutro-fundo: #24272c;
+  --color-chip-azul: #7db6ff;
+  --color-chip-azul-fundo: #16263a;
+  --color-chip-verde: #5bd49a;
+  --color-chip-verde-fundo: #13291f;
+  --color-chip-laranja: #ff9a5c;
+  --color-chip-laranja-fundo: #33200f;
+  --color-chip-vermelho: #ff7a7a;
+  --color-chip-vermelho-fundo: #331516;
+
+  --color-erro-borda: #5a2626;
+  --color-aviso-borda: #5a3a1c;
+  --color-azul-borda: #22405f;
+}
+
+@layer base {
+  html {
+    color-scheme: dark; /* barras de rolagem e controles nativos escuros */
+  }
+  html,
+  body,
+  #raiz {
+    height: 100%;
+  }
+  body {
+    margin: 0;
+    background: var(--color-fundo);
+    color: var(--color-texto);
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+  }
+  *,
+  *::before,
+  *::after {
+    box-sizing: border-box;
+  }
+  a {
+    color: var(--color-ambar);
+  }
+  a:hover {
+    color: #ffd27a;
+  }
+  button,
+  input,
+  select,
+  textarea {
+    font: inherit;
+    color: inherit;
+  }
+  :focus-visible {
+    outline: 2px solid var(--color-ambar);
+    outline-offset: 2px;
+  }
+}
+
+@layer components {
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    min-height: 40px;
+    padding: 0 16px;
+    border-radius: 6px;
+    border: 1px solid var(--color-borda-forte);
+    background: var(--color-campo);
+    color: var(--color-texto);
+    font-weight: 600;
+    font-size: 14px;
+    line-height: 1;
+    cursor: pointer;
+    text-decoration: none;
+    white-space: nowrap;
+  }
+  .btn:hover {
+    background: var(--color-campo-hover);
+    color: #fff;
+    border-color: #3c4149;
+  }
+  .btn:disabled,
+  .btn[aria-disabled='true'] {
+    opacity: 0.4;
+    cursor: not-allowed;
+  }
+  .btn-p {
+    background: var(--color-ambar);
+    border-color: var(--color-ambar);
+    color: var(--color-sobre-ambar);
+  }
+  .btn-p:hover {
+    background: var(--color-ambar-claro);
+    border-color: var(--color-ambar-claro);
+    color: var(--color-sobre-ambar);
+  }
+  .btn-g {
+    background: transparent;
+    border-color: transparent;
+    color: var(--color-texto-suave);
+  }
+  .btn-g:hover {
+    background: var(--color-campo);
+    color: var(--color-texto);
+    border-color: transparent;
+  }
+  .btn-d {
+    background: transparent;
+    border-color: #6b2a2a;
+    color: #ff8a8a;
+  }
+  .btn-d:hover {
+    background: #2a1515;
+    color: #ffb0b0;
+    border-color: #8a3434;
+  }
+  .btn-sm {
+    min-height: 32px;
+    padding: 0 12px;
+    font-size: 13px;
+  }
+
+  .lbl {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--color-texto-mudo);
+  }
+
+  /* chip de estado: texto + quadradinho da cor (a cor nunca é a única informação, Apêndice B) */
+  .st {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    height: 24px;
+    padding: 0 9px;
+    border-radius: 4px;
+    font-size: 12px;
+    font-weight: 600;
+    white-space: nowrap;
+  }
+  .st::before {
+    content: '';
+    width: 7px;
+    height: 7px;
+    border-radius: 2px;
+    background: currentColor;
+  }
+  .st-neutro {
+    color: var(--color-chip-neutro);
+    background: var(--color-chip-neutro-fundo);
+  }
+  .st-azul {
+    color: var(--color-chip-azul);
+    background: var(--color-chip-azul-fundo);
+  }
+  .st-verde {
+    color: var(--color-chip-verde);
+    background: var(--color-chip-verde-fundo);
+  }
+  .st-laranja {
+    color: var(--color-chip-laranja);
+    background: var(--color-chip-laranja-fundo);
+  }
+  .st-vermelho {
+    color: var(--color-chip-vermelho);
+    background: var(--color-chip-vermelho-fundo);
+  }
+
+  .tab {
+    min-height: 40px;
+    padding: 0 14px;
+    border: 0;
+    border-bottom: 2px solid transparent;
+    background: transparent;
+    color: var(--color-texto-suave);
+    font-weight: 600;
+    font-size: 14px;
+    cursor: pointer;
+  }
+  .tab:hover {
+    color: var(--color-texto);
+  }
+  .tab[data-state='active'] {
+    color: var(--color-texto);
+    border-bottom-color: var(--color-ambar);
+  }
+
+  .seg {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    min-height: 36px;
+    padding: 0 14px;
+    border: 0;
+    border-radius: 5px;
+    background: transparent;
+    color: var(--color-texto-suave);
+    font-weight: 600;
+    font-size: 14px;
+    cursor: pointer;
+    text-decoration: none;
+  }
+  .seg:hover {
+    color: var(--color-texto);
+  }
+  .seg[aria-current='page'],
+  .seg[data-state='active'] {
+    background: var(--color-borda);
+    color: #fff;
+  }
+
+  .ico-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    border-radius: 6px;
+    border: 0;
+    background: transparent;
+    color: var(--color-texto-suave);
+    cursor: pointer;
+  }
+  .ico-btn:hover:not(:disabled) {
+    background: var(--color-campo);
+    color: var(--color-texto);
+  }
+  .ico-btn:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+  }
+
+  .row:hover {
+    background: #181b1e;
+  }
+}
+
+@keyframes pulso {
+  0% {
+    opacity: 0.55;
+  }
+  50% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0.55;
+  }
+}
+.esqueleto {
+  background: var(--color-chip-neutro-fundo);
+  border-radius: 4px;
+  animation: pulso 1.4s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .esqueleto {
+    animation: none;
+  }
+}

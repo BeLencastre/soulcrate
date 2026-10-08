@@ -72,6 +72,7 @@ flowchart LR
 
 - [Aviso](#aviso)
 - [Créditos](#créditos)
+- [Contribuindo](#contribuindo)
 - [Licença](#licença)
 
 ---
@@ -211,6 +212,7 @@ Edite o `.env`:
 | `SOULBEET_SECRET_KEY`                          | Uma string aleatória longa (veja abaixo)                                                                                                                                                                                          |
 | `SLSKD_API_KEY_SOULBEET`                       | A mesma chave do passo 3 (usada pelo download em lote)                                                                                                                                                                            |
 | `MUSICBRAINZ_CONTATO` (opcional)               | Seu e-mail ou URL. Vai no User-Agent das consultas ao MusicBrainz, como ele recomenda                                                                                                                                             |
+| `BIND_ADDR` (opcional)                         | Deixe de fora para as interfaces web abrirem só neste PC. Use `0.0.0.0` para abri-las de outro aparelho da rede (ex.: Navidrome no celular)                                                                                       |
 
 
 Para gerar as chaves aleatórias:
@@ -251,7 +253,7 @@ web:
 
 ### 4. Suba a stack
 
-Com o Docker Desktop aberto, dê dois cliques em `subir.bat`, ou rode o comando abaixo. O `subir.bat` cria o `.env` e o `slskd/slskd.yml` a partir dos modelos se eles não existirem, e se recusa a subir enquanto houver senhas ou chaves de exemplo.
+Com o Docker Desktop aberto, dê dois cliques em `subir.bat`, ou rode o comando abaixo. O `subir.bat` cria o `.env` e o `slskd/slskd.yml` a partir dos modelos se eles não existirem e confere os dois com o `validar-config.ps1`. Ele se recusa a subir enquanto houver senhas ou chaves de exemplo, campos vazios, pasta que não existe ou API keys diferentes nos dois arquivos, e avisa (sem impedir) sobre pastas no OneDrive, em discos diferentes ou chaves curtas. As regras estão em [`docs/validacao-configuracao.md`](docs/validacao-configuracao.md).
 
 ```bash
 docker compose up -d --build
@@ -259,7 +261,10 @@ docker compose up -d --build
 
 O primeiro build compila o keyfinder e leva de **5 a 10 minutos**. No log, procure as linhas `plugins ok - beets 2.x` e `lastgenre ok`. Se o Windows Firewall perguntar, permita o acesso em redes privadas.
 
-Confira se está tudo de pé com `status.bat` (ou `docker compose ps`).
+Confira se está tudo de pé com `status.bat` (ou `docker compose ps`). Cada serviço tem healthcheck: em um ou dois minutos, os três devem aparecer como `healthy`.
+
+> [!NOTE]
+> Por padrão, Soulbeet, slskd e Navidrome só abrem **neste PC** (`localhost`). Para usá-los de outro aparelho da rede, ponha `BIND_ADDR=0.0.0.0` no `.env` e rode o `subir.bat` de novo.
 
 ## Configuração inicial
 
@@ -378,6 +383,8 @@ Cloudy - Yeah (Cloudy Remix)
 
 O Docker precisa estar no ar (o `.bat` avisa se não estiver). Pode **fechar a janela no meio**: ao rodar de novo a mesma lista, ele continua de onde parou. Downloads já enfileirados no slskd continuam por lá. Enquanto roda, o PC não entra em suspensão.
 
+A **mesma lista não roda duas vezes ao mesmo tempo**: se você abrir o `baixar-lista.bat` com uma lista que já está rodando em outra janela, ele avisa e sai. Listas diferentes podem rodar juntas (mas dividem o limite de buscas do Soulseek). Se a janela foi fechada à força, a trava é ignorada na próxima vez.
+
 **O que acontece, em ordem:**
 
 1. Lê a lista, limpa as linhas e remove repetidas.
@@ -404,6 +411,18 @@ O Docker precisa estar no ar (o `.bat` avisa se não estiver). Pode **fechar a j
 **Formato:** FLAC toca no Rekordbox e nos XDJ/CDJ recentes (XDJ-XZ, XDJ-RX3, XDJ-AZ, CDJ-3000). Se for tocar num equipamento antigo, confirme o suporte a FLAC antes da gig ou mantenha MP3 320/AIFF dessas faixas.
 
 ## Solução de problemas
+
+**Não consigo abrir o Navidrome (ou o Soulbeet, ou o slskd) de outro aparelho**
+
+Por padrão, as interfaces só abrem no próprio PC. Ponha `BIND_ADDR=0.0.0.0` no `.env` e rode o `subir.bat`. Se ainda não abrir, permita o acesso no Windows Firewall para redes privadas.
+
+**O `subir.bat` não sobe e abre o `.env` (ou o `slskd.yml`)**
+
+A configuração tem um erro, descrito na linha `[!]` logo acima. As regras e o que fazer em cada caso estão em [`docs/validacao-configuracao.md`](docs/validacao-configuracao.md). Linhas `[aviso]` não impedem de subir.
+
+**"Esta lista ja esta sendo baixada por outro processo"**
+
+A mesma lista já está rodando em outra janela. Espere terminar, ou feche aquela janela e rode de novo.
 
 **O Soulbeet não conecta no slskd**
 
@@ -526,9 +545,12 @@ Depois de editar o `config.yaml`, basta reiniciar: `docker compose restart soulb
 soulcrate/
 ├── docker-compose.yml          # os 3 serviços e os volumes compartilhados
 ├── .env.example                # modelo de configuração (copie para .env)
+├── VERSION                     # versão da stack (CHANGELOG.md tem o histórico)
 ├── subir.bat / parar.bat       # sobe / derruba a stack
+├── validar-config.ps1          # confere o .env e o slskd.yml (usado pelo subir.bat)
 ├── status.bat                  # saúde dos contêineres e plugins
 ├── baixar-lista.bat / .ps1     # download em lote
+├── baixar-lista.lib.ps1        # funções do lote sem rede (lista, comparação, catálogo)
 ├── lista.exemplo.txt           # modelo da lista (copiado para lista.txt na 1ª vez)
 ├── lista.txt                   # sua lista de faixas (fora do Git)
 ├── slskd/
@@ -542,8 +564,13 @@ soulcrate/
 ├── downloads/   incomplete/    # área de trabalho do slskd
 ├── music/                      # SUA BIBLIOTECA
 ├── navidrome/                  # banco e cache do Navidrome
-└── lotes/                      # relatórios do download em lote
+├── lotes/                      # relatórios do download em lote
+├── docs/                       # especificação do app, protocolo do lote, regras da configuração
+├── tests/                      # testes (Pester) e o slskd falso usado por eles
+└── app/                        # app desktop (Electron), em construção: Fases 0 e 1 prontas (veja app/README.md)
 ```
+
+Para desenvolver ou rodar os testes, veja o [`CONTRIBUTING.md`](CONTRIBUTING.md).
 
 ---
 
@@ -694,9 +721,12 @@ A linha de progresso aparece a cada 30 s. "Aguardando" são faixas que ainda vã
 | `catalogo-mb/`            | Cache do catálogo de cada artista (7 dias)                                                                                                                                                                       | —                                                               |
 | `beets-<data>.log`        | Saída completa do beets, por lote                                                                                                                                                                                | Quando aparecer "beets falhou"                                  |
 | `estado-<lista>.tsv`      | Memória do que já foi feito com aquela lista                                                                                                                                                                     | Apague para reprocessar a lista do zero                         |
+| `estado-<lista>.lock`     | Existe só enquanto a lista está rodando: impede de rodar a mesma lista em duas janelas                                                                                                                           | —                                                               |
+| `execucao-<data>.log`     | Tudo o que apareceu na tela                                                                                                                                                                                      | Quando o script parou com `ERRO`                                |
+| `eventos-<data>.jsonl`    | Só quando o lote é iniciado por um programa (o app) com `-Eventos`: o andamento em formato de máquina                                                                                                            | —                                                               |
 
 
-Esses arquivos podem ser apagados quando quiser. O único que muda o comportamento é o `estado-*.tsv`.
+Esses arquivos podem ser apagados quando quiser (o `.lock`, só com o lote parado). O único que muda o comportamento é o `estado-*.tsv`.
 
 ### Faixas que não vieram
 
@@ -780,6 +810,8 @@ O `-Retentar` é necessário quando você roda **a mesma lista** de novo. Sem el
 | `-SemBeets`            | —      | Só baixa, sem importar                                 |
 
 
+Há também opções para programas que controlam o lote, como o app: `-Eventos` (andamento em JSON), `-ArquivoParada` (parada segura), `-IdExecucao` (nome dos arquivos) e `-SoAnalisar` (analisa a lista sem baixar). Elas e os códigos de saída estão em [`docs/eventos-lote.md`](docs/eventos-lote.md).
+
 **Receitas:**
 
 
@@ -832,6 +864,8 @@ docker compose exec soulbeet /usr/bin/python3 -c "import sys; from beets.ui impo
 
 ## Versões
 
+A stack como um todo está na versão do arquivo [`VERSION`](VERSION); o histórico de mudanças fica no [`CHANGELOG.md`](CHANGELOG.md).
+
 Versões testadas juntas (outubro de 2026). As marcadas como **fixa** estão travadas no `docker-compose.yml` ou no `soulbeet/Dockerfile`. As outras vêm junto com a imagem base do Soulbeet ou são resolvidas pelo `pip` a partir das fixas. Veja [Atualização](#atualização) para trocar de versão.
 
 **Serviços (contêineres)**
@@ -874,6 +908,7 @@ Plugins do beets ativos (`soulbeet/config/config.yaml`): `musicbrainz`, `mbtwopa
 | Docker Engine  | `29.8.2`        | Docker Desktop com Compose v2 (`docker compose`, sem hífen)           |
 | Docker Compose | `5.5.1`         | v2 ou mais novo (o que vem no Docker Desktop)                         |
 | PowerShell     | `5.1` (Windows) | 5.1 no Windows, ou `pwsh` 7+ no Linux/macOS para o `baixar-lista.ps1` |
+| Node.js        | `24.15`         | Só para desenvolver: testes de integração e o app (`app/.nvmrc`)      |
 
 
 > [!TIP]
@@ -898,7 +933,7 @@ docker compose build           # soulbeet (imagem estendida)
 docker compose up -d
 ```
 
-Sua biblioteca (`music/`), os bancos (`navidrome/`, `soulbeet/data/`, `slskd/data/`) e o `.env` não são afetados.
+Sua biblioteca (`music/`), os bancos (`navidrome/`, `soulbeet/data/`, `slskd/data/`) e o `.env` não são afetados. Antes de atualizar, leia o [`CHANGELOG.md`](CHANGELOG.md): ele avisa quando uma versão muda algo no uso (como as interfaces passarem a abrir só neste PC).
 
 ## Backup
 
@@ -926,6 +961,10 @@ O Soulseek é uma rede de compartilhamento P2P. Baixe apenas o que você tem dir
 - [libkeyfinder](https://github.com/mixxxdj/libkeyfinder) e [keyfinder-cli](https://github.com/evanpurkhiser/keyfinder-cli)
 - [beetcamp](https://github.com/snejus/beetcamp)
 - [MusicBrainz](https://musicbrainz.org) (catálogo usado na conferência de títulos)
+
+## Contribuindo
+
+Como rodar os testes, convenções de commit e de codificação dos arquivos: [`CONTRIBUTING.md`](CONTRIBUTING.md). Um app desktop está sendo planejado em [`docs/interface-electron.md`](docs/interface-electron.md).
 
 ## Licença
 
