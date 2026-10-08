@@ -1,6 +1,7 @@
 import { createHashRouter } from 'react-router';
 import { msg } from '@shared/mensagens';
 import { App, Pagina } from './App';
+import { Assistente } from './paginas/Assistente';
 import { Configuracoes } from './paginas/Configuracoes';
 import { EmBreve } from './paginas/EmBreve';
 import { Inicio } from './paginas/Inicio';
@@ -54,6 +55,7 @@ export const roteador = createHashRouter([
         ),
       },
       { path: 'servicos/web/:servico', element: <WebUi /> },
+      { path: 'assistente', element: <Assistente /> },
       {
         path: 'configuracoes',
         element: (

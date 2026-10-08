@@ -205,13 +205,13 @@ describe('derivarEtapas', () => {
       ).configuracao,
     ).toMatchObject({
       estado: 'erro',
-      acao: 'escolherPasta',
+      acao: 'abrirAssistente',
     });
     expect(
       por(status({ configuracao: { estado: 'invalida', erros: 2, avisos: 0, achados: [] } })).configuracao,
     ).toMatchObject({
       estado: 'erro',
-      acao: 'abrirConfiguracoes',
+      acao: 'abrirAssistente',
       detalhe: 'config-invalida',
     });
     expect(

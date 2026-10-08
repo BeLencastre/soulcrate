@@ -50,6 +50,8 @@ app/node_modules/
 app/out/
 app/dist/
 app/coverage/
+# arquivos da stack montados para o instalador (npm run stack:preparar)
+app/resources/stack/
 app/test-results/
 app/playwright-report/
 # estado do app na pasta do Soulcrate (manifesto dos arquivos da stack)

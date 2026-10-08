@@ -85,8 +85,17 @@ export function lerChaveSlskd(texto: string): string | null {
   return null;
 }
 
+/** Valor que ainda é o do .env.example: `PREENCHA_…`, `troque-…`, `seu_usuario_soulseek` ou `sua_senha_soulseek`. */
+export function ehValorExemplo(valor: string): boolean {
+  return (
+    /^PREENCHA_/i.test(valor) ||
+    /^troque-/i.test(valor) ||
+    ['seu_usuario_soulseek', 'sua_senha_soulseek'].includes(valor.toLowerCase())
+  );
+}
+
 /** O Windows recusa estes caracteres em caminhos; `:` só vale logo depois da letra do disco. */
-function caminhoValido(valor: string): boolean {
+export function caminhoValido(valor: string): boolean {
   for (const ch of valor) {
     if (ch.charCodeAt(0) < 32 || '<>"|?*'.includes(ch)) return false;
   }
@@ -119,11 +128,7 @@ export function validarConfiguracao(raiz: string, fs: SistemaDeArquivos = sistem
 
     // valores de exemplo do .env.example (o PowerShell compara sem diferenciar maiúsculas)
     for (const [k, v] of cfg) {
-      if (
-        /^PREENCHA_/i.test(v) ||
-        /^troque-/i.test(v) ||
-        ['seu_usuario_soulseek', 'sua_senha_soulseek'].includes(v.toLowerCase())
-      ) {
+      if (ehValorExemplo(v)) {
         add('ENV_EXEMPLO', 'erro', '.env', k, `${k} ainda tem o valor de exemplo do .env.example.`);
       }
     }

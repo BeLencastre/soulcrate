@@ -6,3 +6,5 @@ dist/
 test-results/
 playwright-report/
 package-lock.json
+# arquivos da stack montados para o instalador (npm run stack:preparar)
+resources/stack/

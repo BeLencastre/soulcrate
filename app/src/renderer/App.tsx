@@ -1,6 +1,6 @@
 // Estrutura da janela: barra lateral + a tela da rota atual. Liga os eventos do main ao estado do renderer.
 import type { ReactNode } from 'react';
-import { Outlet, useNavigate } from 'react-router';
+import { Outlet, useMatch, useNavigate } from 'react-router';
 import { BarraLateral } from './components/BarraLateral';
 import { DialogoBandeja } from './components/DialogoBandeja';
 import { useLigarEventos } from './lib/estado';
@@ -13,10 +13,12 @@ export function Pagina({ children }: { children: ReactNode }) {
 export function App() {
   const navegar = useNavigate();
   useLigarEventos(navegar);
+  // o assistente ocupa a janela inteira, como no protótipo: sem a barra lateral
+  const noAssistente = useMatch('/assistente') !== null;
 
   return (
     <div className="flex h-full min-h-0 bg-fundo text-texto">
-      <BarraLateral />
+      {noAssistente ? null : <BarraLateral />}
       <main className="min-w-0 flex-1 overflow-y-auto">
         <Outlet />
       </main>

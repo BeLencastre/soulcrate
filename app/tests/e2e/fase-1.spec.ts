@@ -162,7 +162,8 @@ test('configuração inválida: não liga e mostra o que falta', async () => {
   await janela.getByRole('alert').getByRole('button', { name: 'Ver configurações' }).click();
   await expect(janela.locator('[data-achado="ENV_EXEMPLO"]')).toBeVisible();
   await expect(janela.locator('[data-achado="ENV_VAZIA"]')).toBeVisible();
-  await expect(janela.getByTestId('pasta-do-projeto')).toHaveText(amb.projeto);
+  await janela.getByRole('button', { name: 'Pastas', exact: true }).click();
+  await expect(janela.getByTestId('pasta-do-projeto')).toHaveValue(amb.projeto);
   await capturar(janela, '09-configuracoes-invalida');
 });
 
@@ -170,10 +171,10 @@ test('sem pasta do Soulcrate: pede a pasta', async () => {
   amb = criarAmbiente({ semProjeto: true });
   aberto = await abrirApp(amb);
   const { janela } = aberto;
-  await expect(titulo(janela)).toHaveText('Escolha a pasta do Soulcrate');
+  await expect(titulo(janela)).toHaveText('Vamos configurar o Soulcrate');
   await expect(resumo(janela)).toHaveText('Sem pasta do Soulcrate');
-  await janela.getByRole('button', { name: 'Escolher a pasta' }).first().click();
-  await expect(janela.getByRole('heading', { level: 1, name: 'Configurações' })).toBeVisible();
+  await janela.getByRole('button', { name: 'Abrir o assistente' }).first().click();
+  await expect(janela.getByRole('heading', { level: 1, name: 'Onde fica o Soulcrate?' })).toBeVisible();
 });
 
 test('Serviços: verificações e logs dos contêineres', async () => {
@@ -265,7 +266,7 @@ test.describe('segurança do renderer (§6.1)', () => {
     expect(mundo.require).toBe('undefined');
     expect(mundo.process).toBe('undefined');
     expect(mundo.ipcRenderer).toBe('undefined');
-    expect(mundo.api).toEqual(['app', 'config', 'env', 'logs', 'onEvent', 'project', 'stack', 'webui']);
+    expect(mundo.api).toEqual(['app', 'config', 'env', 'logs', 'onEvent', 'project', 'setup', 'stack', 'webui']);
     expect(mundo.csp).toContain("default-src 'self'");
     expect(mundo.csp).not.toContain('unsafe-eval');
 

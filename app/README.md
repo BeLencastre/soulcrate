@@ -1,6 +1,6 @@
 # App do Soulcrate (Electron)
 
-App desktop do Soulcrate: liga e desliga a stack (slskd, Soulbeet e Navidrome), mostra o estado de cada serviço e abre as Web UIs dentro da janela. A [especificação](../docs/interface-electron.md) tem o plano completo; **as Fases 0 e 1 estão implementadas** (esqueleto, ambiente e stack). A tela de download em lote, o assistente de configuração, o histórico e a biblioteca vêm nas próximas fases.
+App desktop do Soulcrate: liga e desliga a stack (slskd, Soulbeet e Navidrome), mostra o estado de cada serviço e abre as Web UIs dentro da janela. A [especificação](../docs/interface-electron.md) tem o plano completo; **as Fases 0, 1 e 2 estão implementadas** (esqueleto, ambiente e stack, e o assistente de configuração). A tela de download em lote, o histórico e a biblioteca vêm nas próximas fases.
 
 ## Requisitos
 
@@ -17,6 +17,7 @@ npm run check        # lint + formatação + tipos + testes unitários (o mesmo 
 npm test             # só os testes unitários e de integração (Vitest)
 npm run test:e2e     # build + testes ponta a ponta (Playwright, abre o app de verdade)
 npm run build        # compila main, preload e renderer em out/
+npm run stack:preparar  # junta os arquivos da stack em resources/stack (o pack:dir e o dist já fazem isso)
 npm run pack:dir     # gera o app desempacotado em dist/win-unpacked (para testar sem instalar)
 npm run dist         # gera o instalador NSIS em dist/ (sem assinatura)
 npm run icones       # regenera os ícones em resources/ (só se o desenho mudar)
@@ -41,11 +42,12 @@ O arquivo de estado é o "mundo" do Docker falso: editá-lo à mão simula o que
 
 Outras variáveis (só fora do app empacotado, e só para desenvolvimento e testes):
 
-| Variável              | Para quê                                                                                                               |
-| --------------------- | ---------------------------------------------------------------------------------------------------------------------- |
-| `SOULCRATE_DIR`       | Pasta do Soulcrate a usar (senão: a escolhida em Configurações, a do repositório em dev, ou `%USERPROFILE%\Soulcrate`) |
-| `SOULCRATE_USER_DATA` | Pasta de dados do app (padrão: `%APPDATA%\Soulcrate`)                                                                  |
-| `SOULCRATE_SEM_DEV`   | `1`: não usar a pasta do repositório como pasta do Soulcrate                                                           |
+| Variável               | Para quê                                                                                                                                                                                 |
+| ---------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `SOULCRATE_DIR`        | Pasta do Soulcrate a usar (senão: a escolhida em Configurações, a do repositório em dev, ou `%USERPROFILE%\Soulcrate`)                                                                   |
+| `SOULCRATE_USER_DATA`  | Pasta de dados do app (padrão: `%APPDATA%\Soulcrate`)                                                                                                                                    |
+| `SOULCRATE_SEM_DEV`    | `1`: não usar a pasta do repositório como pasta do Soulcrate                                                                                                                             |
+| `SOULCRATE_SETUP_URLS` | `{"navidrome":"http://127.0.0.1:1","soulbeet":"http://127.0.0.1:2"}`: onde a pós-configuração do assistente fala com o Navidrome e o Soulbeet (os testes apontam para servidores falsos) |
 
 ## Estrutura
 
@@ -60,25 +62,28 @@ Outras variáveis (só fora do app empacotado, e só para desenvolvimento e test
 
 ### Serviços do main (§3.2 da especificação)
 
-| Serviço                         | O que faz                                                                                                                                                                                                          |
-| ------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `DockerService`                 | Detecta o Docker ([SP1](../docs/spikes/sp1-deteccao-docker.md)), abre o Docker Desktop ([SP2](../docs/spikes/sp2-abrir-docker-desktop.md)) e roda `docker compose` (`up`, `down`, `ps`, `restart`, `exec`, `logs`) |
-| `HealthService`                 | Sonda Docker, contêineres e endpoints HTTP a cada 5 s (30 s com a janela escondida) e publica o estado                                                                                                             |
-| `OperacoesService`              | Ligar, desligar, reconstruir, reiniciar um serviço e abrir o Docker Desktop, uma de cada vez, com log ao vivo                                                                                                      |
-| `ChecksService`                 | As verificações do `status.bat`, em verde/amarelo/vermelho                                                                                                                                                         |
-| `LogsService`                   | `docker compose logs -f` de cada contêiner, em lotes                                                                                                                                                               |
-| `WebUiService`                  | As Web UIs em `WebContentsView`, uma partição de sessão por serviço ([SP7](../docs/spikes/sp7-webcontentsview.md))                                                                                                 |
-| `config-validacao`              | Validação do `.env` e do `slskd.yml` (S4), a mesma regra do `validar-config.ps1`                                                                                                                                   |
-| `ProjectService`, `AppSettings` | Onde está a pasta do Soulcrate e as preferências do app                                                                                                                                                            |
+| Serviço                         | O que faz                                                                                                                                                                                                                |
+| ------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `DockerService`                 | Detecta o Docker ([SP1](../docs/spikes/sp1-deteccao-docker.md)), abre o Docker Desktop ([SP2](../docs/spikes/sp2-abrir-docker-desktop.md)) e roda `docker compose` (`up`, `down`, `ps`, `restart`, `exec`, `logs`)       |
+| `HealthService`                 | Sonda Docker, contêineres e endpoints HTTP a cada 5 s (30 s com a janela escondida) e publica o estado                                                                                                                   |
+| `OperacoesService`              | Ligar, desligar, reconstruir, reiniciar um serviço e abrir o Docker Desktop, uma de cada vez, com log ao vivo                                                                                                            |
+| `ChecksService`                 | As verificações do `status.bat`, em verde/amarelo/vermelho                                                                                                                                                               |
+| `LogsService`                   | `docker compose logs -f` de cada contêiner, em lotes                                                                                                                                                                     |
+| `WebUiService`                  | As Web UIs em `WebContentsView`, uma partição de sessão por serviço ([SP7](../docs/spikes/sp7-webcontentsview.md))                                                                                                       |
+| `config-validacao`              | Validação do `.env` e do `slskd.yml` (S4), a mesma regra do `validar-config.ps1`                                                                                                                                         |
+| `ProjectService`, `AppSettings` | Onde está a pasta do Soulcrate e as preferências do app                                                                                                                                                                  |
+| `PastaService`                  | Passo 1 do assistente: copia os arquivos da stack para uma pasta nova (e guarda o hash deles em `.soulcrate/manifesto.json`) ou confere uma pasta existente; nunca sobrescreve nada do usuário                           |
+| `ConfigService`                 | Lê (sem segredos), valida e grava o `.env` e o `slskd.yml`: gera as chaves, a mesma nos dois arquivos, faz backup e confere o resultado com a validação S4; edita o `.env` linha a linha e o YAML sem perder comentários |
+| `SetupService`                  | Pós-configuração com a stack no ar: liga, cria o administrador do Navidrome, configura o Soulbeet pela API e confere a porta 2234; cada tarefa é idempotente                                                             |
 
 ## Testes
 
-| Nível         | Onde                         | O que cobre                                                                                                                                                                                                                                              |
-| ------------- | ---------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Unidade       | `tests/shared`, `tests/main` | Estado e etapas do Início, catálogo de erros, parsers do Docker, validação S4 (**os mesmos casos do PowerShell**, `tests/fixtures/config/casos.json`), filtro de segredos, URLs permitidas                                                               |
-| Integração    | `tests/main`                 | `DockerService`, `HealthService`, `OperacoesService`, `ChecksService` e `LogsService` contra um executor falso; `ExecutorReal` com processos de verdade (inclusive a árvore de filhos)                                                                   |
-| Renderer      | `tests/renderer`             | A tela Início e a barra lateral (Testing Library, `window.soulcrate` simulado)                                                                                                                                                                           |
-| Ponta a ponta | `tests/e2e`                  | O app de verdade contra o dublê do docker: Docker fechado → abrir; ligar, desligar e reconstruir; contêiner derrubado por fora; porta em uso; configuração inválida; Web UIs (login persistente, isolamento, navegação bloqueada); segurança do renderer |
+| Nível         | Onde                         | O que cobre                                                                                                                                                                                                                                                                                                                                                                                                                                            |
+| ------------- | ---------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Unidade       | `tests/shared`, `tests/main` | Estado e etapas do Início, catálogo de erros, parsers do Docker, validação S4 (**os mesmos casos do PowerShell**, `tests/fixtures/config/casos.json`), filtro de segredos, URLs permitidas. Na Fase 2: edição do `.env` e do `slskd.yml` (comentários, CRLF, formato dos valores, backup), `ConfigService` (ler sem segredos, validar, gravar com chaves iguais nos dois arquivos) e `PastaService` (copiar a stack sem sobrescrever nada do usuário). |
+| Integração    | `tests/main`                 | `DockerService`, `HealthService`, `OperacoesService`, `ChecksService` e `LogsService` contra um executor falso; `ExecutorReal` com processos de verdade (inclusive a árvore de filhos). Na Fase 2: `SetupService` contra um Navidrome e um Soulbeet falsos (`tests/dubles/servicos-falsos.ts`, as rotas dos spikes SP5 e SP6), e o `validar-config.ps1` (o do `subir.bat`) conferindo o que o app gera.                                                |
+| Renderer      | `tests/renderer`             | A tela Início e a barra lateral (Testing Library, `window.soulcrate` simulado). Na Fase 2: o assistente (passos, validação que não fica muda, senhas que não voltam) e a tela Configurações (rascunho, banner, Salvar e Aplicar e reiniciar).                                                                                                                                                                                                          |
+| Ponta a ponta | `tests/e2e`                  | O app de verdade contra o dublê do docker: Docker fechado → abrir; ligar, desligar e reconstruir; contêiner derrubado por fora; porta em uso; configuração inválida; Web UIs (login persistente, isolamento, navegação bloqueada); segurança do renderer. Na Fase 2: instalação limpa até a stack no ar, `.env` com valores de exemplo, refazer com backup, Navidrome que já tem administrador e Configurações (`tests/e2e/fase-2.spec.ts`).           |
 
 Os testes e2e **nunca** tocam na sua stack, nos seus dados nem no seu navegador: `shell.openExternal` é trocado por um registro. As Web UIs são testadas com servidores HTTP locais nas portas 5030 e 9765; se a stack de verdade estiver no ar (portas ocupadas), esses testes são pulados. As capturas de tela ficam em `test-results/capturas/`.
 

@@ -14,13 +14,17 @@ import { criarMenu } from './menu';
 import { ExecutorReal } from './processos';
 import { AppSettingsService } from './services/app-settings';
 import { ChecksService } from './services/checks-service';
+import { ConfigService } from './services/config-service';
 import { validarConfiguracao } from './services/config-validacao';
 import { DockerService } from './services/docker-service';
 import { HealthService, INTERVALO_OCULTO_MS, INTERVALO_VISIVEL_MS } from './services/health-service';
 import { LogsService } from './services/logs-service';
 import { OperacoesService } from './services/operacoes-service';
+import { PastaService } from './services/pasta-service';
 import { lerVersaoDaStack, resolverProjeto } from './services/project-service';
+import { portaAceitaConexao, SetupService } from './services/setup-service';
 import { WebUiService } from './services/webui-service';
+import { urlDoServico } from '@shared/servicos';
 
 /** `--smoke-test`: abre a janela, confere o preload e o IPC e sai (usado pelo CI para testar o instalador). */
 const SMOKE = process.argv.includes('--smoke-test');
@@ -66,6 +70,22 @@ async function sondarHttp(url: string, timeoutMs: number): Promise<boolean> {
     return r.status < 500;
   } catch {
     return false;
+  }
+}
+
+/**
+ * Onde o app fala com o Navidrome e o Soulbeet na pós-configuração. Fora do app empacotado, os testes ponta a ponta
+ * apontam para servidores falsos com SOULCRATE_SETUP_URLS='{"navidrome":"http://127.0.0.1:1","soulbeet":"…"}'.
+ */
+function urlsDoSetup(): { navidrome: string; soulbeet: string } {
+  const padrao = { navidrome: urlDoServico('navidrome'), soulbeet: urlDoServico('soulbeet') };
+  const bruto = !app.isPackaged ? process.env.SOULCRATE_SETUP_URLS : undefined;
+  if (!bruto) return padrao;
+  try {
+    const o = JSON.parse(bruto) as Partial<typeof padrao>;
+    return { navidrome: o.navidrome ?? padrao.navidrome, soulbeet: o.soulbeet ?? padrao.soulbeet };
+  } catch {
+    return padrao;
   }
 }
 
@@ -132,6 +152,25 @@ async function principal(): Promise<void> {
   const logs = new LogsService({ docker, projetoDir: () => projeto().dir, emitir, novoId: randomUUID });
   const webui = new WebUiService({ janela: () => janela, emitir });
 
+  // assistente de configuração (Fase 2)
+  const config = new ConfigService();
+  // os arquivos da stack que acompanham o app: no instalado, a pasta resources/stack; em desenvolvimento, o repositório
+  const origemStack = app.isPackaged ? join(process.resourcesPath, 'stack') : resolve(app.getAppPath(), '..');
+  const pasta = new PastaService({ config, origemStack });
+  const pastaPadrao = PastaService.pastaPadrao(homedir());
+  const setup = new SetupService({
+    operacoes,
+    health,
+    projeto,
+    lerArquivo,
+    urls: urlsDoSetup(),
+    portaAceitaConexao: (porta) => portaAceitaConexao(porta),
+    emitir,
+    agora: Date.now,
+    dormir: (ms) => new Promise((r) => setTimeout(r, ms)),
+    aoErro,
+  });
+
   health.aoMudar((status) => {
     emitir({ type: 'stack.status', status });
     bandeja?.atualizar(status);
@@ -166,6 +205,10 @@ async function principal(): Promise<void> {
     checks,
     logs,
     webui,
+    config,
+    pasta,
+    setup,
+    pastaPadrao,
     projeto,
     validarConfig,
     existeArquivo,
@@ -273,6 +316,11 @@ function executarSmoke(win: BrowserWindow): void {
     app.exit(1);
   };
   const timer = setTimeout(() => falhar('tempo esgotado esperando a janela'), TIMEOUT_SMOKE_MS);
+  // o instalador precisa trazer os arquivos da stack: sem eles o assistente não cria a pasta do Soulcrate
+  if (app.isPackaged && !existsSync(join(process.resourcesPath, 'stack', 'docker-compose.yml'))) {
+    clearTimeout(timer);
+    return falhar('o instalador não trouxe os arquivos da stack (resources/stack)');
+  }
   win.webContents.once('did-fail-load', (_e, codigo, descricao) =>
     falhar(`falha ao carregar a página (${codigo} ${descricao})`),
   );

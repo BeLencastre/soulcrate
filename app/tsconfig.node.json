@@ -5,5 +5,15 @@
     "types": ["node"],
     "tsBuildInfoFile": "node_modules/.tmp/tsconfig.node.tsbuildinfo"
   },
-  "include": ["src/main", "src/preload", "src/shared", "tests/*.ts", "tests/main", "tests/shared", "scripts", "*.ts"]
+  "include": [
+    "src/main",
+    "src/preload",
+    "src/shared",
+    "tests/*.ts",
+    "tests/main",
+    "tests/shared",
+    "tests/dubles/*.ts",
+    "scripts",
+    "*.ts"
+  ]
 }

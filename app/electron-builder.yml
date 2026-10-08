@@ -1,5 +1,6 @@
 # Instalador do Windows (NSIS). Fase 0: instalação por usuário, sem assinatura.
-# Recursos da stack (extraResources), atualização automática e assinatura entram na Fase 7.
+# Fase 2: os arquivos da stack (resources/stack, montado por `npm run stack:preparar`) vão no instalador para o
+# assistente copiá-los para a pasta do Soulcrate. A atualização desses arquivos, o updater e a assinatura são da Fase 7.
 appId: br.com.soulcrate.app
 productName: Soulcrate
 copyright: Soulcrate
@@ -15,6 +16,8 @@ extraResources:
     to: tray
   - from: resources/icon.png
     to: icon.png
+  - from: resources/stack
+    to: stack
 asar: true
 win:
   target:

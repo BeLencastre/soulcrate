@@ -11,6 +11,10 @@ export type ErroCodigo =
   | 'compose.ausente'
   | 'projeto.ausente'
   | 'config.invalida'
+  | 'config.nao-gravou'
+  | 'config.yml-invalido'
+  | 'pasta.nao-instalou'
+  | 'setup.falhou'
   | 'porta.em-uso'
   | 'servico.inacessivel'
   | 'operacao.falhou'
@@ -22,11 +26,12 @@ export type AcaoErroId =
   | 'comoInstalarWsl'
   | 'abrirDockerDesktop'
   | 'abrirConfiguracoes'
-  | 'escolherPasta'
+  | 'abrirAssistente'
   | 'verServicos'
   | 'tentarDeNovo'
   | 'copiarDetalhes'
-  | 'abrirLog';
+  | 'abrirLog'
+  | 'abrirYml';
 
 export interface AcaoErro {
   id: AcaoErroId;
@@ -55,6 +60,8 @@ export interface ContextoErro {
   /** quantidade de problemas (config.invalida) */
   problemas?: number;
   operacao?: OperacaoStack | 'reiniciando';
+  /** passo da pós-configuração que falhou (setup.falhou): "o Soulbeet", "o Navidrome" */
+  passo?: string;
 }
 
 export function criarErro(codigo: ErroCodigo, ctx: ContextoErro = {}): AppError {
@@ -91,13 +98,54 @@ export function criarErro(codigo: ErroCodigo, ctx: ContextoErro = {}): AppError 
     case 'compose.ausente':
       return { codigo, ...e.composeAusente, acoes: [acao('baixarDocker', A.baixarDocker, true)], detalhes };
     case 'projeto.ausente':
-      return { codigo, ...e.projetoAusente, acoes: [acao('escolherPasta', A.escolherPasta, true)], detalhes };
+      return { codigo, ...e.projetoAusente, acoes: [acao('abrirAssistente', A.abrirAssistente, true)], detalhes };
     case 'config.invalida':
       return {
         codigo,
         titulo: e.configInvalida.titulo,
         mensagem: e.configInvalida.mensagem(ctx.problemas ?? 1),
         acoes: [acao('abrirConfiguracoes', A.abrirConfiguracoes, true)],
+        detalhes,
+      };
+    case 'config.nao-gravou':
+      return {
+        codigo,
+        ...e.configNaoGravou,
+        acoes: [
+          acao('tentarDeNovo', A.tentarDeNovo, true),
+          acao('copiarDetalhes', A.copiarDetalhes),
+          acao('abrirLog', A.abrirLog),
+        ],
+        detalhes,
+      };
+    case 'config.yml-invalido':
+      return {
+        codigo,
+        ...e.configYmlInvalido,
+        acoes: [acao('abrirYml', A.abrirYml, true), acao('copiarDetalhes', A.copiarDetalhes)],
+        detalhes,
+      };
+    case 'pasta.nao-instalou':
+      return {
+        codigo,
+        ...e.pastaNaoInstalou,
+        acoes: [
+          acao('tentarDeNovo', A.tentarDeNovo, true),
+          acao('copiarDetalhes', A.copiarDetalhes),
+          acao('abrirLog', A.abrirLog),
+        ],
+        detalhes,
+      };
+    case 'setup.falhou':
+      return {
+        codigo,
+        titulo: e.setupFalhou.titulo(ctx.passo ?? 'a configuração'),
+        mensagem: e.setupFalhou.mensagem,
+        acoes: [
+          acao('tentarDeNovo', A.tentarDeNovo, true),
+          acao('verServicos', A.verServicos),
+          acao('copiarDetalhes', A.copiarDetalhes),
+        ],
         detalhes,
       };
     case 'porta.em-uso': {

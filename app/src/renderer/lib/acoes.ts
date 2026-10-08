@@ -27,8 +27,11 @@ export function useAcoes() {
         case 'abrirDockerDesktop':
           return seguro(api.env.startDockerDesktop());
         case 'abrirConfiguracoes':
-        case 'escolherPasta':
           return void navegar('/configuracoes');
+        case 'abrirAssistente':
+          return void navegar('/assistente');
+        case 'abrirYml':
+          return seguro(api.project.openFile('slskd/slskd.yml'));
         case 'verServicos':
           return void navegar('/servicos');
         case 'tentarDeNovo':
@@ -49,7 +52,8 @@ export function useAcoes() {
           return seguro(api.app.openExternal(LINKS.baixarDocker));
         case 'abrirDockerDesktop':
           return seguro(api.env.startDockerDesktop());
-        case 'escolherPasta':
+        case 'abrirAssistente':
+          return void navegar('/assistente');
         case 'abrirConfiguracoes':
           return void navegar('/configuracoes');
         case 'ligar':

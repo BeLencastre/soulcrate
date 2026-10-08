@@ -6,6 +6,7 @@ Mudanças visíveis para quem usa o Soulcrate. Formato baseado no [Keep a Change
 
 ### Adicionado
 
+- App desktop (Electron), Fase 2: assistente de configuração em sete passos que cria a pasta do Soulcrate, gera o `.env` e o `slskd.yml` (a mesma API key nos dois, sem você ver nem copiar nada), faz backup do que já existia, liga a stack e termina sozinho o que antes era feito à mão nas interfaces web (administrador do Navidrome e URL, API key e pasta `/music` do Soulbeet). A tela Configurações edita tudo depois, com *Aplicar e reiniciar*. Confere a porta 2234. Veja [`docs/interface-electron.md`](docs/interface-electron.md#fase-2-assistente-de-configuração).
 - App desktop (Electron), Fases 0 e 1: janela com navegação lateral, tela Início com as cinco etapas do ambiente (Docker, Docker Desktop, configuração, stack e serviços), Ligar, Desligar e Reconstruir com log ao vivo, tela Serviços com as verificações do `status.bat` e os logs de cada contêiner, Web UIs do Soulbeet, slskd e Navidrome dentro do app, ícone na bandeja com o estado da stack e instalador do Windows (NSIS, sem assinatura). Veja [`app/README.md`](app/README.md).
 - Download em lote: parâmetros para programas que controlam o lote, como o futuro app (`-Eventos`, `-ArquivoParada`, `-IdExecucao`, `-SoAnalisar`). Sem eles, nada muda. Veja [`docs/eventos-lote.md`](docs/eventos-lote.md).
 - Download em lote: códigos de saída distintos (`0` concluído, `2` parado, `3` slskd fora, `4` configuração, `5` lista já rodando).

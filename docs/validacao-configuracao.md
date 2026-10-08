@@ -61,5 +61,5 @@ Com `-Json`, a saída é `{"ok": bool, "erros": n, "avisos": n, "achados": [{"id
 ## O que não é validado
 
 - Se a conta do Soulseek existe ou se a senha está certa (só o slskd sabe, ao conectar).
-- Portas em uso (`2234`, `5030`, `9765`, `4533`): fica para o app, que pode testar antes de subir.
-- Espaço livre em disco.
+- Portas em uso (`2234`, `5030`, `9765`, `4533`): o app confere a `2234` (o assistente e a tela Configurações tentam uma conexão em `127.0.0.1`) e mostra o erro "porta em uso" quando o `docker compose up` falha por uma delas; o script não testa nenhuma.
+- Espaço livre em disco: o assistente mostra o espaço livre do disco da biblioteca e avisa quando há menos de 10 GB; o script não confere.

@@ -37,6 +37,22 @@ const api: SoulcrateApi = {
   },
   config: {
     check: () => chamar('config:check'),
+    read: () => chamar('config:read'),
+    validate: (entrada) => chamar('config:validate', entrada),
+    write: (entrada) => chamar('config:write', entrada),
+    pickFolder: (finalidade, inicial) =>
+      inicial === undefined
+        ? chamar('config:pickFolder', finalidade)
+        : chamar('config:pickFolder', finalidade, inicial),
+  },
+  setup: {
+    prepareFolder: (entrada) => chamar('setup:prepareFolder', entrada),
+    defaultFolder: () => chamar('setup:defaultFolder'),
+    start: (opcoes) => chamar('setup:start', opcoes),
+    status: () => chamar('setup:status'),
+    retry: () => chamar('setup:retry'),
+    provideNavidromeLogin: (login) => chamar('setup:provideNavidromeLogin', login),
+    checkPort: () => chamar('setup:checkPort'),
   },
   logs: {
     subscribe: (alvo) => chamar('logs:subscribe', alvo),

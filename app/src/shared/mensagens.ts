@@ -1,6 +1,7 @@
 // Textos da interface em português do Brasil, num só lugar (§6.5 da especificação), prontos para i18n.
 // Vocabulário do README: "lista", "lote", "biblioteca", "faixa", "stack".
 import type { ErroCodigo } from './erros.js';
+import type { TarefaEstado, TarefaSetupId } from './configuracao.js';
 import type { EtapaDetalhe, EtapaEstado, EtapaId, MotivoResumo, OperacaoStack, ResumoStack } from './stack.js';
 import type { ServicoId } from './servicos.js';
 import { servicoPorId } from './servicos.js';
@@ -50,7 +51,7 @@ export const msg = {
     abrirDocker: 'Abrir Docker Desktop',
     baixarDocker: 'Baixar o Docker Desktop',
     comoInstalarWsl: 'Como instalar o WSL 2',
-    escolherPasta: 'Escolher a pasta',
+    abrirAssistente: 'Abrir o assistente',
     abrirConfiguracoes: 'Ver configurações',
     verServicos: 'Ver serviços',
     tentarDeNovo: 'Tentar de novo',
@@ -68,6 +69,7 @@ export const msg = {
     mudarNasConfiguracoes: 'Mudar nas configurações',
     sair: 'Sair',
     abrirPasta: 'Abrir a pasta',
+    abrirYml: 'Abrir o slskd.yml',
   },
 
   inicio: {
@@ -137,9 +139,9 @@ export const msg = {
           };
         case 'sem-projeto':
           return {
-            titulo: 'Escolha a pasta do Soulcrate',
+            titulo: 'Vamos configurar o Soulcrate',
             subtitulo:
-              'O app precisa da pasta onde ficam o docker-compose.yml, o .env e a biblioteca. O assistente de instalação chega em uma próxima versão.',
+              'O assistente cria a pasta, gera o .env e o slskd.yml e liga a stack, sem você abrir nenhum arquivo. Leva poucos minutos.',
           };
         case 'servico-parou':
           return {
@@ -204,9 +206,9 @@ export const msg = {
         case 'config-ok-avisos':
           return `.env e slskd.yml conferidos, com ${ctx.avisos} ${plural(ctx.avisos, 'aviso', 'avisos')}.`;
         case 'config-invalida':
-          return `${ctx.erros} ${plural(ctx.erros, 'problema', 'problemas')} no .env ou no slskd.yml. Veja os detalhes em Configurações.`;
+          return `${ctx.erros} ${plural(ctx.erros, 'problema', 'problemas')} no .env ou no slskd.yml. O assistente mostra o que falta e corrige.`;
         case 'config-sem-projeto':
-          return 'Escolha a pasta do Soulcrate, a que tem o docker-compose.yml.';
+          return 'Ainda não há uma pasta do Soulcrate. O assistente cria a pasta e a configuração.';
         case 'stack-ok':
           return `${ctx.total} contêineres rodando.`;
         case 'stack-desligada':
@@ -226,7 +228,7 @@ export const msg = {
     acao: {
       baixarDocker: 'Baixar o Docker Desktop',
       abrirDockerDesktop: 'Abrir Docker Desktop',
-      escolherPasta: 'Escolher a pasta',
+      abrirAssistente: 'Abrir o assistente',
       abrirConfiguracoes: 'Ver configurações',
       ligar: 'Ligar a stack',
       verServicos: 'Ver serviços',
@@ -286,8 +288,7 @@ export const msg = {
   configuracoes: {
     rotulo: 'Configurações',
     titulo: 'Configurações',
-    subtitulo:
-      'O assistente que cria o .env e o slskd.yml para você chega em uma próxima versão. Por enquanto, o app confere os arquivos que já existem.',
+    subtitulo: 'Pastas, contas e chaves da stack, e as preferências do app.',
     pasta: 'Pasta do Soulcrate',
     pastaOrigem: {
       configurada: 'escolhida por você',
@@ -309,6 +310,254 @@ export const msg = {
     erro: 'Erro',
     aviso: 'Aviso',
     estado: { valida: 'OK', avisos: 'Avisos', invalida: 'Corrigir' },
+    secoes: {
+      grupoStack: 'Stack',
+      grupoApp: 'App',
+      aria: 'Seções',
+      pastas: 'Pastas',
+      soulseek: 'Conta Soulseek',
+      webui: 'Web UI do slskd',
+      rede: 'Rede',
+      avancado: 'Avançado',
+      conferencia: 'Conferência',
+      app: 'Aplicativo',
+    },
+    sempastaTitulo: 'Ainda não há uma pasta do Soulcrate',
+    sempastaCorpo: 'O assistente cria a pasta, gera o .env e o slskd.yml e liga a stack sem você abrir nenhum arquivo.',
+    abrirAssistente: 'Abrir o assistente de configuração',
+    refazerAssistente: 'Refazer pelo assistente',
+    abrirNoExplorer: 'Abrir no Explorer',
+    outraPasta: 'Escolher outra pasta…',
+    carregando: 'Lendo a configuração…',
+    senhaConfigurada: 'Configurada',
+    senha: 'Senha',
+    trocarSenha: 'Trocar senha',
+    gerarNova: 'Gerar nova',
+    gerarNovaChave: 'Gerar nova chave',
+    chaveSoLigada:
+      'Ligue a stack para trocar a chave: o Soulbeet precisa receber a nova API key logo depois de ela mudar.',
+    cancelarTroca: 'Cancelar a troca',
+    senhaNuncaMostrada: 'Por segurança, senhas nunca aparecem nesta tela depois de gravadas.',
+    chaveNoEnvEYml: 'API key no .env e no slskd.yml',
+    chaveProblema: {
+      ok: 'Iguais',
+      ausente: 'Ausente',
+      exemplo: 'De exemplo',
+      diferentes: 'Diferentes',
+    },
+    rede: {
+      abrir: 'Abrir as interfaces para outros aparelhos',
+      abrirDica:
+        'Libera Navidrome, Soulbeet e slskd na rede local (BIND_ADDR=0.0.0.0), para ouvir no celular, por exemplo. Desligado, só este PC acessa.',
+      porta: 'Porta 2234 (Soulseek)',
+      testar: 'Testar',
+      testarDeNovo: 'Testar de novo',
+      testando: 'Testando…',
+      estado: {
+        escutando: 'Escutando neste PC',
+        livre: 'Nada escuta',
+        ocupada: 'Em uso por outro programa',
+        desconhecido: 'Não testada',
+      },
+      explicacao:
+        'Redirecione a porta 2234/TCP do roteador para este PC. O app não consegue confirmar o redirecionamento daqui. Sem ele você ainda baixa, mas alguns usuários não conseguem se conectar a você, e quem não recebe conexões costuma ser despriorizado.',
+      livre:
+        'Nada atende na porta 2234 deste PC, embora a stack esteja no ar. Reinicie a stack; se continuar assim, confira se o Docker consegue publicar a porta.',
+      ocupada:
+        'Outro programa deste PC está usando a porta 2234 e a stack está desligada. Feche-o antes de ligar a stack, ou o slskd não consegue escutar.',
+    },
+    pendente: {
+      titulo: 'Há alterações não gravadas',
+      corpoDesligada: 'Valem na próxima vez que você ligar a stack.',
+      corpoNoAr: 'Valem depois de reiniciar a stack. Um lote em andamento continua rodando durante o reinício.',
+      descartar: 'Descartar',
+      salvar: 'Salvar',
+      aplicar: 'Aplicar e reiniciar',
+      salvando: 'Gravando…',
+      invalida: 'Corrija os campos marcados antes de gravar.',
+    },
+    gravado: {
+      titulo: 'Configuração gravada',
+      backup: (nomes: string) => `Backup: ${nomes}.`,
+      reiniciando: 'Reiniciando a stack para valer as mudanças…',
+    },
+  },
+
+  assistente: {
+    titulo: 'Configuração inicial',
+    sair: 'Sair do assistente',
+    passosAria: 'Passos',
+    barraAria: (n: number, total: number) => `Passo ${n} de ${total}`,
+    escolher: {
+      project: 'Escolha a pasta do Soulcrate',
+      music: 'Escolha a pasta da biblioteca',
+      downloads: 'Escolha a pasta dos downloads',
+      incomplete: 'Escolha a pasta dos downloads incompletos',
+    },
+    passos: [
+      'Pasta do Soulcrate',
+      'Pastas das músicas',
+      'Conta Soulseek',
+      'Web UI do slskd',
+      'Chaves',
+      'Ajustes finos',
+      'Revisar e gravar',
+    ] as readonly string[],
+    rotuloPasso: (n: number, total: number, opcional = false) =>
+      `Passo ${n} de ${total}${opcional ? ' · opcional' : ''}`,
+    voltar: 'Voltar',
+    avancar: 'Avançar',
+    gravar: 'Gravar e ligar a stack',
+    gravando: 'Gravando…',
+    preparando: 'Preparando a pasta…',
+    escolherPasta: 'Escolher…',
+    pasta: {
+      vazia: 'Escolha uma pasta.',
+      naoAbsoluta:
+        'Informe o caminho completo da pasta, começando pelo disco (por exemplo C:\\Users\\você\\Soulcrate).',
+      eArquivo: 'Esse caminho é um arquivo, não uma pasta.',
+      naoExiste: 'Essa pasta não existe.',
+      raizDoDisco: 'Escolha uma pasta dentro do disco, não o disco inteiro.',
+      titulo: 'Onde fica o Soulcrate?',
+      subtitulo: 'É a pasta com a stack, as listas e os relatórios. Os .bat continuam funcionando nela.',
+      nova: 'Criar uma pasta nova',
+      novaDica: 'O app copia os arquivos da stack para cá.',
+      existente: 'Usar uma pasta do Soulcrate que já existe',
+      existenteDica:
+        'Para quem já usa pelo Git e pelos .bat. Nada é copiado; o app só confere e passa a gerenciar a pasta.',
+      campo: 'Pasta',
+      jaExistia: 'Essa pasta já tem o Soulcrate: o app vai usá-la como está, sem copiar nada.',
+      copiados: (n: number) => `${n} arquivos da stack copiados.`,
+    },
+    pastas: {
+      titulo: 'Pastas das músicas',
+      subtitulo: 'Biblioteca e downloads precisam estar no mesmo disco para o beets mover os arquivos sem copiar.',
+      music: 'Biblioteca',
+      musicDica: 'MUSIC_DIR · o caixote final, organizado por gênero e artista',
+      downloads: 'Downloads',
+      downloadsDica: 'DOWNLOADS_DIR · arquivos prontos; o beets esvazia esta pasta',
+      incomplete: 'Incompletos',
+      incompleteDica: 'downloads em andamento',
+      disco: (disco: string, livre: string | null) => (livre ? `Disco ${disco} · ${livre} livres` : `Disco ${disco}`),
+      seraCriada: 'Será criada',
+      mesmoDisco: 'Mesmo disco da biblioteca',
+      outroDisco: 'Disco diferente da biblioteca',
+      gravadoComo: (caminho: string) => `gravado como ${caminho}`,
+      usarSugestao: (caminho: string) => `Usar ${caminho.replace(/\//g, '\\')}`,
+      onedriveTitulo: 'Esta pasta está no OneDrive',
+      discoExterno:
+        'Se a pasta fica em um disco externo, mantenha o disco conectado enquanto a stack estiver no ar: sem ele o Docker não encontra a pasta.',
+    },
+    soulseek: {
+      titulo: 'Sua conta no Soulseek',
+      subtitulo:
+        'Se ainda não tem conta, escolha um nome e uma senha: a conta é criada no primeiro login. O nome precisa ser único na rede.',
+      usuario: 'Usuário',
+      senha: 'Senha',
+      senhaDica: 'Fica só no .env deste PC. O app não mostra esta senha de novo.',
+      senhaMantida: 'Senha já configurada. Deixe em branco para manter.',
+    },
+    webui: {
+      titulo: 'Acesso à interface do slskd',
+      subtitulo: 'Login da tela de transferências em localhost:5030. Não é a conta do Soulseek.',
+      usuario: 'Usuário',
+      senha: 'Senha',
+      gerar: 'Gerar senha',
+      copiar: 'Copiar senha',
+      copiada: 'Copiada',
+      geradaDica:
+        'Anote ou copie esta senha agora: o app não a mostra de novo. O mesmo usuário e senha entram no Navidrome e no Soulbeet.',
+      dicaReuso: 'O mesmo usuário e senha também criam o administrador do Navidrome e o login do Soulbeet.',
+      dicaTrocaDeSenha:
+        'Trocar esta senha muda só o login do slskd. A senha do Navidrome e o login do Soulbeet continuam os de antes; se quiser trocá-los, faça nas próprias interfaces.',
+    },
+    chaves: {
+      titulo: 'Chaves',
+      subtitulo: 'Geradas aqui e gravadas nos dois arquivos ao mesmo tempo. Você não precisa ver nem copiar nada.',
+      soulbeet: 'Chave secreta do Soulbeet',
+      soulbeetOnde: 'SOULBEET_SECRET_KEY · .env',
+      slskd: 'API key do slskd',
+      slskdOnde: 'SLSKD_API_KEY_SOULBEET · .env e slskd.yml, idênticas',
+      seraGerada: 'Será gerada',
+      mantida: 'Mantida',
+      seraTrocada: 'Será trocada',
+      gerarNovas: 'Gerar novas chaves',
+      cancelarNovas: 'Manter as chaves atuais',
+      aviso: 'Chaves novas valem depois de reiniciar a stack; o Soulbeet recebe a nova API key sozinho.',
+    },
+    ajustes: {
+      titulo: 'Ajustes finos',
+      subtitulo: 'Os padrões servem para quase todo mundo.',
+      tz: 'Fuso horário',
+      tzDica: 'Vem do Windows.',
+      puid: 'PUID',
+      pgid: 'PGID',
+      contato: 'Contato para o MusicBrainz',
+      contatoPlaceholder: 'seu@email',
+      contatoDica: 'MUSICBRAINZ_CONTATO · o MusicBrainz pede um contato de quem consulta o catálogo.',
+    },
+    revisao: {
+      titulo: 'Revisar e gravar',
+      subtituloNovo: 'O app cria o .env e o slskd.yml com o que você escolheu.',
+      subtituloExistente: 'O .env e o slskd.yml já existem: o app faz um backup antes de gravar.',
+      pasta: 'Pasta do Soulcrate',
+      biblioteca: 'Biblioteca',
+      downloads: 'Downloads',
+      incompletos: 'Incompletos',
+      contaSoulseek: 'Conta Soulseek',
+      webui: 'Web UI do slskd',
+      chaves: 'Chaves',
+      chavesDescricao: (trocadas: boolean) =>
+        trocadas ? 'novas · iguais nos dois arquivos' : 'geradas · iguais nos dois arquivos',
+      chavesMantidas: 'mantidas · iguais nos dois arquivos',
+      senhaConfigurada: 'senha configurada',
+      criarPastas: 'Pastas que serão criadas',
+      backup: 'Backup',
+      avisos: 'Avisos',
+    },
+    fim: {
+      rotulo: 'Pronto',
+      tituloRodando: 'Configuração gravada. Ligando a stack.',
+      tituloOk: 'Tudo pronto. A stack está no ar.',
+      tituloAtencao: 'Configuração gravada. Falta terminar um passo.',
+      subtitulo: 'O app agora termina sozinho o que antes era feito à mão nas interfaces web.',
+      irParaInicio: 'Ir para o Início',
+      tentarDeNovo: 'Tentar de novo',
+      loginTitulo: 'Esse Navidrome já tem um administrador',
+      loginCorpo:
+        'Informe o usuário e a senha dele. Eles servem também para o login do Soulbeet e não ficam guardados.',
+      loginUsuario: 'Usuário do Navidrome',
+      loginSenha: 'Senha do Navidrome',
+      loginContinuar: 'Continuar',
+      loginErrado: 'Esse usuário e senha não entraram no Navidrome.',
+      construindo: 'O primeiro build leva de 5 a 10 minutos.',
+      /** o nome da tarefa fala no passado só quando ela terminou (no protótipo: "Stack no ar", "…criado") */
+      tarefa(id: TarefaSetupId, estado: TarefaEstado, detalhe: string | null): string {
+        switch (id) {
+          case 'gravar':
+            return '.env e slskd/slskd.yml gravados';
+          case 'stack':
+            return estado === 'feito' ? 'Stack no ar' : 'Ligar a stack';
+          case 'navidrome':
+            return estado === 'feito' && detalhe === null
+              ? 'Administrador do Navidrome criado'
+              : 'Administrador do Navidrome';
+          case 'soulbeet':
+            return 'Soulbeet: URL do slskd, API key e pasta /music';
+          case 'porta':
+            return 'Conferir a porta 2234';
+        }
+      },
+      tarefasAria: 'Tarefas',
+      estado: {
+        feito: 'Feito',
+        agora: 'Agora',
+        depois: 'Depois',
+        erro: 'Erro',
+        aviso: 'Atenção',
+        'precisa-login': 'Precisa de login',
+      },
+    },
   },
 
   emBreve: {
@@ -357,6 +606,10 @@ export const msg = {
       'compose.ausente': 'Erro · ambiente',
       'projeto.ausente': 'Erro · configuração',
       'config.invalida': 'Erro · configuração',
+      'config.nao-gravou': 'Erro · configuração',
+      'config.yml-invalido': 'Erro · configuração',
+      'pasta.nao-instalou': 'Erro · configuração',
+      'setup.falhou': 'Erro · configuração',
       'porta.em-uso': 'Erro · rede',
       'servico.inacessivel': 'Erro · serviço',
       'operacao.falhou': 'Erro · stack',
@@ -393,6 +646,26 @@ export const msg = {
       titulo: 'A configuração tem problemas',
       mensagem: (n: number) =>
         `O .env ou o slskd.yml ${plural(n, 'tem 1 problema', `têm ${n} problemas`)} que impedem de ligar a stack. Nada foi iniciado.`,
+    },
+    configNaoGravou: {
+      titulo: 'Não consegui gravar a configuração',
+      mensagem:
+        'Nada foi alterado. Veja se a pasta do Soulcrate permite gravação e se nenhum outro programa está com o .env aberto, e tente de novo.',
+    },
+    configYmlInvalido: {
+      titulo: 'O slskd.yml tem um erro de sintaxe',
+      mensagem:
+        'Não consegui ler o slskd/slskd.yml, então não mexi em nenhum arquivo. Corrija o arquivo (ou apague-o para o assistente criar um novo) e tente de novo.',
+    },
+    pastaNaoInstalou: {
+      titulo: 'Não consegui preparar a pasta do Soulcrate',
+      mensagem:
+        'Os arquivos da stack não foram copiados por inteiro. Escolha outra pasta ou confira a permissão de gravação.',
+    },
+    setupFalhou: {
+      titulo: (passo: string) => `Não consegui terminar ${passo}`,
+      mensagem:
+        'A configuração foi gravada e a stack está no ar, mas este passo não terminou. Dá para tentar de novo agora, ou depois pelas Configurações.',
     },
     portaEmUso: {
       titulo: (porta: string) => `A porta ${porta} já está em uso`,

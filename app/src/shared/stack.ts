@@ -194,7 +194,7 @@ export type EtapaEstado = 'ok' | 'erro' | 'aguardando' | 'trabalhando' | 'deslig
 
 /** Ação que o cartão oferece; o renderer liga cada uma a uma chamada de IPC ou a uma rota. */
 export type EtapaAcao =
-  'baixarDocker' | 'abrirDockerDesktop' | 'escolherPasta' | 'abrirConfiguracoes' | 'ligar' | 'verServicos';
+  'baixarDocker' | 'abrirDockerDesktop' | 'abrirAssistente' | 'abrirConfiguracoes' | 'ligar' | 'verServicos';
 
 /** Chave do texto de detalhe do cartão (em mensagens.ts). */
 export type EtapaDetalhe =
@@ -268,7 +268,7 @@ export function derivarEtapas(status: StackStatus): Etapa[] {
 
   let e3: Etapa;
   if (status.configuracao.estado === 'sem-projeto') {
-    e3 = { id: 'configuracao', numero: 3, estado: 'erro', detalhe: 'config-sem-projeto', acao: 'escolherPasta' };
+    e3 = { id: 'configuracao', numero: 3, estado: 'erro', detalhe: 'config-sem-projeto', acao: 'abrirAssistente' };
   } else if (status.configuracao.estado === 'valida') {
     const avisos = status.configuracao.avisos > 0;
     e3 = {
@@ -279,7 +279,7 @@ export function derivarEtapas(status: StackStatus): Etapa[] {
       acao: avisos ? 'abrirConfiguracoes' : null,
     };
   } else {
-    e3 = { id: 'configuracao', numero: 3, estado: 'erro', detalhe: 'config-invalida', acao: 'abrirConfiguracoes' };
+    e3 = { id: 'configuracao', numero: 3, estado: 'erro', detalhe: 'config-invalida', acao: 'abrirAssistente' };
   }
 
   let e4: Etapa;
