@@ -25,6 +25,8 @@ lotes/
 *.log
 diagnostico*.txt
 diagnostico*.bat
+# fixtures reais do script (o diagnostico-exemplo.txt cai na regra acima)
+!app/tests/fixtures/**
 *.bak
 
 # ===================== Sistema / editores =============================
