@@ -15,10 +15,12 @@ import { iniciarLog, pastaDeLogs } from './log';
 import { criarMenu } from './menu';
 import { ExecutorReal, LancadorReal } from './processos';
 import { AppSettingsService } from './services/app-settings';
+import { BibliotecaService } from './services/biblioteca-service';
 import { ChecksService } from './services/checks-service';
 import { ConfigService } from './services/config-service';
 import { validarConfiguracao } from './services/config-validacao';
 import { DockerService } from './services/docker-service';
+import { escanearDownloads } from './services/downloads-parados';
 import { HealthService, INTERVALO_OCULTO_MS, INTERVALO_VISIVEL_MS } from './services/health-service';
 import { ListasService } from './services/listas-service';
 import { LogsService } from './services/logs-service';
@@ -28,6 +30,7 @@ import { PastaService } from './services/pasta-service';
 import { RelatoriosService } from './services/relatorios-service';
 import { lerVersaoDaStack, resolverProjeto } from './services/project-service';
 import { portaAceitaConexao, SetupService } from './services/setup-service';
+import { SlskdService } from './services/slskd-service';
 import { WebUiService } from './services/webui-service';
 import { servicoDe, servicoSaudavel } from '@shared/stack';
 import { urlDoServico } from '@shared/servicos';
@@ -234,6 +237,20 @@ async function principal(): Promise<void> {
     aoErro,
     slskdUrl: !app.isPackaged ? (process.env.SOULCRATE_SLSKD_URL ?? null) : null,
   });
+  /** `music/` e `downloads/` no disco do PC, como o `.env` as define (relativas valem a partir da pasta do Soulcrate) */
+  const pastasDoDisco = (dir: string): { musica: string; downloads: string } => {
+    let pastas = { music: '', downloads: '' };
+    try {
+      const lida = config.ler(dir).pastas;
+      pastas = { music: lida.music, downloads: lida.downloads };
+    } catch {
+      /* sem .env legível: vale o padrão do modelo (./music, ./downloads) */
+    }
+    return {
+      musica: resolve(dir, pastas.music || './music'),
+      downloads: resolve(dir, pastas.downloads || './downloads'),
+    };
+  };
   // histórico e diagnóstico (Fase 4): relatórios de lotes/. Apagar manda para a Lixeira; os testes ponta a ponta
   // trocam a Lixeira por apagar de vez (a Lixeira de quem testa não é lugar de arquivo temporário)
   const lixeiraDuble = !app.isPackaged && process.env.SOULCRATE_DUBLE_LIXEIRA === '1';
@@ -242,21 +259,32 @@ async function principal(): Promise<void> {
     agora: Date.now,
     processoVivo: processoVivoReal,
     pastas: (dir) => {
-      let pastas = { music: '', downloads: '' };
-      try {
-        const lida = config.ler(dir).pastas;
-        pastas = { music: lida.music, downloads: lida.downloads };
-      } catch {
-        /* sem .env legível: vale o padrão do modelo (./music, ./downloads) */
-      }
-      return {
-        musica: resolve(dir, pastas.music || './music'),
-        downloads: resolve(dir, pastas.downloads || './downloads'),
-      };
+      const p = pastasDoDisco(dir);
+      return { musica: p.musica, downloads: p.downloads };
     },
     listas,
     descartar: (caminho) => (lixeiraDuble ? rm(caminho, { force: true }) : shell.trashItem(caminho)),
     aoErro,
+  });
+  // biblioteca e manutenção (Fase 5): o beets pelo contêiner do Soulbeet e o compartilhamento pela API do slskd
+  const biblioteca = new BibliotecaService({
+    docker,
+    health,
+    projeto,
+    pastas: pastasDoDisco,
+    loteRodando: async () => (await lote.ativas()).some((r) => !r.terminou),
+    escanearDownloads,
+    emitir,
+    novoId: randomUUID,
+    novoToken: randomUUID,
+    agora: Date.now,
+    aoErro,
+  });
+  const slskd = new SlskdService({
+    projeto,
+    lerArquivo,
+    urlBase: () =>
+      !app.isPackaged ? (process.env.SOULCRATE_SLSKD_URL ?? urlDoServico('slskd')) : urlDoServico('slskd'),
   });
   /** "Abrir com" e a linha de comando: um .txt/.csv vira uma lista na pasta do Soulcrate e abre no editor (§6.2) */
   const abrirListaDoArgv = (argv: readonly string[]): void => {
@@ -285,10 +313,13 @@ async function principal(): Promise<void> {
     listas,
     lote,
     relatorios,
+    biblioteca,
+    slskd,
     pastaPadrao,
     projeto,
     validarConfig,
     existeArquivo,
+    pastasDoDisco,
     versaoDaStack: () => lerVersaoDaStack(projeto().dir, lerArquivo),
     versaoDoApp: app.getVersion(),
     emitir,
@@ -380,6 +411,7 @@ async function principal(): Promise<void> {
   app.on('will-quit', () => {
     health.parar();
     operacoes.cancelar();
+    biblioteca.cancelar();
     logs.cancelarTodas();
     webui.encerrar();
     lote.encerrar();

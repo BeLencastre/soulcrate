@@ -1,0 +1,2 @@
+/music/[1;31mHard [39;49;00mTechno/Azyr/Power (Extended Mix).wav 
+  -> /music/Techno/Azyr/Power (Extended Mix).wav

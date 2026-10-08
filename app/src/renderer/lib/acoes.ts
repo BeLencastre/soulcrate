@@ -40,6 +40,8 @@ export function useAcoes() {
           return void navegar('/lista/execucao');
         case 'abrirPastaLotes':
           return seguro(api.batch.openFolder());
+        case 'ligarStack':
+          return seguro(api.stack.up());
         case 'copiarDetalhes':
           return seguro(api.app.copyText(textoParaCopiar(erro)));
         case 'abrirLog':

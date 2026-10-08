@@ -562,7 +562,7 @@ soulcrate/                      # repositório (código)
 │   └── beets-plugins/keepmix.py
 ├── docs/                       # especificação do app, protocolo do lote, regras da configuração
 ├── tests/                      # testes (Pester) e o slskd falso usado por eles
-└── app/                        # app desktop (Electron), em construção: Fases 0 a 4 prontas (veja app/README.md)
+└── app/                        # app desktop (Electron), em construção: Fases 0 a 5 prontas (veja app/README.md)
 
 %USERPROFILE%\Soulcrate/        # instalação (configuração, segredos e bancos)
 ├── .env                        # inclui DOWNLOADS_DIR, INCOMPLETE_DIR e MUSIC_DIR
@@ -838,6 +838,9 @@ Há também opções para programas que controlam o lote, como o app: `-Eventos`
 
 
 ## Manutenção da biblioteca
+
+> [!TIP]
+> O app desktop faz isto sem linha de comando, na tela **Biblioteca**: listar e buscar, remover (com a lista do que será apagado e confirmação), sincronizar com o disco, reorganizar pastas, recalcular tom e BPM e importar o que sobrou em `downloads/`. Veja [`app/README.md`](app/README.md).
 
 Os comandos do beets rodam dentro do contêiner. Abra um terminal na pasta do projeto e use este prefixo (chamado de `BEET` abaixo):
 

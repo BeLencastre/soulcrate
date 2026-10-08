@@ -26,7 +26,7 @@ export function CartaoErro({
       <Rotulo className={inesperado ? '' : '!text-[#ff8a8a]'}>{msg.erro.categoria[erro.codigo]}</Rotulo>
       <h2 className="m-0 text-lg font-extrabold">{erro.titulo}</h2>
       <p className="m-0 text-sm leading-normal text-texto-claro">{erro.mensagem}</p>
-      {erro.detalhes && erro.codigo === 'config.invalida' ? (
+      {erro.detalhes && (erro.codigo === 'config.invalida' || erro.codigo === 'biblioteca.falhou') ? (
         <pre className="m-0 max-h-40 overflow-auto rounded-md bg-log p-3 font-mono text-xs leading-relaxed whitespace-pre-wrap text-texto-claro">
           {erro.detalhes}
         </pre>

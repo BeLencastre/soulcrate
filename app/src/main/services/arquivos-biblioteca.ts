@@ -6,7 +6,7 @@ import { readdir } from 'node:fs/promises';
 import { basename, extname, join, relative, sep } from 'node:path';
 import { normalizar } from '@shared/texto';
 
-const EXTENSOES = new Set(['.flac', '.mp3', '.wav', '.aif', '.aiff', '.m4a', '.ogg', '.opus', '.wma']);
+export const EXTENSOES_DE_AUDIO = new Set(['.flac', '.mp3', '.wav', '.aif', '.aiff', '.m4a', '.ogg', '.opus', '.wma']);
 const PROFUNDIDADE_MAXIMA = 8;
 export const LIMITE_DE_ARQUIVOS = 300_000;
 
@@ -37,7 +37,7 @@ export async function indexarBiblioteca(raiz: string): Promise<IndiceBiblioteca>
         if (nivel < PROFUNDIDADE_MAXIMA) pendentes.push({ pasta: join(pasta, it.name), nivel: nivel + 1 });
         continue;
       }
-      if (!it.isFile() || !EXTENSOES.has(extname(it.name).toLowerCase())) continue;
+      if (!it.isFile() || !EXTENSOES_DE_AUDIO.has(extname(it.name).toLowerCase())) continue;
       if (indice.total >= LIMITE_DE_ARQUIVOS) {
         indice.parcial = true;
         return indice;

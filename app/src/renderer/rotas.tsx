@@ -1,9 +1,8 @@
 import { createHashRouter } from 'react-router';
-import { msg } from '@shared/mensagens';
 import { App, Pagina } from './App';
 import { Assistente } from './paginas/Assistente';
+import { Biblioteca } from './paginas/Biblioteca';
 import { Configuracoes } from './paginas/Configuracoes';
-import { EmBreve } from './paginas/EmBreve';
 import { Inicio } from './paginas/Inicio';
 import { DetalheDaExecucao } from './paginas/historico/Detalhe';
 import { DiagnosticoDasFaltas } from './paginas/historico/Diagnostico';
@@ -80,7 +79,7 @@ export const roteador = createHashRouter([
         path: 'biblioteca',
         element: (
           <Pagina>
-            <EmBreve nome={msg.nav.biblioteca} />
+            <Biblioteca />
           </Pagina>
         ),
       },
