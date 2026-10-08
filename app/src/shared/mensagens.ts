@@ -890,6 +890,353 @@ export const msg = {
     },
   },
 
+  historico: {
+    rotulo: 'Histórico',
+    titulo: 'Execuções',
+    subtitulo: 'Tudo o que está em lotes/, inclusive o que foi rodado pelos .bat.',
+    apagarAntigas: 'Apagar execuções antigas…',
+    abrirPasta: 'Abrir pasta lotes',
+    filtros: { todas: 'Todas', faltas: 'Com faixas que não vieram' },
+    tabela: 'Execuções',
+    colunas: {
+      quando: 'Quando',
+      lista: 'Lista',
+      duracao: 'Duração',
+      resultado: 'Resultado',
+      fim: 'Fim',
+      acoes: 'Ações',
+    },
+    hoje: 'Hoje',
+    ontem: 'Ontem',
+    semLista: 'lista não registrada',
+    semDuracao: '—',
+    fonte: {
+      eventos: 'eventos',
+      aoVivo: 'eventos ao vivo',
+      resultado: 'antiga · lida do resultado-*.txt',
+      log: 'antiga · só o log da tela',
+    },
+    resumo: {
+      completo: (c: { ok: number; naoVieram: number; puladas: number; atencao: number }) =>
+        [
+          `${c.ok} na biblioteca`,
+          `${c.naoVieram} não ${plural(c.naoVieram, 'veio', 'vieram')}`,
+          `${c.puladas} ${plural(c.puladas, 'pulada', 'puladas')}`,
+          ...(c.atencao > 0 ? [`${c.atencao} com o beets falhando`] : []),
+        ].join(' · '),
+      parou: (ok: number, naoIniciadas: number) =>
+        `${ok} na biblioteca · ${naoIniciadas} ${plural(naoIniciadas, 'não iniciada', 'não iniciadas')}`,
+      rodando: (feitas: number, total: number) => `${feitas}/${total} concluídas`,
+      semFaixas: 'nenhuma faixa registrada',
+    },
+    verFaltas: 'Ver faltas',
+    abrir: 'Abrir',
+    abrirNoPainel: 'Ver ao vivo',
+    vazio: {
+      titulo: 'Nenhuma execução ainda',
+      corpo: 'Quando você rodar uma lista, pelo app ou pelo .bat, ela aparece aqui com o resultado de cada faixa.',
+      irParaLista: 'Baixar uma lista',
+    },
+    filtroVazio: 'Nenhuma execução com faixas que não vieram.',
+    semRelatorio:
+      'Esta execução não gravou relatório: só o log da tela sobrou. Provavelmente foi interrompida ou deu erro antes do fim.',
+    erroCarregar: 'Não consegui ler a pasta lotes',
+    carregando: 'Lendo a pasta lotes…',
+    avisoEmAndamento: 'Esta execução ainda está rodando. Os números abaixo acompanham o lote.',
+    verAoVivo: 'Ver painel ao vivo',
+
+    detalhe: {
+      voltar: 'Histórico',
+      rotulo: (id: string, quando: string, duracao: string | null) =>
+        `Execução ${id} · ${quando}${duracao ? ` · ${duracao}` : ''}`,
+      listaDesconhecida: 'lista não registrada',
+      reprocessar: 'Reprocessar a lista do zero…',
+      tentarDeNovo: (n: number) => `Tentar de novo ${n === 1 ? 'a faixa' : `as ${n}`}`,
+      cartoes: {
+        naBiblioteca: 'Na biblioteca',
+        naoEncontradas: 'Não encontradas',
+        falharam: 'Falharam',
+        paraConferir: 'Para conferir',
+        naoTerminadas: 'Não terminadas',
+      },
+      filtros: {
+        todas: 'Todas',
+        bib: 'Na biblioteca',
+        nao: 'Não vieram',
+        conf: 'Para conferir',
+        inc: 'Não terminadas',
+      },
+      tabela: 'Faixas da execução',
+      tabelaVazia: 'Nenhuma faixa neste filtro.',
+      semFaixas:
+        'Esta execução não registrou nenhuma faixa. Se terminou com erro, a explicação está no cartão acima e no log.',
+      colunas: { status: 'Status', faixa: 'Faixa', arquivo: 'Arquivo na biblioteca', acoes: 'Ações' },
+      mostrarNoExplorer: 'Mostrar no Explorer',
+      mostrarNoExplorerDe: (linha: string) => `Mostrar no Explorer: ${linha}`,
+      porQue: 'Por quê?',
+      porQueDe: (linha: string) => `Por que não veio: ${linha}`,
+      emDownloads: 'ainda em downloads/ (não organizada)',
+      arquivoNaoAchado: 'não achei em music/',
+      arquivoNaoAchadoDica:
+        'O beets move e renomeia o arquivo; o app o procura em music/ pelo título. Se você mudou as tags ou apagou o arquivo, ele não aparece.',
+      relatorios: 'Relatórios em lotes/',
+      relatoriosVazio: 'Nenhum relatório desta execução está em lotes/.',
+      abrirArquivo: (nome: string) => `Abrir ${nome}`,
+      opcoesUsadas: 'Opções usadas',
+      opcoesPadrao: 'padrão do script',
+      opcoesNaoRegistradas: 'não registradas (execução antiga, sem eventos)',
+      semDiagnostico: 'Sem diagnóstico',
+      naoAbriu: 'Não consegui abrir o arquivo.',
+      naoMostrou: 'Não achei o arquivo no disco.',
+      naoExiste: {
+        titulo: 'Execução não encontrada',
+        corpo:
+          'Os arquivos desta execução não estão mais em lotes/. Ela pode ter sido apagada ou a pasta do Soulcrate mudou.',
+      },
+    },
+
+    arquivos: {
+      resultado: 'Status e caminho de cada faixa',
+      'nao-baixadas': (n: number | null) =>
+        n === null ? 'As linhas que faltaram' : `${n === 1 ? 'A linha que faltou' : `As ${n} linhas que faltaram`}`,
+      diagnostico: 'Por que não vieram',
+      catalogo: 'Conferência no MusicBrainz',
+      beets: 'Saída do beets',
+      log: 'Tudo o que apareceu na tela',
+    },
+
+    reprocessar: {
+      titulo: 'Reprocessar a lista do zero?',
+      corpo: (lista: string, feitas: number) =>
+        `O app vai apagar a memória de ${lista}${feitas > 0 ? ` (${feitas} ${plural(feitas, 'faixa registrada', 'faixas registradas')})` : ''}. Na próxima execução, nada será pulado por já ter sido feito: o lote busca tudo de novo. A biblioteca e os relatórios não mudam.`,
+      aviso: 'O arquivo vai para a Lixeira; dá para restaurá-lo de lá.',
+      semMemoria: 'Esta lista não tem memória a apagar: ela nunca rodou, ou já foi reprocessada.',
+      rodando: 'Esta lista está rodando agora. Espere o lote terminar.',
+      confirmar: 'Reprocessar do zero',
+      cancelar: 'Cancelar',
+      pronto: (lista: string) => `A memória de ${lista} foi para a Lixeira. A próxima execução começa do zero.`,
+      erro: 'Não consegui apagar a memória da lista',
+    },
+
+    limpar: {
+      titulo: 'Apagar execuções antigas',
+      corpo:
+        'Os relatórios e o log de cada execução vão para a Lixeira. A memória das listas (o que já foi feito) e a biblioteca não mudam. Execuções em andamento ficam.',
+      criterio: 'O que apagar',
+      opcoes: {
+        dias30: 'Mais antigas que 30 dias',
+        dias90: 'Mais antigas que 90 dias',
+        dias180: 'Mais antigas que 6 meses',
+        manter10: 'Tudo, menos as 10 mais recentes',
+        manter30: 'Tudo, menos as 30 mais recentes',
+      },
+      previa: (execucoes: number, arquivos: number, tamanho: string) =>
+        `${execucoes} ${plural(execucoes, 'execução', 'execuções')} · ${arquivos} ${plural(arquivos, 'arquivo', 'arquivos')} · ${tamanho}`,
+      nada: 'Nenhuma execução se encaixa neste critério.',
+      calculando: 'Conferindo…',
+      confirmar: 'Mandar para a Lixeira',
+      cancelar: 'Cancelar',
+      apagando: 'Apagando…',
+      pronto: (execucoes: number) =>
+        `${execucoes} ${plural(execucoes, 'execução foi para a Lixeira', 'execuções foram para a Lixeira')}.`,
+      falhas: (n: number) =>
+        `${n} ${plural(n, 'arquivo não pôde ser apagado', 'arquivos não puderam ser apagados')} (talvez abertos em outro programa).`,
+      erro: 'Não consegui apagar',
+    },
+
+    diagnostico: {
+      voltar: (lista: string, quando: string) => `${lista} · ${quando}`,
+      rotulo: 'Diagnóstico',
+      titulo: (n: number) => (n === 1 ? '1 faixa não veio' : `${n} faixas não vieram`),
+      tituloNenhuma: 'Nenhuma faixa ficou de fora',
+      subtitulo: 'Para cada uma: o que foi encontrado, por que foi recusado e o que fazer.',
+      semFaltas: {
+        titulo: 'Nada para diagnosticar',
+        corpo: 'Todas as faixas desta execução vieram, foram puladas ou ainda estão em andamento.',
+        voltar: 'Voltar à execução',
+      },
+      nav: 'Faixas',
+      corrigida: 'Corrigida',
+      musicbrainz: (r: string) => `MusicBrainz: ${r}`,
+      linha: (n: number, lista: string) => `linha ${n} de ${lista}`,
+      buscas: (b: string) => `buscas: ${b}`,
+      buscaArtista: (a: string) => `[artista] ${a}`,
+      semBuscas: 'buscas: nenhuma registrada',
+      talvezSeja: 'Talvez seja',
+      cliquePara: 'Clique para corrigir a linha na lista.',
+      doCatalogo: 'Títulos do catálogo do artista também servem: clique em um deles abaixo.',
+      corrigindo: 'Corrigindo…',
+      corrigidaAviso: 'entra no próximo "tentar de novo"',
+      listaAtualizada: (lista: string, n: number) => `${lista} também foi atualizada (linha ${n}).`,
+      listaNaoAtualizada: {
+        'sem-lista':
+          'A lista desta execução não está mais na pasta do Soulcrate: só o "tentar de novo" leva a correção.',
+        csv: 'A lista é um CSV, que o app só lê: só o "tentar de novo" leva a correção.',
+        'nao-achou':
+          'Não achei esta linha na lista (ela mudou desde a execução): só o "tentar de novo" leva a correção.',
+        editando: 'A lista está aberta no editor com alterações não salvas: só o "tentar de novo" leva a correção.',
+        generico: 'Só o "tentar de novo" leva a correção: a lista original não foi mexida.',
+      },
+      desfazer: 'Desfazer',
+      erroCorrigir: 'Não consegui corrigir a linha',
+      desfazerSemLista:
+        'A correção foi esquecida, mas a linha na lista já não está como o app a deixou e não foi mexida.',
+      porQueRecusada: 'Por que foi recusada · o que fazer',
+      semMotivos: {
+        rotulo: 'Sem motivos registrados',
+        acao: 'Esta execução não guardou os motivos desta faixa. Veja o diagnostico-*.txt ou o log da execução.',
+      },
+      maisParecidos: 'Arquivos mais parecidos',
+      tentativasFalhas: 'Tentativas que falharam',
+      semArquivos: 'Nenhum arquivo com o título ou o artista apareceu.',
+      semTentativas: 'Nenhuma tentativa de download foi registrada.',
+      catalogo: (artista: string) => `Catálogo de ${artista} no Soulseek`,
+      catalogoVazio: 'A busca só pelo artista não achou nenhuma faixa dele.',
+      catalogoNaoBuscado: 'O catálogo do artista não foi consultado nesta execução.',
+      usuarios: (n: number) => `${n} ${plural(n, 'usuário', 'usuários')}`,
+      usarTitulo: (t: string) => `Usar o título ${t}`,
+      mostrarTodos: (n: number) => `Mostrar os ${n}`,
+      mostrarMenos: 'Mostrar menos',
+      opcoesCatalogo: 'Catálogo',
+      rodape: {
+        titulo: (n: number) => `Tentar de novo ${n === 1 ? 'a faixa' : `as ${n}`}`,
+        antes: 'Gera',
+        depois: 'com as correções e abre o lote com as opções sugeridas pelos motivos:',
+        opcoesPadrao: 'as opções padrão do script',
+        revisar: 'Revisar e tentar de novo',
+        gerando: 'Gerando a lista…',
+        erro: 'Não consegui gerar a lista',
+        retentarAviso: 'Esta lista já rodou: o -Retentar tenta de novo o que falhou.',
+      },
+      abrirSoulbeet: 'Abrir o Soulbeet',
+      receitaUsuariosLentos: 'Receita: usuários lentos',
+      selecionar: (linha: string) => `Ver o diagnóstico de ${linha}`,
+    },
+
+    mb: {
+      OK: 'OK',
+      CORRIGIDO: 'Título corrigido',
+      'NAO EXISTE': 'NÃO EXISTE',
+      'NAO CONFIRMADO': 'NÃO CONFIRMADO',
+      'SEM DADOS': 'SEM DADOS',
+      INDISPONIVEL: 'INDISPONÍVEL',
+    } as Record<string, string>,
+
+    via: {
+      buscaArtista: 'veio da busca pelo artista',
+      tituloAproximado: (titulo: string) => `título aproximado: "${titulo}" · confira`,
+      tituloOriginal: 'usou o título original da lista (a correção do catálogo não achou)',
+      beetsFalhou: 'baixada, mas o beets falhou: importe depois (BEET import) ou rode de novo',
+    },
+
+    resumoDaFalta: {
+      tituloErrado: 'Título provavelmente errado',
+      soFormato: 'Só existe em formato não aceito',
+      usuarios: 'Usuários não entregaram a tempo',
+      ninguemTem: 'Ninguém compartilha',
+      semCompativel: 'Respostas sem arquivo compatível',
+      erroInterno: 'Erro ao processar a busca',
+      generico: 'Veja o diagnóstico',
+    },
+
+    motivos: {
+      wav: {
+        rotulo: (ext: string) => `Formato ${ext.toUpperCase()}`,
+        acao: 'Só existe em WAV ou AIFF, que o lote só aceita com -AceitarWav. Rode de novo com essa opção.',
+      },
+      mp3Menor: {
+        rotulo: (detalhe: string) => `MP3 ${detalhe}`,
+        acao: 'Só existe em MP3 abaixo de 320 kbps, que o lote só aceita com -AceitarMp3Menor. Rode de novo com essa opção.',
+      },
+      mp3Baixo: {
+        rotulo: (detalhe: string) => `MP3 ${detalhe}`,
+        acao: 'Só existe em qualidade baixa (menos de 256 kbps). Compre a faixa ou procure outra versão.',
+      },
+      formato: {
+        rotulo: (ext: string) => `Formato ${ext}`,
+        acao: 'Só existe nesse formato, que o lote não aceita. Compre a faixa ou baixe pelo Soulbeet, escolhendo o arquivo na mão.',
+      },
+      titulo: {
+        rotulo: 'Título diferente',
+        acaoComSugestao:
+          'O título da linha provavelmente está errado. Escolha um dos títulos sugeridos acima ou do catálogo do artista.',
+        acao: 'O título da linha provavelmente está errado. Confira a grafia ou escolha um dos títulos do catálogo do artista.',
+      },
+      outroArtista: {
+        rotulo: (nome: string) => (nome ? `Outro artista no nome: ${nome}` : 'Outro artista no nome'),
+        acao: 'O arquivo é de outro artista, numa pasta com o nome do seu. A recusa estava certa.',
+      },
+      tituloComArtista: {
+        rotulo: 'Título só aparece junto do nome do artista',
+        acao: 'O título é uma palavra que também aparece no nome dos artistas (ex.: "X"). A recusa estava certa.',
+      },
+      palavraExtra: {
+        rotulo: (palavra: string) => (palavra ? `Palavra a mais no título: ${palavra}` : 'Palavra a mais no título'),
+        acao: 'O arquivo tem o título da linha mais alguma palavra. Se o título completo é outro, corrija a linha ou rode com -TituloAproximado. Se for outra faixa (como "Northern Power"), a recusa estava certa.',
+      },
+      artista: {
+        rotulo: 'Artista não aparece',
+        acao: 'Troque o artista principal na linha (ex.: pelo outro colaborador).',
+      },
+      mix: { rotulo: 'Mix diferente', acao: 'Confira o nome exato do remix.' },
+      versao: {
+        rotulo: (v: string) => (v ? `Outra versão (${v})` : 'Outra versão'),
+        acao: (v: string) =>
+          v
+            ? `Só existe a versão "${v}". Se servir, escreva-a entre parênteses na linha (ex.: "(... ${v})").`
+            : 'Só existe outra versão. Se servir, escreva o nome dela entre parênteses na linha.',
+      },
+      bloqueado: {
+        rotulo: 'Arquivo bloqueado pelo usuário',
+        acao: 'O dono não libera o download deste arquivo. Tente outro dia ou procure outra versão.',
+      },
+      curto: {
+        rotulo: 'Arquivo curto demais (prévia)',
+        acao: 'É só uma prévia de menos de 90 segundos. A recusa estava certa.',
+      },
+      ilegivel: {
+        rotulo: 'Nome de arquivo ilegível',
+        acao: 'O nome do arquivo não pôde ser lido e foi ignorado. Nada a fazer.',
+      },
+      semRespostas: {
+        rotulo: '0 respostas',
+        acao: 'Ninguém compartilha nada desse artista no momento. Confira a grafia do artista, tente outro dia ou compre a faixa.',
+      },
+      semCompativel: {
+        rotulo: (n: number) => `${n} ${plural(n, 'resposta', 'respostas')}, nenhuma compatível`,
+        acao: 'Havia respostas, mas nenhum arquivo servia. Confira o título e o artista da linha.',
+      },
+      fila: {
+        rotulo: 'Fila longa demais',
+        acao: 'Havia candidatos, mas ficaram na fila do usuário por mais tempo que o limite. Tente de novo dando mais tempo à fila e à transferência.',
+      },
+      tempo: {
+        rotulo: 'Transferência demorou demais',
+        acao: 'Havia candidatos, mas a transferência passou do tempo máximo. Tente de novo dando mais tempo à fila e à transferência.',
+      },
+      erroUsuario: {
+        rotulo: (estado: string) => (estado ? `A transferência falhou (${estado})` : 'A transferência falhou'),
+        acao: 'O usuário ficou offline, recusou o pedido ou a transferência deu erro. Tente de novo mais tarde: o app tenta outro usuário.',
+      },
+      sumiu: {
+        rotulo: 'Transferência sumiu da fila',
+        acao: 'O slskd perdeu a transferência. Tente de novo.',
+      },
+      naoEnfileirou: {
+        rotulo: 'Não consegui enfileirar o download',
+        acao: 'O slskd recusou o pedido. Confira se ele está saudável em Serviços e tente de novo.',
+      },
+      erroInterno: {
+        rotulo: 'Erro ao processar a busca',
+        acao: 'Falha interna do script. Abra o log desta execução; se repetir, copie os detalhes e abra um problema.',
+      },
+      desconhecido: {
+        rotulo: (bruto: string) => bruto,
+        acao: 'Motivo que o app ainda não conhece. Veja o arquivo mais parecido abaixo.',
+      },
+    },
+  },
+
   emBreve: {
     rotulo: 'Em breve',
     titulo: 'Esta tela chega em uma próxima versão',

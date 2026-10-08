@@ -1,6 +1,7 @@
 // Validação do que o renderer envia ao main nos canais da Fase 2: o renderer não é confiável (§6.1), então cada
 // entrada é conferida campo a campo, com tipo e tamanho, antes de chegar aos serviços.
 import type { ConfigEntrada, EntradaPasta, LoginNavidrome, OpcoesSetup, PastasConfig } from '@shared/configuracao';
+import type { ArquivoRelatorio, CriterioLimpeza } from '@shared/historico';
 import type { FinalidadePasta } from '@shared/ipc';
 import {
   ehIdDeExecucao,
@@ -130,4 +131,50 @@ export function exigirArquivoExecucao(valor: unknown): ArquivoExecucao {
     return valor;
   }
   throw new Error('Arquivo da execução desconhecido.');
+}
+
+// ---------------------------------------------------------------- Fase 4: histórico e diagnóstico
+
+export function exigirArquivoRelatorio(valor: unknown): ArquivoRelatorio {
+  if (valor === 'beets') return valor;
+  return exigirArquivoExecucao(valor);
+}
+
+/** A chave de uma faixa é a linha normalizada do script: texto curto, sem caracteres de controle. */
+export function exigirChaveDeFaixa(valor: unknown): string {
+  // eslint-disable-next-line no-control-regex -- caracteres de controle não existem numa chave
+  if (typeof valor !== 'string' || valor.length === 0 || valor.length > 400 || /[\u0000-\u001f]/.test(valor)) {
+    throw new Error('Faixa inválida.');
+  }
+  return valor;
+}
+
+export function exigirTituloEscolhido(valor: unknown): string {
+  // eslint-disable-next-line no-control-regex -- caracteres de controle não existem num título
+  if (typeof valor !== 'string' || valor.trim().length === 0 || valor.length > 300 || /[\u0000-\u001f]/.test(valor)) {
+    throw new Error('Título inválido.');
+  }
+  return valor;
+}
+
+export function exigirOpcoesDaCorrecao(bruto: unknown): { atualizarLista: boolean } {
+  const o = objeto(bruto, 'opcoes');
+  return { atualizarLista: booleano(o.atualizarLista, 'atualizarLista') };
+}
+
+export function exigirCriterioDeLimpeza(bruto: unknown): CriterioLimpeza {
+  const o = objeto(bruto, 'criterio');
+  if (o.tipo === 'idade') {
+    if (typeof o.dias !== 'number' || !Number.isInteger(o.dias) || o.dias < 1 || o.dias > 3650) {
+      throw new Error('Campo inválido: dias.');
+    }
+    return { tipo: 'idade', dias: o.dias };
+  }
+  if (o.tipo === 'manter') {
+    if (typeof o.quantas !== 'number' || !Number.isInteger(o.quantas) || o.quantas < 0 || o.quantas > 100_000) {
+      throw new Error('Campo inválido: quantas.');
+    }
+    return { tipo: 'manter', quantas: o.quantas };
+  }
+  throw new Error('Critério de limpeza desconhecido.');
 }

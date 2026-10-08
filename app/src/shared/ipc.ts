@@ -16,6 +16,17 @@ import type {
 import type { AppError } from './erros.js';
 import type { EventoLote } from './eventos-lote.js';
 import type {
+  ArquivoRelatorio,
+  CriterioLimpeza,
+  EstadoDaLista,
+  ExecucaoDetalhe,
+  ExecucaoResumo,
+  NovaTentativa,
+  PreviaLimpeza,
+  ResultadoCorrecao,
+  ResultadoLimpeza,
+} from './historico.js';
+import type {
   AnexoExecucao,
   ArquivoExecucao,
   ListaConteudo,
@@ -218,6 +229,34 @@ export interface SoulcrateApi {
     /** abre a pasta lotes/ no Explorer */
     openFolder(): Promise<void>;
   };
+  reports: {
+    /** as execuções de lotes/ (as do app e as do .bat), da mais recente para a mais antiga */
+    listRuns(): Promise<ExecucaoResumo[]>;
+    /** o detalhe de uma execução, com o diagnóstico de cada faixa que não veio; null se ela não está mais em lotes/ */
+    getRun(runId: string): Promise<ExecucaoDetalhe | null>;
+    /** o número da linha de cada faixa que não veio dentro da lista (-SoAnalisar); null se a lista não está mais lá */
+    listLines(runId: string): Promise<Record<string, number> | null>;
+    /** "Talvez seja": guarda a correção e, se der, reescreve a linha na lista da execução */
+    applySuggestion(
+      runId: string,
+      key: string,
+      titulo: string,
+      opcoes: { atualizarLista: boolean },
+    ): Promise<ResultadoCorrecao>;
+    /** desfaz a correção (e devolve a linha original à lista, se ela ainda está como o app a deixou) */
+    undoSuggestion(runId: string, key: string, opcoes: { atualizarLista: boolean }): Promise<boolean>;
+    /** gera nao-baixadas-<id>.txt com as faixas que falharam (já corrigidas) e devolve as opções sugeridas */
+    buildRetryList(runId: string): Promise<NovaTentativa>;
+    openFile(runId: string, arquivo: ArquivoRelatorio): Promise<boolean>;
+    /** "Mostrar no Explorer" para o arquivo de uma faixa */
+    revealTrack(runId: string, key: string): Promise<boolean>;
+    previewCleanup(criterio: CriterioLimpeza): Promise<PreviaLimpeza>;
+    /** manda os relatórios das execuções escolhidas para a Lixeira */
+    cleanup(criterio: CriterioLimpeza): Promise<ResultadoLimpeza>;
+    /** a memória (estado-<lista>.tsv) que "Reprocessar do zero" apagaria; null se não há */
+    listState(runId: string): Promise<EstadoDaLista | null>;
+    resetList(runId: string): Promise<boolean>;
+  };
   logs: {
     subscribe(alvo: AlvoLog): Promise<SubscriptionId>;
     unsubscribe(id: SubscriptionId): Promise<void>;
@@ -302,6 +341,24 @@ export interface IpcInvoke {
   'batch:attach': { args: [runId: string]; result: AnexoExecucao | null };
   'batch:openFile': { args: [runId: string, arquivo: ArquivoExecucao]; result: boolean };
   'batch:openFolder': { args: []; result: void };
+  'reports:listRuns': { args: []; result: ExecucaoResumo[] };
+  'reports:getRun': { args: [runId: string]; result: ExecucaoDetalhe | null };
+  'reports:listLines': { args: [runId: string]; result: Record<string, number> | null };
+  'reports:applySuggestion': {
+    args: [runId: string, key: string, titulo: string, opcoes: { atualizarLista: boolean }];
+    result: ResultadoCorrecao;
+  };
+  'reports:undoSuggestion': {
+    args: [runId: string, key: string, opcoes: { atualizarLista: boolean }];
+    result: boolean;
+  };
+  'reports:buildRetryList': { args: [runId: string]; result: NovaTentativa };
+  'reports:openFile': { args: [runId: string, arquivo: ArquivoRelatorio]; result: boolean };
+  'reports:revealTrack': { args: [runId: string, key: string]; result: boolean };
+  'reports:previewCleanup': { args: [criterio: CriterioLimpeza]; result: PreviaLimpeza };
+  'reports:cleanup': { args: [criterio: CriterioLimpeza]; result: ResultadoLimpeza };
+  'reports:listState': { args: [runId: string]; result: EstadoDaLista | null };
+  'reports:resetList': { args: [runId: string]; result: boolean };
   'logs:subscribe': { args: [alvo: AlvoLog]; result: SubscriptionId };
   'logs:unsubscribe': { args: [id: SubscriptionId]; result: void };
   'webui:show': { args: [servico: ServicoId, limites: Limites]; result: void };

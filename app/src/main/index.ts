@@ -1,6 +1,7 @@
 // Processo principal do app Soulcrate (Electron): liga os serviços (§3.2), a janela, a bandeja e o IPC.
 import { randomUUID } from 'node:crypto';
 import { existsSync, readFileSync, statSync } from 'node:fs';
+import { rm } from 'node:fs/promises';
 import { homedir, tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { app, Menu, Notification, powerMonitor, shell, type BrowserWindow } from 'electron';
@@ -24,6 +25,7 @@ import { LogsService } from './services/logs-service';
 import { LoteService, processoVivoReal, type NotificacaoLote } from './services/lote-service';
 import { OperacoesService } from './services/operacoes-service';
 import { PastaService } from './services/pasta-service';
+import { RelatoriosService } from './services/relatorios-service';
 import { lerVersaoDaStack, resolverProjeto } from './services/project-service';
 import { portaAceitaConexao, SetupService } from './services/setup-service';
 import { WebUiService } from './services/webui-service';
@@ -232,6 +234,30 @@ async function principal(): Promise<void> {
     aoErro,
     slskdUrl: !app.isPackaged ? (process.env.SOULCRATE_SLSKD_URL ?? null) : null,
   });
+  // histórico e diagnóstico (Fase 4): relatórios de lotes/. Apagar manda para a Lixeira; os testes ponta a ponta
+  // trocam a Lixeira por apagar de vez (a Lixeira de quem testa não é lugar de arquivo temporário)
+  const lixeiraDuble = !app.isPackaged && process.env.SOULCRATE_DUBLE_LIXEIRA === '1';
+  const relatorios = new RelatoriosService({
+    projeto,
+    agora: Date.now,
+    processoVivo: processoVivoReal,
+    pastas: (dir) => {
+      let pastas = { music: '', downloads: '' };
+      try {
+        const lida = config.ler(dir).pastas;
+        pastas = { music: lida.music, downloads: lida.downloads };
+      } catch {
+        /* sem .env legível: vale o padrão do modelo (./music, ./downloads) */
+      }
+      return {
+        musica: resolve(dir, pastas.music || './music'),
+        downloads: resolve(dir, pastas.downloads || './downloads'),
+      };
+    },
+    listas,
+    descartar: (caminho) => (lixeiraDuble ? rm(caminho, { force: true }) : shell.trashItem(caminho)),
+    aoErro,
+  });
   /** "Abrir com" e a linha de comando: um .txt/.csv vira uma lista na pasta do Soulcrate e abre no editor (§6.2) */
   const abrirListaDoArgv = (argv: readonly string[]): void => {
     const dir = projeto().dir;
@@ -258,6 +284,7 @@ async function principal(): Promise<void> {
     setup,
     listas,
     lote,
+    relatorios,
     pastaPadrao,
     projeto,
     validarConfig,

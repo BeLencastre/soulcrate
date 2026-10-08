@@ -19,6 +19,9 @@ import type { ConfigPublica } from '@shared/configuracao';
 import type { ConfigStatus, ProjetoStatus } from '@shared/stack';
 import {
   exigirArquivoExecucao,
+  exigirArquivoRelatorio,
+  exigirChaveDeFaixa,
+  exigirCriterioDeLimpeza,
   exigirBytes,
   exigirEntrada,
   exigirEntradaPasta,
@@ -28,9 +31,11 @@ import {
   exigirModelo,
   exigirNomeDeLista,
   exigirOpcoesAnalise,
+  exigirOpcoesDaCorrecao,
   exigirOpcoesSetup,
   exigirRunId,
   exigirTextoDaLista,
+  exigirTituloEscolhido,
 } from './ipc-entradas';
 import { ehUrlDoApp, podeAbrirNoNavegador } from './seguranca';
 import type { AppSettingsService } from './services/app-settings';
@@ -42,6 +47,7 @@ import type { LoteService } from './services/lote-service';
 import type { LogsService } from './services/logs-service';
 import type { OperacoesService } from './services/operacoes-service';
 import type { PastaService } from './services/pasta-service';
+import type { RelatoriosService } from './services/relatorios-service';
 import { ehPastaDoSoulcrate } from './services/project-service';
 import type { SetupService } from './services/setup-service';
 import type { WebUiService } from './services/webui-service';
@@ -60,6 +66,7 @@ export interface ContextoIpc {
   setup: SetupService;
   listas: ListasService;
   lote: LoteService;
+  relatorios: RelatoriosService;
   /** pasta proposta para uma instalação nova */
   pastaPadrao: string;
   projeto(): ProjetoStatus;
@@ -283,6 +290,37 @@ export function registrarIpc(ctx: ContextoIpc): void {
     const erro = await shell.openPath(lotes);
     if (erro) throw new Error(erro);
   });
+
+  // ------------------------------------------------------------ histórico e diagnóstico (Fase 4)
+  tratar('reports:listRuns', () => ctx.relatorios.listar());
+  tratar('reports:getRun', (_e, runId) => ctx.relatorios.detalhe(exigirRunId(runId)));
+  tratar('reports:listLines', (_e, runId) => ctx.relatorios.linhasNaLista(exigirRunId(runId)));
+  tratar('reports:applySuggestion', (_e, runId, key, titulo, opcoes) =>
+    ctx.relatorios.corrigir(
+      exigirRunId(runId),
+      exigirChaveDeFaixa(key),
+      exigirTituloEscolhido(titulo),
+      exigirOpcoesDaCorrecao(opcoes),
+    ),
+  );
+  tratar('reports:undoSuggestion', (_e, runId, key, opcoes) =>
+    ctx.relatorios.desfazerCorrecao(exigirRunId(runId), exigirChaveDeFaixa(key), exigirOpcoesDaCorrecao(opcoes)),
+  );
+  tratar('reports:buildRetryList', (_e, runId) => ctx.relatorios.novaTentativa(exigirRunId(runId)));
+  tratar('reports:openFile', async (_e, runId, arquivo) => {
+    const caminho = await ctx.relatorios.caminhoDoArquivo(exigirRunId(runId), exigirArquivoRelatorio(arquivo));
+    return caminho ? (await shell.openPath(caminho)) === '' : false;
+  });
+  tratar('reports:revealTrack', async (_e, runId, key) => {
+    const caminho = await ctx.relatorios.caminhoDaFaixa(exigirRunId(runId), exigirChaveDeFaixa(key));
+    if (!caminho) return false;
+    shell.showItemInFolder(caminho);
+    return true;
+  });
+  tratar('reports:previewCleanup', (_e, criterio) => ctx.relatorios.previaDaLimpeza(exigirCriterioDeLimpeza(criterio)));
+  tratar('reports:cleanup', (_e, criterio) => ctx.relatorios.limpar(exigirCriterioDeLimpeza(criterio)));
+  tratar('reports:listState', (_e, runId) => ctx.relatorios.estadoDaLista(exigirRunId(runId)));
+  tratar('reports:resetList', (_e, runId) => ctx.relatorios.reprocessarLista(exigirRunId(runId)));
 
   // ------------------------------------------------------------ logs e Web UIs
   tratar('logs:subscribe', (e, alvo) => ctx.logs.assinar(e.sender.id, exigirAlvoLog(alvo)));

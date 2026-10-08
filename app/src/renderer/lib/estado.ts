@@ -9,6 +9,7 @@ import type { MainEvent, MarcadorBuild, OperacaoTipo, OperationId, WebUiEstado }
 import type { ServicoId } from '@shared/servicos';
 import { statusInicial, type StackStatus } from '@shared/stack';
 import { api } from './api';
+import { CHAVE_HISTORICO } from './historico';
 import { useExecucao, useRascunho } from './lote-store';
 
 export const chaveStatus = ['stack', 'status'] as const;
@@ -128,8 +129,13 @@ export function ligarEventos(qc: QueryClient, navegar: (rota: string) => void): 
   return api.onEvent((e) => {
     if (e.type === 'stack.status') qc.setQueryData(chaveStatus, e.status);
     else if (e.type === 'app.navigate') navegar(e.rota);
-    else if (e.type === 'batch.events' || e.type === 'batch.log') useExecucao.getState().aoEvento(e);
-    else if (e.type === 'app.openList') {
+    else if (e.type === 'batch.events' || e.type === 'batch.log') {
+      useExecucao.getState().aoEvento(e);
+      // uma execução começou ou terminou: o histórico tem uma linha nova (ou mudou a de sempre)
+      if (e.type === 'batch.events' && e.eventos.some((ev) => ev.type === 'run.start' || ev.type === 'run.end')) {
+        void qc.invalidateQueries({ queryKey: CHAVE_HISTORICO });
+      }
+    } else if (e.type === 'app.openList') {
       void useRascunho.getState().abrir(e.nome);
       navegar('/lista');
     } else useUi.getState().aoEvento(e);

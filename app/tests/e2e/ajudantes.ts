@@ -1,10 +1,19 @@
 // Ajudantes dos testes ponta a ponta: monta uma "pasta do Soulcrate" de mentira, um mundo do dublê do docker
 // e abre o app (o build em out/) apontando para eles. Nenhum teste toca na stack nem nos dados reais do usuário.
-import { spawn, type ChildProcess } from 'node:child_process';
-import { copyFileSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { spawn, spawnSync, type ChildProcess } from 'node:child_process';
+import {
+  copyFileSync,
+  existsSync,
+  mkdirSync,
+  mkdtempSync,
+  readdirSync,
+  readFileSync,
+  rmSync,
+  writeFileSync,
+} from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { _electron as electron, type ElectronApplication, type Page } from '@playwright/test';
+import { _electron as electron, expect, type ElectronApplication, type Page } from '@playwright/test';
 
 const APP_DIR = join(import.meta.dirname, '..', '..');
 const DUBLE = join(APP_DIR, 'tests', 'dubles', 'docker-falso.mjs');
@@ -306,3 +315,43 @@ export async function fecharApp(app: ElectronApplication, limiteMs = 20_000): Pr
   await Promise.race([saiu, new Promise((r) => setTimeout(r, limiteMs))]);
   if (processo.exitCode === null) processo.kill();
 }
+
+// ---------------------------------------------------------------- Fases 3 e 4: o que os testes do lote repetem
+
+/** Cria o arquivo-sinal de qualquer lote ainda vivo no ambiente e espera as travas sumirem. */
+export async function pararLotesRodando(a: Ambiente | undefined): Promise<void> {
+  if (!a) return;
+  const lotes = join(a.projeto, 'lotes');
+  if (!existsSync(lotes)) return;
+  for (const f of readdirSync(lotes)) {
+    const m = /^estado-.+\.lock$/.exec(f);
+    if (!m) continue;
+    const id = readFileSync(join(lotes, f), 'utf8').split('\t')[2]?.trim();
+    if (id) writeFileSync(join(lotes, `parar-${id}.flag`), 'x');
+  }
+  for (let i = 0; i < 30 && readdirSync(lotes).some((f) => f.endsWith('.lock')); i++) {
+    await new Promise((r) => setTimeout(r, 500));
+  }
+  // o que não parou com o arquivo-sinal (o script preso numa espera) é encerrado à força: é só um teste
+  for (const f of readdirSync(lotes).filter((n) => n.endsWith('.lock'))) {
+    const pid = Number(readFileSync(join(lotes, f), 'utf8').split('\t')[0]);
+    if (pid > 0) spawnSync('taskkill', ['/PID', String(pid), '/T', '/F']);
+  }
+  await new Promise((r) => setTimeout(r, 500));
+}
+
+export const abrirListaDosRecentes = async (janela: Page, nome: string) => {
+  await janela.getByRole('link', { name: 'Baixar lista' }).click();
+  await janela
+    .getByTestId('lista-recentes')
+    .getByRole('button', { name: new RegExp(nome.replace('.', '\\.')) })
+    .click();
+  await expect(janela.getByTestId('nome-da-lista')).toHaveText(nome);
+};
+
+/** Sem MusicBrainz (não há rede nos testes) e sem beets (não há stack): "Só baixar" + "Não conferir os títulos". */
+export const opcoesDeTeste = async (janela: Page) => {
+  await janela.getByRole('link', { name: 'Revisar opções' }).click();
+  await janela.locator('[data-receita="soBaixar"]').click();
+  await janela.getByRole('switch', { name: /Não conferir os títulos no MusicBrainz/ }).click();
+};
