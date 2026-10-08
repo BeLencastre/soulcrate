@@ -14,6 +14,19 @@ import type {
   SetupEstado,
 } from './configuracao.js';
 import type { AppError } from './erros.js';
+import type { EventoLote } from './eventos-lote.js';
+import type {
+  AnexoExecucao,
+  ArquivoExecucao,
+  ListaConteudo,
+  ListaRef,
+  ModeloLista,
+  OpcoesAnalise,
+  ResultadoAnalise,
+  ResultadoInicio,
+  ResumoExecucao,
+} from './lote.js';
+import type { OpcoesLote } from './opcoes-lote.js';
 import type { ServicoId } from './servicos.js';
 import type { ConfigStatus, DockerStatus, ProjetoStatus, StackStatus } from './stack.js';
 
@@ -178,6 +191,33 @@ export interface SoulcrateApi {
     provideNavidromeLogin(login: LoginNavidrome): Promise<SetupEstado>;
     checkPort(): Promise<PortaStatus>;
   };
+  lists: {
+    /** listas da pasta do Soulcrate, as mais recentes primeiro */
+    listRecent(): Promise<ListaRef[]>;
+    read(nome: string): Promise<ListaConteudo>;
+    /** grava o texto da lista (UTF-8, fim de linha do Windows) */
+    save(nome: string, texto: string): Promise<ListaRef>;
+    create(modelo: ModeloLista): Promise<ListaRef>;
+    /** abre o seletor de arquivo do sistema e copia o .txt/.csv escolhido para a pasta do Soulcrate; null se cancelou */
+    importFile(): Promise<ListaRef | null>;
+    /** arquivo solto na janela: os bytes vão para o main, que grava na pasta do Soulcrate */
+    importBytes(nome: string, bytes: Uint8Array): Promise<ListaRef>;
+    /** `baixar-lista.ps1 -SoAnalisar` na lista salva (P5) */
+    analyze(nome: string, opcoes: OpcoesAnalise): Promise<ResultadoAnalise>;
+  };
+  batch: {
+    /** inicia o lote destacado; erros esperados (stack fora, lista já rodando) voltam em `erro`, sem lançar */
+    start(entrada: { lista: string; opcoes: OpcoesLote }): Promise<ResultadoInicio>;
+    /** cria o arquivo-sinal: o lote termina o que está em andamento e grava os relatórios */
+    stop(runId: string): Promise<void>;
+    /** execuções que o app acompanha (inclui as que continuavam vivas ao abrir) */
+    active(): Promise<ResumoExecucao[]>;
+    /** tudo o que já foi lido de uma execução, para montar o painel; null se o app não a acompanha */
+    attach(runId: string): Promise<AnexoExecucao | null>;
+    openFile(runId: string, arquivo: ArquivoExecucao): Promise<boolean>;
+    /** abre a pasta lotes/ no Explorer */
+    openFolder(): Promise<void>;
+  };
   logs: {
     subscribe(alvo: AlvoLog): Promise<SubscriptionId>;
     unsubscribe(id: SubscriptionId): Promise<void>;
@@ -205,8 +245,14 @@ export type MainEvent =
   | { type: 'logs.end'; id: SubscriptionId; motivo: string | null }
   | { type: 'webui.state'; estado: WebUiEstado }
   | { type: 'setup.state'; estado: SetupEstado }
+  /** eventos novos do lote; `desde` é o índice (absoluto) do primeiro deles */
+  | { type: 'batch.events'; runId: string; desde: number; eventos: EventoLote[] }
+  /** linhas novas do log bruto; `desde` é o índice (absoluto) da primeira */
+  | { type: 'batch.log'; runId: string; desde: number; linhas: string[] }
   | { type: 'app.closePrompt' }
-  | { type: 'app.navigate'; rota: string };
+  | { type: 'app.navigate'; rota: string }
+  /** o app foi aberto com um .txt/.csv ("Abrir com"): vira uma lista na pasta do Soulcrate */
+  | { type: 'app.openList'; nome: string };
 
 // ---------------------------------------------------------------- Canais
 
@@ -243,6 +289,19 @@ export interface IpcInvoke {
   'setup:retry': { args: []; result: SetupEstado };
   'setup:provideNavidromeLogin': { args: [login: LoginNavidrome]; result: SetupEstado };
   'setup:checkPort': { args: []; result: PortaStatus };
+  'lists:recent': { args: []; result: ListaRef[] };
+  'lists:read': { args: [nome: string]; result: ListaConteudo };
+  'lists:save': { args: [nome: string, texto: string]; result: ListaRef };
+  'lists:create': { args: [modelo: ModeloLista]; result: ListaRef };
+  'lists:import': { args: []; result: ListaRef | null };
+  'lists:importBytes': { args: [nome: string, bytes: Uint8Array]; result: ListaRef };
+  'lists:analyze': { args: [nome: string, opcoes: OpcoesAnalise]; result: ResultadoAnalise };
+  'batch:start': { args: [entrada: { lista: string; opcoes: OpcoesLote }]; result: ResultadoInicio };
+  'batch:stop': { args: [runId: string]; result: void };
+  'batch:active': { args: []; result: ResumoExecucao[] };
+  'batch:attach': { args: [runId: string]; result: AnexoExecucao | null };
+  'batch:openFile': { args: [runId: string, arquivo: ArquivoExecucao]; result: boolean };
+  'batch:openFolder': { args: []; result: void };
   'logs:subscribe': { args: [alvo: AlvoLog]; result: SubscriptionId };
   'logs:unsubscribe': { args: [id: SubscriptionId]; result: void };
   'webui:show': { args: [servico: ServicoId, limites: Limites]; result: void };

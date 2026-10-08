@@ -18,6 +18,13 @@ export type ErroCodigo =
   | 'porta.em-uso'
   | 'servico.inacessivel'
   | 'operacao.falhou'
+  | 'lote.lista-rodando'
+  | 'lote.stack-fora'
+  | 'lote.nao-iniciou'
+  | 'lote.slskd-fora'
+  | 'lote.config'
+  | 'lote.erro'
+  | 'lote.interrompido'
   | 'inesperado';
 
 /** Ações que um erro pode oferecer; o renderer liga cada uma a um comportamento. */
@@ -31,7 +38,9 @@ export type AcaoErroId =
   | 'tentarDeNovo'
   | 'copiarDetalhes'
   | 'abrirLog'
-  | 'abrirYml';
+  | 'abrirYml'
+  | 'verExecucao'
+  | 'abrirPastaLotes';
 
 export interface AcaoErro {
   id: AcaoErroId;
@@ -62,6 +71,10 @@ export interface ContextoErro {
   operacao?: OperacaoStack | 'reiniciando';
   /** passo da pós-configuração que falhou (setup.falhou): "o Soulbeet", "o Navidrome" */
   passo?: string;
+  /** lista do lote (lote.lista-rodando) */
+  lista?: string;
+  /** desde quando a lista está rodando, como a trava registrou (lote.lista-rodando) */
+  desde?: string;
 }
 
 export function criarErro(codigo: ErroCodigo, ctx: ContextoErro = {}): AppError {
@@ -172,6 +185,63 @@ export function criarErro(codigo: ErroCodigo, ctx: ContextoErro = {}): AppError 
         titulo: e.operacaoFalhou.titulo(ctx.operacao ?? 'ligando'),
         mensagem: e.operacaoFalhou.mensagem,
         acoes: [acao('copiarDetalhes', A.copiarDetalhes, true), acao('abrirLog', A.abrirLog)],
+        detalhes,
+      };
+    case 'lote.lista-rodando':
+      return {
+        codigo,
+        titulo: e.loteListaRodando.titulo(ctx.lista ?? 'Esta lista'),
+        mensagem: e.loteListaRodando.mensagem(ctx.desde ?? null),
+        acoes: [acao('verExecucao', A.verExecucao, true)],
+        detalhes,
+      };
+    case 'lote.stack-fora':
+      return { codigo, ...e.loteStackFora, acoes: [acao('verServicos', A.verServicos, true)], detalhes };
+    case 'lote.nao-iniciou':
+      return {
+        codigo,
+        ...e.loteNaoIniciou,
+        acoes: [
+          acao('tentarDeNovo', A.tentarDeNovo, true),
+          acao('copiarDetalhes', A.copiarDetalhes),
+          acao('abrirLog', A.abrirLog),
+        ],
+        detalhes,
+      };
+    case 'lote.slskd-fora':
+      return {
+        codigo,
+        ...e.loteSlskdFora,
+        acoes: [acao('verServicos', A.verServicos, true), acao('abrirPastaLotes', A.abrirPastaLotes)],
+        detalhes,
+      };
+    case 'lote.config':
+      return {
+        codigo,
+        ...e.loteConfig,
+        acoes: [
+          acao('abrirConfiguracoes', A.abrirConfiguracoes, true),
+          acao('copiarDetalhes', A.copiarDetalhes),
+          acao('abrirPastaLotes', A.abrirPastaLotes),
+        ],
+        detalhes,
+      };
+    case 'lote.interrompido':
+      return {
+        codigo,
+        ...e.loteInterrompido,
+        acoes: [acao('copiarDetalhes', A.copiarDetalhes, true), acao('abrirPastaLotes', A.abrirPastaLotes)],
+        detalhes,
+      };
+    case 'lote.erro':
+      return {
+        codigo,
+        ...e.loteErro,
+        acoes: [
+          acao('copiarDetalhes', A.copiarDetalhes, true),
+          acao('abrirPastaLotes', A.abrirPastaLotes),
+          acao('abrirLog', A.abrirLog),
+        ],
         detalhes,
       };
     case 'inesperado':

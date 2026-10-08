@@ -206,7 +206,7 @@ Edite o `.env`:
 | ---------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `PUID` / `PGID`                                | `1000` / `1000` no Windows. No Linux, a saída de `id -u` / `id -g`                                                                                                                                                                |
 | `TZ`                                           | Seu fuso, ex.: `America/Sao_Paulo`                                                                                                                                                                                                |
-| `DOWNLOADS_DIR`, `INCOMPLETE_DIR`, `MUSIC_DIR` | Pastas no seu PC. O padrão (`./downloads` etc.) fica dentro do projeto. **Mantenha** `DOWNLOADS_DIR` **e** `MUSIC_DIR` **no mesmo disco**: assim o "mover" do beets é instantâneo. No Windows, use barras normais (`D:/DJ/Music`) |
+| `DOWNLOADS_DIR`, `INCOMPLETE_DIR`, `MUSIC_DIR` | Pastas no seu PC. O padrão (`./downloads` etc.) fica dentro da pasta do Soulcrate. No Windows, a biblioteca pode ficar ao lado, no mesmo disco: `C:/DJ/Musics`, `C:/DJ/Downloads` e `C:/DJ/Incomplete`. **Mantenha** `DOWNLOADS_DIR` **e** `MUSIC_DIR` **no mesmo disco**: assim o "mover" do beets é instantâneo. Use barras normais. |
 | `SLSK_USERNAME` / `SLSK_PASSWORD`              | Sua conta Soulseek (ou invente uma)                                                                                                                                                                                               |
 | `SLSKD_WEB_USER` / `SLSKD_WEB_PASSWORD`        | Login da Web UI do slskd                                                                                                                                                                                                          |
 | `SOULBEET_SECRET_KEY`                          | Uma string aleatória longa (veja abaixo)                                                                                                                                                                                          |
@@ -541,8 +541,10 @@ Depois de editar o `config.yaml`, basta reiniciar: `docker compose restart soulb
 
 ## Estrutura do projeto
 
+O repositório guarda o código. A instalação em uso fica em `%USERPROFILE%\Soulcrate`, e a biblioteca fica no mesmo disco, fora das duas pastas. Dentro dos contêineres os caminhos continuam `/music`, `/downloads` e `/incomplete`.
+
 ```text
-soulcrate/
+soulcrate/                      # repositório (código)
 ├── docker-compose.yml          # os 3 serviços e os volumes compartilhados
 ├── .env.example                # modelo de configuração (copie para .env)
 ├── VERSION                     # versão da stack (CHANGELOG.md tem o histórico)
@@ -552,22 +554,29 @@ soulcrate/
 ├── baixar-lista.bat / .ps1     # download em lote
 ├── baixar-lista.lib.ps1        # funções do lote sem rede (lista, comparação, catálogo)
 ├── lista.exemplo.txt           # modelo da lista (copiado para lista.txt na 1ª vez)
-├── lista.txt                   # sua lista de faixas (fora do Git)
-├── slskd/
-│   ├── slskd.example.yml       # modelo (copie para slskd.yml)
-│   └── slskd.yml               # sua API key (fora do Git)
+├── slskd/slskd.example.yml     # modelo (o slskd.yml fica na instalação)
 ├── soulbeet/
 │   ├── Dockerfile              # soulbeet:full + keyfinder + autobpm + beetcamp
 │   ├── fix-metadata.py         # corrige metadados de pacotes da imagem base (lastgenre)
 │   ├── config/config.yaml      # configuração do beets (perfil DJ)
 │   └── beets-plugins/keepmix.py
-├── downloads/   incomplete/    # área de trabalho do slskd
-├── music/                      # SUA BIBLIOTECA
-├── navidrome/                  # banco e cache do Navidrome
-├── lotes/                      # relatórios do download em lote
+├── downloads/ incomplete/ music/ navidrome/   # só .gitkeep
 ├── docs/                       # especificação do app, protocolo do lote, regras da configuração
 ├── tests/                      # testes (Pester) e o slskd falso usado por eles
 └── app/                        # app desktop (Electron), em construção: Fases 0 e 1 prontas (veja app/README.md)
+
+%USERPROFILE%\Soulcrate/        # instalação (configuração, segredos e bancos)
+├── .env                        # inclui DOWNLOADS_DIR, INCOMPLETE_DIR e MUSIC_DIR
+├── lista.txt                   # sua lista de faixas
+├── lotes/                      # relatórios do download em lote
+├── slskd/                      # slskd.yml, banco e logs
+├── navidrome/                  # banco e cache do Navidrome
+└── soulbeet/data/              # banco do Soulbeet
+
+C:/DJ/                          # biblioteca, no mesmo disco da instalação
+├── Musics/                     # MUSIC_DIR
+├── Downloads/                  # DOWNLOADS_DIR
+└── Incomplete/                 # INCOMPLETE_DIR
 ```
 
 Para desenvolver ou rodar os testes, veja o [`CONTRIBUTING.md`](CONTRIBUTING.md).

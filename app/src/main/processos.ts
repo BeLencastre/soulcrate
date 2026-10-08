@@ -174,3 +174,57 @@ export function matarArvore(filho: ChildProcess): void {
     filho.kill('SIGTERM');
   }
 }
+
+// ---------------------------------------------------------------- Lançador (processo que não pode morrer com o app)
+
+export interface OpcoesLancamento {
+  cwd?: string;
+  timeoutMs: number;
+}
+
+export interface ResultadoLancamento {
+  /** código de saída do lançador (0 = o processo destacado foi iniciado); null se não terminou ou não rodou */
+  codigo: number | null;
+  tempoEsgotado: boolean;
+  erroSpawn: NodeJS.ErrnoException | null;
+}
+
+/** Inicia o lançador de um processo destacado e espera só o lançador sair (SP3). */
+export interface Lancador {
+  lancar(comando: string, args: readonly string[], opcoes: OpcoesLancamento): Promise<ResultadoLancamento>;
+}
+
+/**
+ * O lançador roda sem pipe nenhum (`stdio: 'ignore'`) e a espera é pelo evento `exit`, não por `close`: o processo que
+ * ele cria com `Start-Process` herda os handles do lançador, e um pipe de saída só fecharia quando o lote terminasse
+ * (SP3, "Armadilha encontrada: handles herdados"). Não entra em `ExecutorReal.vivos` de propósito: o lote não é filho
+ * do app e não deve ser encerrado junto com ele.
+ */
+export class LancadorReal implements Lancador {
+  lancar(comando: string, args: readonly string[], opcoes: OpcoesLancamento): Promise<ResultadoLancamento> {
+    return new Promise((resolve) => {
+      let filho: ChildProcess;
+      try {
+        filho = spawn(comando, [...args], { cwd: opcoes.cwd, windowsHide: true, shell: false, stdio: 'ignore' });
+      } catch (e) {
+        resolve({ codigo: null, tempoEsgotado: false, erroSpawn: e as NodeJS.ErrnoException });
+        return;
+      }
+      let tempoEsgotado = false;
+      let resolvido = false;
+      const fim = (r: ResultadoLancamento) => {
+        if (resolvido) return;
+        resolvido = true;
+        clearTimeout(timer);
+        resolve(r);
+      };
+      const timer = setTimeout(() => {
+        tempoEsgotado = true;
+        matarArvore(filho);
+        fim({ codigo: null, tempoEsgotado: true, erroSpawn: null });
+      }, opcoes.timeoutMs);
+      filho.once('error', (e: NodeJS.ErrnoException) => fim({ codigo: null, tempoEsgotado, erroSpawn: e }));
+      filho.once('exit', (codigo) => fim({ codigo, tempoEsgotado, erroSpawn: null }));
+    });
+  }
+}

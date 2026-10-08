@@ -9,6 +9,7 @@ import type { MainEvent, MarcadorBuild, OperacaoTipo, OperationId, WebUiEstado }
 import type { ServicoId } from '@shared/servicos';
 import { statusInicial, type StackStatus } from '@shared/stack';
 import { api } from './api';
+import { useExecucao, useRascunho } from './lote-store';
 
 export const chaveStatus = ['stack', 'status'] as const;
 
@@ -127,11 +128,19 @@ export function ligarEventos(qc: QueryClient, navegar: (rota: string) => void): 
   return api.onEvent((e) => {
     if (e.type === 'stack.status') qc.setQueryData(chaveStatus, e.status);
     else if (e.type === 'app.navigate') navegar(e.rota);
-    else useUi.getState().aoEvento(e);
+    else if (e.type === 'batch.events' || e.type === 'batch.log') useExecucao.getState().aoEvento(e);
+    else if (e.type === 'app.openList') {
+      void useRascunho.getState().abrir(e.nome);
+      navegar('/lista');
+    } else useUi.getState().aoEvento(e);
   });
 }
 
 export function useLigarEventos(navegar: (rota: string) => void): void {
   const qc = useQueryClient();
   useEffect(() => ligarEventos(qc, navegar), [qc, navegar]);
+  // um lote iniciado antes de o app fechar continua rodando: volta a mostrá-lo no painel (§5, Fase 3, "Reconexão")
+  useEffect(() => {
+    void useExecucao.getState().reconectar();
+  }, []);
 }

@@ -1,5 +1,6 @@
 // Handlers de IPC (main): um por canal de `IpcInvoke`. Todo canal confere quem chamou (só a janela principal,
 // só em páginas do app) e valida os argumentos: o renderer não é confiável (§6.1).
+import { mkdirSync } from 'node:fs';
 import { isAbsolute, join } from 'node:path';
 import { clipboard, dialog, ipcMain, shell, type BrowserWindow, type IpcMainInvokeEvent } from 'electron';
 import type {
@@ -16,12 +17,28 @@ import { msg } from '@shared/mensagens';
 import { ehServicoId, type ServicoId } from '@shared/servicos';
 import type { ConfigPublica } from '@shared/configuracao';
 import type { ConfigStatus, ProjetoStatus } from '@shared/stack';
-import { exigirEntrada, exigirEntradaPasta, exigirFinalidade, exigirLogin, exigirOpcoesSetup } from './ipc-entradas';
+import {
+  exigirArquivoExecucao,
+  exigirBytes,
+  exigirEntrada,
+  exigirEntradaPasta,
+  exigirFinalidade,
+  exigirInicioDeLote,
+  exigirLogin,
+  exigirModelo,
+  exigirNomeDeLista,
+  exigirOpcoesAnalise,
+  exigirOpcoesSetup,
+  exigirRunId,
+  exigirTextoDaLista,
+} from './ipc-entradas';
 import { ehUrlDoApp, podeAbrirNoNavegador } from './seguranca';
 import type { AppSettingsService } from './services/app-settings';
 import type { ChecksService } from './services/checks-service';
 import type { ConfigService } from './services/config-service';
 import type { HealthService } from './services/health-service';
+import type { ListasService } from './services/listas-service';
+import type { LoteService } from './services/lote-service';
 import type { LogsService } from './services/logs-service';
 import type { OperacoesService } from './services/operacoes-service';
 import type { PastaService } from './services/pasta-service';
@@ -41,6 +58,8 @@ export interface ContextoIpc {
   config: ConfigService;
   pasta: PastaService;
   setup: SetupService;
+  listas: ListasService;
+  lote: LoteService;
   /** pasta proposta para uma instalação nova */
   pastaPadrao: string;
   projeto(): ProjetoStatus;
@@ -222,6 +241,48 @@ export function registrarIpc(ctx: ContextoIpc): void {
   tratar('setup:retry', () => ctx.setup.tentarDeNovo());
   tratar('setup:provideNavidromeLogin', (_e, login) => ctx.setup.informarLoginNavidrome(exigirLogin(login)));
   tratar('setup:checkPort', () => ctx.setup.verificarPorta());
+
+  // ------------------------------------------------------------ listas e lote em lote (Fase 3)
+  tratar('lists:recent', () => ctx.listas.recentes(exigirDir()));
+  tratar('lists:read', (_e, nome) => ctx.listas.ler(exigirDir(), exigirNomeDeLista(nome)));
+  tratar('lists:save', (_e, nome, texto) =>
+    ctx.listas.salvar(exigirDir(), exigirNomeDeLista(nome), exigirTextoDaLista(texto)),
+  );
+  tratar('lists:create', (_e, modelo) => ctx.listas.criar(exigirDir(), exigirModelo(modelo)));
+  tratar('lists:import', async () => {
+    const dir = exigirDir();
+    const win = ctx.janela();
+    const opcoes = {
+      title: msg.lote.lista.importarTitulo,
+      properties: ['openFile' as const],
+      filters: [{ name: msg.lote.lista.filtroArquivos, extensions: ['txt', 'csv'] }],
+    };
+    const r = win ? await dialog.showOpenDialog(win, opcoes) : await dialog.showOpenDialog(opcoes);
+    const origem = r.filePaths[0];
+    return r.canceled || !origem ? null : ctx.listas.importarArquivo(dir, origem);
+  });
+  tratar('lists:importBytes', (_e, nome, bytes) => {
+    if (typeof nome !== 'string' || nome.length > 260) throw new Error('Nome de arquivo inválido.');
+    return ctx.listas.importarBytes(exigirDir(), nome, exigirBytes(bytes));
+  });
+  tratar('lists:analyze', (_e, nome, opcoes) =>
+    ctx.listas.analisar(exigirDir(), exigirNomeDeLista(nome), exigirOpcoesAnalise(opcoes)),
+  );
+  tratar('batch:start', (_e, entrada) => ctx.lote.iniciar(exigirInicioDeLote(entrada)));
+  tratar('batch:stop', (_e, runId) => ctx.lote.parar(exigirRunId(runId)));
+  tratar('batch:active', () => ctx.lote.ativas());
+  tratar('batch:attach', (_e, runId) => ctx.lote.anexar(exigirRunId(runId)));
+  tratar('batch:openFile', async (_e, runId, arquivo) => {
+    const caminho = ctx.lote.caminhoDoArquivo(exigirRunId(runId), exigirArquivoExecucao(arquivo));
+    if (!caminho) return false;
+    return (await shell.openPath(caminho)) === '';
+  });
+  tratar('batch:openFolder', async () => {
+    const lotes = join(exigirDir(), 'lotes');
+    mkdirSync(lotes, { recursive: true });
+    const erro = await shell.openPath(lotes);
+    if (erro) throw new Error(erro);
+  });
 
   // ------------------------------------------------------------ logs e Web UIs
   tratar('logs:subscribe', (e, alvo) => ctx.logs.assinar(e.sender.id, exigirAlvoLog(alvo)));

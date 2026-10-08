@@ -266,7 +266,19 @@ test.describe('segurança do renderer (§6.1)', () => {
     expect(mundo.require).toBe('undefined');
     expect(mundo.process).toBe('undefined');
     expect(mundo.ipcRenderer).toBe('undefined');
-    expect(mundo.api).toEqual(['app', 'config', 'env', 'logs', 'onEvent', 'project', 'setup', 'stack', 'webui']);
+    expect(mundo.api).toEqual([
+      'app',
+      'batch',
+      'config',
+      'env',
+      'lists',
+      'logs',
+      'onEvent',
+      'project',
+      'setup',
+      'stack',
+      'webui',
+    ]);
     expect(mundo.csp).toContain("default-src 'self'");
     expect(mundo.csp).not.toContain('unsafe-eval');
 

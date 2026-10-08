@@ -5,6 +5,7 @@ import { msg } from '@shared/mensagens';
 import { SERVICOS } from '@shared/servicos';
 import { resumirStack, servicoSaudavel, type EstadoStack, type ServicoStatus } from '@shared/stack';
 import { useStackStatus } from '../lib/estado';
+import { execucaoRodando, useExecucao } from '../lib/lote-store';
 import {
   IconeBaixar,
   IconeBiblioteca,
@@ -39,6 +40,34 @@ export function ledDoServico(s: ServicoStatus): CorLed {
   if (servicoSaudavel(s)) return 'verde';
   if (s.saude === 'starting') return 'azul';
   return 'vermelho';
+}
+
+/** O lote rodando, sempre à mão (protótipo "Componente navegação lateral"): lista, progresso e tempo restante. */
+function CartaoDoLote() {
+  const rodando = useExecucao(execucaoRodando);
+  const estado = useExecucao((s) => s.estado);
+  const resumo = useExecucao((s) => s.resumo);
+  if (!rodando) return null;
+  const total = estado.total || estado.faixas.length;
+  const feitas = estado.contagem.concluidas;
+  const eta = estado.progresso?.etaMin ?? null;
+  return (
+    <NavLink
+      to="/lista/execucao"
+      data-testid="cartao-lote"
+      className="flex flex-col gap-2 rounded-md border border-borda bg-[#181b1f] p-3 text-texto no-underline hover:border-[#4a4f57]"
+    >
+      <span className="lbl !text-[10.5px] !text-chip-azul">{msg.lote.sidebar.rodando}</span>
+      <span className="truncate font-mono text-[13px] font-bold">{estado.inicio?.list ?? resumo?.lista ?? '…'}</span>
+      <span aria-hidden="true" className="block h-1 overflow-hidden rounded-sm bg-borda">
+        <span
+          className="block h-1 bg-ambar"
+          style={{ width: `${total > 0 ? Math.round((feitas / total) * 100) : 0}%` }}
+        />
+      </span>
+      <span className="font-mono text-xs text-texto-suave">{msg.lote.sidebar.progresso(feitas, total, eta)}</span>
+    </NavLink>
+  );
 }
 
 export function BarraLateral() {
@@ -81,26 +110,29 @@ export function BarraLateral() {
         ))}
       </nav>
 
-      <div
-        className="mt-auto flex flex-col gap-[10px] border-t border-[#24272c] p-3"
-        role="status"
-        aria-label={`${msg.barraLateral.titulo}: ${msg.barraLateral.resumo(resumo)}`}
-      >
-        <span className="lbl !text-[10.5px]">{msg.barraLateral.titulo}</span>
-        <div className="flex items-center gap-2 text-[13px] font-bold">
-          <Led cor={LED_DO_ESTADO[resumo.estado]} tamanho={9} brilho />
-          <span data-testid="resumo-stack">{msg.barraLateral.resumo(resumo)}</span>
+      <div className="mt-auto flex flex-col gap-[14px]">
+        <CartaoDoLote />
+        <div
+          className="flex flex-col gap-[10px] border-t border-[#24272c] p-3"
+          role="status"
+          aria-label={`${msg.barraLateral.titulo}: ${msg.barraLateral.resumo(resumo)}`}
+        >
+          <span className="lbl !text-[10.5px]">{msg.barraLateral.titulo}</span>
+          <div className="flex items-center gap-2 text-[13px] font-bold">
+            <Led cor={LED_DO_ESTADO[resumo.estado]} tamanho={9} brilho />
+            <span data-testid="resumo-stack">{msg.barraLateral.resumo(resumo)}</span>
+          </div>
+          {SERVICOS.map((info) => {
+            const s = status.servicos.find((x) => x.id === info.id);
+            return (
+              <div key={info.id} className="flex items-center gap-2 text-[12.5px] text-texto-suave">
+                <Led cor={s ? ledDoServico(s) : 'cinza'} tamanho={6} />
+                <span>{info.nome}</span>
+                <span className="ml-auto font-mono text-[11.5px] text-texto-mudo">:{info.porta}</span>
+              </div>
+            );
+          })}
         </div>
-        {SERVICOS.map((info) => {
-          const s = status.servicos.find((x) => x.id === info.id);
-          return (
-            <div key={info.id} className="flex items-center gap-2 text-[12.5px] text-texto-suave">
-              <Led cor={s ? ledDoServico(s) : 'cinza'} tamanho={6} />
-              <span>{info.nome}</span>
-              <span className="ml-auto font-mono text-[11.5px] text-texto-mudo">:{info.porta}</span>
-            </div>
-          );
-        })}
       </div>
     </aside>
   );
