@@ -46,6 +46,12 @@
   --color-chip-laranja-fundo: #33200f;
   --color-chip-vermelho: #ff7a7a;
   --color-chip-vermelho-fundo: #331516;
+  --color-chip-roxo: #c3a6ff;
+  --color-chip-roxo-fundo: #251c38;
+  --color-chip-verdec: #b5e07f;
+  --color-chip-verdec-fundo: #1e2814;
+  --color-chip-cinza: #9da1a8;
+  --color-chip-cinza-fundo: #1e2024;
 
   --color-erro-borda: #5a2626;
   --color-aviso-borda: #5a3a1c;
@@ -204,6 +210,138 @@
   .st-vermelho {
     color: var(--color-chip-vermelho);
     background: var(--color-chip-vermelho-fundo);
+  }
+  .st-roxo {
+    color: var(--color-chip-roxo);
+    background: var(--color-chip-roxo-fundo);
+  }
+  .st-verdec {
+    color: var(--color-chip-verdec);
+    background: var(--color-chip-verdec-fundo);
+  }
+  .st-cinza {
+    color: var(--color-chip-cinza);
+    background: var(--color-chip-cinza-fundo);
+  }
+
+  /* etapas do lote (Lista · Opções · Execução) */
+  .stp {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    min-height: 40px;
+    padding: 0 14px;
+    border-radius: 6px;
+    text-decoration: none;
+    color: var(--color-texto-suave);
+    font-weight: 600;
+    font-size: 14px;
+  }
+  .stp:hover {
+    background: #1a1d21;
+    color: var(--color-texto);
+  }
+  .stp[aria-current='page'] {
+    background: #1f2226;
+    color: #fff;
+  }
+
+  /* filtro por chips (tabela de faixas) */
+  .chip-f {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    min-height: 34px;
+    padding: 0 12px;
+    border-radius: 6px;
+    border: 1px solid var(--color-borda-forte);
+    background: transparent;
+    color: var(--color-texto-suave);
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  .chip-f:hover {
+    color: var(--color-texto);
+    border-color: #4a4f57;
+  }
+  .chip-f[aria-pressed='true'] {
+    background: var(--color-borda);
+    color: #fff;
+    border-color: #4a4f57;
+  }
+
+  /* receitas e botões − + da tela de Opções */
+  .rc {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    min-height: 92px;
+    padding: 14px;
+    border-radius: 8px;
+    border: 1px solid var(--color-borda);
+    background: var(--color-cartao);
+    text-align: left;
+    cursor: pointer;
+  }
+  .rc:hover {
+    border-color: #4a4f57;
+    background: #181b1f;
+  }
+  .rc[aria-pressed='true'] {
+    border-color: var(--color-ambar);
+    background: #1f1a10;
+  }
+  .knob {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 34px;
+    height: 34px;
+    border-radius: 6px;
+    border: 1px solid var(--color-borda-forte);
+    background: var(--color-campo);
+    cursor: pointer;
+    font-size: 18px;
+    line-height: 1;
+  }
+  .knob:hover:not(:disabled) {
+    background: var(--color-campo-hover);
+  }
+  .knob:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+  }
+  .dif {
+    display: inline-flex;
+    align-items: center;
+    height: 20px;
+    padding: 0 7px;
+    border-radius: 4px;
+    background: #2e2410;
+    color: var(--color-ambar);
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+  }
+
+  /* editor da lista: o gutter e o texto rolam juntos e têm a mesma altura de linha */
+  .ed {
+    display: block;
+    width: 100%;
+    padding: 14px 16px;
+    border: 0;
+    background: transparent;
+    color: var(--color-texto);
+    font-family: var(--font-mono);
+    font-size: 13px;
+    line-height: 24px;
+    resize: none;
+    white-space: pre;
+    overflow: hidden;
+  }
+  .ed:focus {
+    outline: none;
   }
 
   .tab {
@@ -440,8 +578,19 @@
   animation: pulso 1.4s ease-in-out infinite;
 }
 
+/* faixas em andamento na barra de progresso do lote */
+@keyframes pisca {
+  50% {
+    opacity: 0.35;
+  }
+}
+.pulsa {
+  animation: pisca 1.2s steps(2, start) infinite;
+}
+
 @media (prefers-reduced-motion: reduce) {
-  .esqueleto {
+  .esqueleto,
+  .pulsa {
     animation: none;
   }
 }

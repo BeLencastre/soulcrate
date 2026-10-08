@@ -40,7 +40,16 @@ export class ExecutorFalso implements Executor {
   executar(comando: string, args: readonly string[], opcoes: OpcoesProcesso = {}): Promise<ResultadoProcesso> {
     this.chamadas.push([comando, ...args].join(' '));
     const r = this.responder(comando, args, opcoes) ?? FALHA(`sem resposta para: ${comando} ${args.join(' ')}`);
-    if (r.atraso) return new Promise((res) => setTimeout(() => res(completo(r)), r.atraso));
+    if (r.atraso) {
+      // como o ExecutorReal: abortar (signal) mata o processo na hora
+      return new Promise((res) => {
+        const t = setTimeout(() => res(completo(r)), r.atraso);
+        opcoes.signal?.addEventListener('abort', () => {
+          clearTimeout(t);
+          res(completo({ codigo: null }));
+        });
+      });
+    }
     return Promise.resolve(completo(r));
   }
 
@@ -84,4 +93,18 @@ export async function ate(cond: () => boolean, ms = 2000): Promise<void> {
     await esperar(5);
   }
   throw new Error('Condição não aconteceu a tempo.');
+}
+
+/** Apaga a pasta; no Windows, um processo que acabou de sair ainda segura a pasta por um instante (EPERM/EBUSY). */
+export async function removerPasta(dir: string, tentativas = 40): Promise<void> {
+  const { rmSync } = await import('node:fs');
+  for (let i = 0; ; i++) {
+    try {
+      rmSync(dir, { recursive: true, force: true });
+      return;
+    } catch (e) {
+      if (i >= tentativas) throw e;
+      await esperar(250);
+    }
+  }
 }

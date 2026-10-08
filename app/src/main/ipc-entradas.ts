@@ -2,6 +2,15 @@
 // entrada é conferida campo a campo, com tipo e tamanho, antes de chegar aos serviços.
 import type { ConfigEntrada, EntradaPasta, LoginNavidrome, OpcoesSetup, PastasConfig } from '@shared/configuracao';
 import type { FinalidadePasta } from '@shared/ipc';
+import {
+  ehIdDeExecucao,
+  LIMITE_LISTA_BYTES,
+  nomeDeListaValido,
+  type ArquivoExecucao,
+  type ModeloLista,
+  type OpcoesAnalise,
+} from '@shared/lote';
+import { validarOpcoes, type OpcoesLote } from '@shared/opcoes-lote';
 
 /** Nenhum campo do formulário tem motivo para passar disto (uma senha de 255 caracteres já é enorme). */
 const LIMITE_TEXTO = 1024;
@@ -71,4 +80,54 @@ export function exigirOpcoesSetup(bruto: unknown): OpcoesSetup {
 export function exigirFinalidade(valor: unknown): FinalidadePasta {
   if (valor === 'project' || valor === 'music' || valor === 'downloads' || valor === 'incomplete') return valor;
   throw new Error('Finalidade de pasta desconhecida.');
+}
+
+// ---------------------------------------------------------------- Fase 3: listas e lote
+
+export function exigirNomeDeLista(valor: unknown): string {
+  if (!nomeDeListaValido(valor)) throw new Error('Nome de lista inválido.');
+  return valor;
+}
+
+export function exigirModelo(valor: unknown): ModeloLista {
+  if (valor === 'exemplo' || valor === 'vazia') return valor;
+  throw new Error('Modelo de lista desconhecido.');
+}
+
+export function exigirTextoDaLista(valor: unknown): string {
+  if (typeof valor !== 'string' || valor.length > LIMITE_LISTA_BYTES) throw new Error('Texto da lista inválido.');
+  return valor;
+}
+
+export function exigirBytes(valor: unknown): Uint8Array {
+  if (!(valor instanceof Uint8Array) || valor.byteLength > LIMITE_LISTA_BYTES) throw new Error('Arquivo inválido.');
+  return valor;
+}
+
+export function exigirOpcoesAnalise(bruto: unknown): OpcoesAnalise {
+  const o = objeto(bruto, 'opcoes');
+  return { biblioteca: booleano(o.biblioteca, 'biblioteca'), retentar: booleano(o.retentar, 'retentar') };
+}
+
+export function exigirInicioDeLote(bruto: unknown): { lista: string; opcoes: OpcoesLote } {
+  const o = objeto(bruto, 'lote');
+  return { lista: exigirNomeDeLista(o.lista), opcoes: validarOpcoes(o.opcoes) };
+}
+
+export function exigirRunId(valor: unknown): string {
+  if (!ehIdDeExecucao(valor)) throw new Error('Execução inválida.');
+  return valor;
+}
+
+export function exigirArquivoExecucao(valor: unknown): ArquivoExecucao {
+  if (
+    valor === 'resultado' ||
+    valor === 'nao-baixadas' ||
+    valor === 'diagnostico' ||
+    valor === 'catalogo' ||
+    valor === 'log'
+  ) {
+    return valor;
+  }
+  throw new Error('Arquivo da execução desconhecido.');
 }

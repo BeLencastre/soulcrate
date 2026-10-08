@@ -132,3 +132,21 @@ export function Logo({ tamanho = 30 }: { tamanho?: number }) {
     </svg>
   );
 }
+
+export const IconeEnviar = (p: Props) => (
+  <Base {...p}>
+    <path d="M12 15V3" />
+    <path d="m7 8 5-5 5 5" />
+    <path d="M4 15v4a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-4" />
+  </Base>
+);
+export const IconePlay = (p: Props) => (
+  <Base fill="currentColor" stroke="none" {...p}>
+    <path d="M7 4v16l13-8z" />
+  </Base>
+);
+export const IconeParar = (p: Props) => (
+  <Base fill="currentColor" stroke="none" {...p}>
+    <rect x="5" y="5" width="14" height="14" rx="2" />
+  </Base>
+);

@@ -36,6 +36,10 @@ export function useAcoes() {
           return void navegar('/servicos');
         case 'tentarDeNovo':
           return opcoes.aoTentarDeNovo ? opcoes.aoTentarDeNovo() : seguro(api.env.check());
+        case 'verExecucao':
+          return void navegar('/lista/execucao');
+        case 'abrirPastaLotes':
+          return seguro(api.batch.openFolder());
         case 'copiarDetalhes':
           return seguro(api.app.copyText(textoParaCopiar(erro)));
         case 'abrirLog':

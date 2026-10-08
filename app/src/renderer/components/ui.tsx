@@ -32,7 +32,7 @@ export function Rotulo({ children, className = '', ...resto }: HTMLAttributes<HT
   );
 }
 
-export type CorChip = 'neutro' | 'azul' | 'verde' | 'laranja' | 'vermelho';
+export type CorChip = 'neutro' | 'azul' | 'verde' | 'laranja' | 'vermelho' | 'roxo' | 'verdec' | 'cinza';
 
 /** Estado em texto com quadradinho colorido; nunca depende só da cor. */
 export function Chip({ cor, children }: { cor: CorChip; children: ReactNode }) {

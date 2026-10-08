@@ -54,6 +54,23 @@ const api: SoulcrateApi = {
     provideNavidromeLogin: (login) => chamar('setup:provideNavidromeLogin', login),
     checkPort: () => chamar('setup:checkPort'),
   },
+  lists: {
+    listRecent: () => chamar('lists:recent'),
+    read: (nome) => chamar('lists:read', nome),
+    save: (nome, texto) => chamar('lists:save', nome, texto),
+    create: (modelo) => chamar('lists:create', modelo),
+    importFile: () => chamar('lists:import'),
+    importBytes: (nome, bytes) => chamar('lists:importBytes', nome, bytes),
+    analyze: (nome, opcoes) => chamar('lists:analyze', nome, opcoes),
+  },
+  batch: {
+    start: (entrada) => chamar('batch:start', entrada),
+    stop: (runId) => chamar('batch:stop', runId),
+    active: () => chamar('batch:active'),
+    attach: (runId) => chamar('batch:attach', runId),
+    openFile: (runId, arquivo) => chamar('batch:openFile', runId, arquivo),
+    openFolder: () => chamar('batch:openFolder'),
+  },
   logs: {
     subscribe: (alvo) => chamar('logs:subscribe', alvo),
     unsubscribe: (id) => chamar('logs:unsubscribe', id),

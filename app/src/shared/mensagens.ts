@@ -5,6 +5,9 @@ import type { TarefaEstado, TarefaSetupId } from './configuracao.js';
 import type { EtapaDetalhe, EtapaEstado, EtapaId, MotivoResumo, OperacaoStack, ResumoStack } from './stack.js';
 import type { ServicoId } from './servicos.js';
 import { servicoPorId } from './servicos.js';
+import type { MotivoFim } from './eventos-lote.js';
+import type { ResumoFim } from './lote-estado.js';
+import type { OpcaoId } from './opcoes-lote.js';
 
 const listaFmt = new Intl.ListFormat('pt-BR', { style: 'long', type: 'conjunction' });
 
@@ -70,6 +73,8 @@ export const msg = {
     sair: 'Sair',
     abrirPasta: 'Abrir a pasta',
     abrirYml: 'Abrir o slskd.yml',
+    verExecucao: 'Ver execução',
+    abrirPastaLotes: 'Abrir a pasta lotes',
   },
 
   inicio: {
@@ -78,7 +83,7 @@ export const msg = {
     interfacesWeb: 'Interfaces web',
     ultimoLote: 'Último lote concluído',
     semLote: 'Nenhum lote rodando',
-    semLoteDica: 'O download em lote chega em uma próxima versão do app. Por enquanto, use o baixar-lista.bat.',
+    semLoteDica: 'Escolha uma lista e baixe tudo de uma vez, com a stack no ar. Fechar o app não interrompe o lote.',
     logDaStack: 'Log da stack',
     logFonte: 'docker compose',
     logVazio: 'Nenhum contêiner rodando.',
@@ -560,6 +565,331 @@ export const msg = {
     },
   },
 
+  lote: {
+    rotulo: 'Baixar lista',
+    etapas: {
+      rotulo: 'Etapas do lote',
+      lista: 'Lista',
+      opcoes: 'Opções',
+      execucao: 'Execução',
+    },
+    lista: {
+      salvaAgora: 'salva agora',
+      salvaHa: (tempo: string) => `salva há ${tempo}`,
+      salvando: 'salvando…',
+      naoSalva: 'alterações não salvas',
+      listasRecentes: 'Listas recentes',
+      novaDoExemplo: 'Nova a partir do exemplo',
+      novaEmBranco: 'Nova em branco',
+      importar: 'Importar .txt ou .csv',
+      importarTitulo: 'Importar lista',
+      filtroArquivos: 'Listas (.txt e .csv)',
+      salvar: 'Salvar',
+      editor: 'Editor da lista',
+      textoDaLista: 'Texto da lista',
+      cabecalhoEditor: 'Uma faixa por linha · Artista - Título (Mix)',
+      linhas: (n: number) => `${n} ${plural(n, 'linha', 'linhas')}`,
+      dica: 'Solte um .txt ou .csv do Spotify na janela, ou cole uma tracklist: numeração, traço longo e duração são limpos sozinhos.',
+      somenteLeitura:
+        'Lista em CSV: o app só lê. O lote usa as colunas de artista e título; para mudar a lista, edite o arquivo em outro programa.',
+      previa: 'Pré-visualização',
+      comoVaiLer: 'Como o lote vai ler',
+      atualizando: 'Atualizando…',
+      paraBaixar: (n: number) => `${n} para baixar`,
+      duplicadas: (n: number) => `${n} ${plural(n, 'duplicada', 'duplicadas')}`,
+      naBiblioteca: (n: number) => `${n} na biblioteca`,
+      jaFeitas: (n: number) => `${n} ${plural(n, 'já feita', 'já feitas')}`,
+      colunas: { numero: '#', artista: 'Artista', titulo: 'Título', mix: 'Mix', aviso: 'Aviso' },
+      previaVazia: 'Nenhuma faixa ainda. Escreva ou cole faixas ao lado.',
+      analiseFalhou: 'Não consegui ler a lista',
+      avisos: {
+        duplicada: (linha: number) => `Duplicada · linha ${linha}`,
+        naBiblioteca: 'Já na biblioteca',
+        jaFeita: 'Feita em execução anterior',
+        ignorada: 'Ignorada',
+        semTraco: 'Falta o " - "',
+        tituloVazio: 'Título vazio',
+        remixer: 'Artista é o remixer: aceita qualquer original',
+      },
+      retomada: {
+        titulo: (data: string) => `Esta lista já rodou em ${data}.`,
+        corpo: (feitas: number) =>
+          feitas > 0
+            ? `O lote continua de onde parou e pula ${feitas === 1 ? 'a faixa já feita' : `as ${feitas} faixas já feitas`}.`
+            : 'Nada do que já foi feito será pulado.',
+        retentar: 'Tentar de novo as que falharam',
+      },
+      rodandoAgora: 'Esta lista está rodando agora.',
+      verExecucao: 'Ver execução',
+      rodapeFaixas: (n: number) => (n === 1 ? 'faixa para baixar' : 'faixas para baixar'),
+      opcoesPadrao: 'Opções: padrão',
+      opcoesAlteradas: (n: number) => `Opções: padrão, com ${n} ${plural(n, 'alteração', 'alterações')}`,
+      revisarOpcoes: 'Revisar opções',
+      iniciar: 'Iniciar lote',
+      iniciando: 'Iniciando…',
+      semFaixas: 'Não há faixas para baixar nesta lista.',
+      vazio: {
+        titulo: 'Escolha uma lista',
+        corpo:
+          'Uma faixa por linha, no formato Artista - Título (Mix). Abra uma lista que você já tem, importe um .txt ou .csv, ou comece pelo exemplo.',
+      },
+      recentes: {
+        titulo: 'Listas recentes',
+        corpo: 'Listas que estão na pasta do Soulcrate, da mais recente para a mais antiga.',
+        vazio: 'Nenhuma lista na pasta do Soulcrate ainda.',
+        fechar: 'Fechar',
+      },
+      soltar: 'Solte um .txt ou .csv para importar',
+      erroAbrir: 'Não consegui abrir a lista',
+      erroSalvar: 'Não consegui salvar a lista',
+      erroImportar: 'Não consegui importar o arquivo',
+      soTxtCsv: 'Só arquivos .txt e .csv podem ser importados.',
+    },
+    opcoes: {
+      receitas: 'Receitas',
+      receitasDica: 'Um clique ajusta as opções para a situação.',
+      avancadas: 'Avançadas',
+      avancadasDica: 'Ritmo, filas e tentativas',
+      diferente: '≠ PADRÃO',
+      padrao: (v: string) => `PADRÃO ${v}`,
+      alteradas: (n: number) => `${n} ${plural(n, 'ALTERADA', 'ALTERADAS')}`,
+      resumo: 'Resumo',
+      nenhuma: 'Nenhuma opção diferente do padrão do script',
+      algumas: (n: number) => `${plural(n, 'opção diferente', 'opções diferentes')} do padrão do script`,
+      equivale: 'Equivale a rodar',
+      restaurar: 'Restaurar padrões',
+      conferirStack: 'Antes de começar, o app confere se a stack está no ar e oferece ligá-la.',
+      iniciar: (n: number) => `Iniciar lote · ${n} ${plural(n, 'faixa', 'faixas')}`,
+      iniciarSemContagem: 'Iniciar lote',
+      diminuir: (titulo: string) => `Diminuir: ${titulo}`,
+      aumentar: (titulo: string) => `Aumentar: ${titulo}`,
+      grupos: {
+        qualidade: { nome: 'Qualidade', desc: 'O que aceitar além de FLAC e MP3 320' },
+        titulos: { nome: 'Títulos', desc: 'Como comparar o título da linha com o do arquivo' },
+        comportamento: { nome: 'Comportamento', desc: 'O que fazer com o que já foi feito' },
+        ritmo: { nome: 'Ritmo', desc: '' },
+        filas: { nome: 'Filas e tentativas', desc: '' },
+      },
+      itens: {
+        AceitarWav: { titulo: 'Aceitar WAV e AIFF', desc: 'Aceita WAV e AIFF antes do MP3.' },
+        AceitarMp3Menor: {
+          titulo: 'Aceitar MP3 256 e VBR (V0)',
+          desc: 'Quando a faixa não existe em FLAC nem em MP3 320.',
+        },
+        TituloAproximado: {
+          titulo: 'Aceitar títulos com palavras a mais',
+          desc: 'Tentados por último e marcados para conferir no resultado.',
+        },
+        NaoTolerarGrafia: {
+          titulo: 'Exigir o título sem erros de digitação',
+          desc: 'Por padrão, "Abaddon" também acha "Abbadon".',
+        },
+        SemCatalogo: {
+          titulo: 'Não conferir os títulos no MusicBrainz',
+          desc: 'Começa a buscar antes, mas não corrige títulos errados.',
+        },
+        PularForaDoCatalogo: {
+          titulo: 'Pular títulos que não existem no catálogo',
+          desc: 'Nem busca. Corrija a lista com o relatório do catálogo.',
+        },
+        Retentar: { titulo: 'Tentar de novo o que falhou antes', desc: 'Necessário ao rodar a mesma lista outra vez.' },
+        NaoPularExistentes: {
+          titulo: 'Baixar mesmo o que já está na biblioteca',
+          desc: 'Para trocar um arquivo ruim que já foi apagado.',
+        },
+        SemBeets: { titulo: 'Só baixar, sem organizar', desc: 'Os arquivos ficam em downloads/ para importar depois.' },
+        SemBuscaArtista: {
+          titulo: 'Não buscar só pelo nome do artista',
+          desc: 'Mais rápido em listas enormes, mas acha menos.',
+        },
+        Paralelo: { titulo: 'Downloads simultâneos', desc: '' },
+        Buscas: { titulo: 'Buscas simultâneas', desc: '' },
+        BuscasPorJanela: { titulo: 'Buscas a cada 220 s', desc: '' },
+        PausaBloqueioMin: { titulo: 'Pausa quando o servidor bloqueia', desc: '' },
+        Tentativas: { titulo: 'Usuários ou arquivos tentados por faixa', desc: '' },
+        FilaMaxMin: { titulo: 'Espera na fila de um usuário', desc: '' },
+        FilaUltimoMin: { titulo: 'Espera quando é o último usuário', desc: '' },
+        DownloadMaxMin: { titulo: 'Tempo máximo de cada transferência', desc: '' },
+        LoteBeets: { titulo: 'Faixas por chamada do beets', desc: '' },
+      } satisfies Record<OpcaoId, { titulo: string; desc: string }>,
+      receitasNomes: {
+        listaGrande: 'Lista grande, internet boa',
+        usuariosLentos: 'Usuários lentos, filas longas',
+        querTudo: 'Quero tudo, nem que seja MP3 256',
+        tentarDeNovo: 'Tentar de novo as que falharam',
+        soBaixar: 'Só baixar, organizar depois',
+        buscasSemResposta: 'Muitas buscas sem resposta',
+        titulosDuvidosos: 'Muitos títulos duvidosos',
+        titulosIncompletos: 'Títulos da lista incompletos',
+        listaEnormeComPressa: 'Lista enorme e com pressa',
+      } as Record<string, string>,
+    },
+    antesDeIniciar: {
+      semStackTitulo: 'A stack não está no ar',
+      semStackCorpo:
+        'Para baixar, o slskd precisa estar rodando. O app liga a stack e começa o lote assim que os serviços estiverem saudáveis. Na primeira vez, o build leva de 5 a 10 minutos.',
+      ligarEComecar: 'Ligar e começar',
+      ligandoTitulo: 'Ligando a stack…',
+      ligandoCorpo: 'Esperando os serviços ficarem saudáveis. O lote começa sozinho em seguida.',
+      naoDaTitulo: 'Não dá para ligar a stack agora',
+      naoDaCorpo: (motivo: string) =>
+        `${motivo}. Resolva isso no Início e volte aqui; sua lista e suas opções ficam como estão.`,
+      irParaInicio: 'Ir para o Início',
+      cancelar: 'Cancelar',
+      demorou: 'A stack não ficou saudável a tempo. Veja os serviços e tente de novo.',
+    },
+    execucao: {
+      rotulo: (id: string) => `Baixar lista · execução ${id}`,
+      vazio: {
+        titulo: 'Nenhum lote em execução',
+        corpo: 'Escolha uma lista, revise as opções e inicie o lote. O painel ao vivo aparece aqui.',
+        irParaLista: 'Ir para a lista',
+      },
+      estado: {
+        preparando: 'Iniciando',
+        rodando: 'Rodando',
+        pausado: 'Buscas pausadas',
+        parando: 'Parando',
+        completed: 'Concluído',
+        user: 'Parado pelo usuário',
+        error: 'Terminou com erro',
+        slskd_down: 'slskd não respondeu',
+        config: 'Configuração inválida',
+        locked: 'Lista já estava rodando',
+        interrupted: 'Interrompido',
+      } satisfies Record<string, string>,
+      abrirPasta: 'Abrir pasta lotes',
+      parar: 'Parar',
+      abrirResultado: 'Abrir resultado',
+      abrirNaoBaixadas: 'Abrir não baixadas',
+      novaExecucao: 'Voltar à lista',
+      faixa: {
+        iniciando: ['Iniciando o lote…', 'Esperando o primeiro sinal do script.'] as const,
+        catalogo: (feitas: number, total: number) =>
+          ['Conferindo os títulos no MusicBrainz', `${feitas}/${total} faixas conferidas antes de buscar.`] as const,
+        janelaCheia: (limite: number, janela: number) =>
+          [
+            'Limite de buscas atingido',
+            `${limite} buscas a cada ${janela} s. As próximas buscas começam em instantes; os downloads seguem normalmente.`,
+          ] as const,
+        pausado: (hora: string) =>
+          [
+            `Buscas pausadas até ${hora}`,
+            'O servidor do Soulseek não respondeu nem à busca de teste. Os downloads continuam; as buscas voltam sozinhas.',
+          ] as const,
+        parando: [
+          'Finalizando e gravando relatórios…',
+          'Esperando os downloads em andamento terminarem a etapa atual. Não feche o Soulcrate à força.',
+        ] as const,
+        gravados: [
+          'Relatórios gravados em lotes/',
+          'resultado, não baixadas, diagnóstico e catálogo desta execução.',
+        ] as const,
+        concluido: ['Lote concluído', 'Os relatórios desta execução estão em lotes/.'] as const,
+      },
+      avisoSlskd: 'O slskd não respondeu',
+      avisoMusicbrainz: 'MusicBrainz indisponível',
+      progresso: 'Progresso',
+      concluidas: 'concluídas',
+      rodandoHa: 'rodando há',
+      faltam: 'faltam',
+      calculando: 'calculando…',
+      barra: (c: { baixadas: number; atencao: number; puladas: number; andamento: number; aguardando: number }) =>
+        `Progresso por faixa: ${c.baixadas} baixadas, ${c.atencao} com atenção, ${c.puladas} puladas, ${c.andamento} em andamento, ${c.aguardando} aguardando`,
+      contadores: {
+        buscando: 'Buscando',
+        baixando: 'Baixando',
+        naFila: 'Na fila',
+        beets: 'Beets',
+        aguardando: 'Aguardando',
+        baixadas: 'Baixadas',
+        naoAchadas: 'Não achadas',
+        falhas: 'Falhas',
+        puladas: 'Puladas',
+      },
+      abas: { visao: 'Visão', faixas: 'Faixas', log: 'Log bruto' },
+      filtros: {
+        todas: 'Todas',
+        andamento: 'Em andamento',
+        concluida: 'Concluídas',
+        atencao: 'Atenção',
+        pulada: 'Puladas',
+      },
+      buscar: 'Buscar artista ou título',
+      buscarRotulo: 'Buscar faixa',
+      colunas: {
+        numero: '#',
+        faixa: 'Faixa',
+        status: 'Status',
+        formato: 'Formato',
+        usuario: 'Usuário',
+        tentativa: 'Tent.',
+        observacao: 'Observação',
+      },
+      tabelaVazia: 'Nenhuma faixa neste filtro.',
+      tabela: 'Faixas do lote',
+      logVazio: 'Nenhuma saída ainda.',
+      log: 'Log bruto do lote',
+    },
+    fim: {
+      sumiu:
+        'O processo do lote terminou sem registrar o fim (foi encerrado à força ou o PC foi desligado). Rode a lista de novo: ela continua de onde parou.',
+      naoComecou: 'O lote não chegou a começar.',
+    },
+    status: {
+      aguardando: 'Aguardando',
+      buscando: 'Buscando',
+      aguardandoVaga: 'Aguardando vaga',
+      baixando: 'Baixando',
+      naFila: 'Na fila do usuário',
+      organizando: 'Organizando (beets)',
+      naBiblioteca: 'Na biblioteca',
+      baixada: 'Baixada (não organizada)',
+      beetsFalhou: 'Baixada, beets falhou',
+      jaEstavaNaBiblioteca: 'Já estava na biblioteca',
+      jaFeita: 'Feita em execução anterior',
+      naoEncontrada: 'Não encontrada',
+      falhou: 'Falhou',
+    },
+    observacao: {
+      tituloCorrigido: (linha: string) => `título corrigido: ${linha}`,
+      busca: (etapa: number, etapas: number, consulta: string) => `busca ${etapa}/${etapas}: ${consulta}`,
+      candidatos: (n: number) => `${n} ${plural(n, 'candidato', 'candidatos')}`,
+      naFilaDoUsuario: 'na fila do usuário',
+      organizando: 'importando no beets',
+      tentativaFalhou: (motivo: string) => `tentativa anterior falhou (${motivo})`,
+    },
+    notificacao: {
+      titulo: {
+        completed: 'Lote concluído',
+        user: 'Lote parado',
+        error: 'O lote terminou com erro',
+        slskd_down: 'O slskd não respondeu',
+        config: 'Configuração inválida',
+        locked: 'Esta lista já estava rodando',
+        interrupted: 'Lote interrompido',
+      } satisfies Record<MotivoFim, string>,
+      contagem: (r: ResumoFim) =>
+        `${r.ok} ${plural(r.ok, 'baixada', 'baixadas')} · ${r.naoAchadas} ${plural(r.naoAchadas, 'não encontrada', 'não encontradas')} · ${r.falhas} ${plural(r.falhas, 'falha', 'falhas')}`,
+      buscasPausadasTitulo: 'Buscas pausadas',
+      buscasPausadasCorpo: (hora: string, lista: string | null) =>
+        `${lista ? `${lista}: ` : ''}o servidor do Soulseek bloqueou as buscas até ${hora}. Os downloads continuam.`,
+    },
+    sidebar: {
+      rodando: 'Lote rodando',
+      terminou: 'Lote terminou',
+      progresso: (feitas: number, total: number, eta: number | null) =>
+        `${feitas}/${total}${eta !== null ? ` · ~${eta} min` : ''}`,
+    },
+    inicio: {
+      rodando: 'Lote rodando',
+      terminou: 'Último lote',
+      ver: 'Ver execução',
+      baixarLista: 'Baixar uma lista',
+      progresso: (feitas: number, total: number) => `${feitas}/${total} concluídas`,
+    },
+  },
+
   emBreve: {
     rotulo: 'Em breve',
     titulo: 'Esta tela chega em uma próxima versão',
@@ -613,6 +943,13 @@ export const msg = {
       'porta.em-uso': 'Erro · rede',
       'servico.inacessivel': 'Erro · serviço',
       'operacao.falhou': 'Erro · stack',
+      'lote.lista-rodando': 'Erro · lote',
+      'lote.stack-fora': 'Erro · lote',
+      'lote.nao-iniciou': 'Erro · lote',
+      'lote.slskd-fora': 'Erro · lote',
+      'lote.config': 'Erro · lote',
+      'lote.erro': 'Erro · lote',
+      'lote.interrompido': 'Erro · lote',
       inesperado: 'Erro inesperado',
     } satisfies Record<ErroCodigo, string>,
     inesperado: { titulo: 'Algo deu errado', mensagem: 'O app não conseguiu terminar o que você pediu.' },
@@ -675,6 +1012,39 @@ export const msg = {
     servicoInacessivel: {
       titulo: (nome: string) => `O ${nome} não respondeu`,
       mensagem: 'O contêiner pode ter caído ou ainda estar subindo.',
+    },
+    loteListaRodando: {
+      titulo: (lista: string) => `${lista} já está rodando`,
+      mensagem: (desde: string | null) =>
+        `Esta lista já está sendo baixada por outro lote${desde ? ` (desde ${desde})` : ''}, pelo app ou pelo baixar-lista.bat. Espere terminar, ou pare aquele lote, antes de iniciar de novo.`,
+    },
+    loteStackFora: {
+      titulo: 'A stack não está no ar',
+      mensagem:
+        'O slskd precisa estar rodando para baixar. Ligue a stack, espere os serviços ficarem saudáveis e tente de novo.',
+    },
+    loteNaoIniciou: {
+      titulo: 'Não consegui iniciar o lote',
+      mensagem: 'O PowerShell não chegou a rodar o baixar-lista.ps1. Os detalhes explicam o motivo.',
+    },
+    loteSlskdFora: {
+      titulo: 'O slskd não respondeu',
+      mensagem:
+        'O lote parou porque o slskd ficou inacessível. Veja os serviços; ao rodar a lista de novo, ela continua de onde parou.',
+    },
+    loteConfig: {
+      titulo: 'O lote não pôde começar',
+      mensagem:
+        'O script recusou a configuração (lista, API key ou parâmetros). Os detalhes dizem o que precisa mudar.',
+    },
+    loteInterrompido: {
+      titulo: 'O lote foi interrompido',
+      mensagem:
+        'O processo do lote terminou sem gravar o fim (foi encerrado à força, ou o PC foi desligado). Rode a lista de novo: ela continua de onde parou.',
+    },
+    loteErro: {
+      titulo: 'O lote terminou com erro',
+      mensagem: 'Aconteceu um erro durante o lote. Os detalhes e o log da execução dizem onde.',
     },
     operacaoFalhou: {
       titulo: (op: OperacaoStack | 'reiniciando') =>

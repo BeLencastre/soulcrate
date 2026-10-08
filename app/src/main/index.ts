@@ -3,27 +3,31 @@ import { randomUUID } from 'node:crypto';
 import { existsSync, readFileSync, statSync } from 'node:fs';
 import { homedir, tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
-import { app, Menu, powerMonitor, shell, type BrowserWindow } from 'electron';
+import { app, Menu, Notification, powerMonitor, shell, type BrowserWindow } from 'electron';
 import { CANAL_EVENTOS, type MainEvent } from '@shared/ipc';
+import { listaDoArgv } from './argv';
 import { Bandeja } from './bandeja';
 import { ExecutorComDockerFalso, VAR_DOCKER_DUBLE, VAR_HTTP_DUBLE } from './duble-docker';
 import { registrarIpc } from './ipc';
 import { criarJanelaPrincipal } from './janela';
 import { iniciarLog, pastaDeLogs } from './log';
 import { criarMenu } from './menu';
-import { ExecutorReal } from './processos';
+import { ExecutorReal, LancadorReal } from './processos';
 import { AppSettingsService } from './services/app-settings';
 import { ChecksService } from './services/checks-service';
 import { ConfigService } from './services/config-service';
 import { validarConfiguracao } from './services/config-validacao';
 import { DockerService } from './services/docker-service';
 import { HealthService, INTERVALO_OCULTO_MS, INTERVALO_VISIVEL_MS } from './services/health-service';
+import { ListasService } from './services/listas-service';
 import { LogsService } from './services/logs-service';
+import { LoteService, processoVivoReal, type NotificacaoLote } from './services/lote-service';
 import { OperacoesService } from './services/operacoes-service';
 import { PastaService } from './services/pasta-service';
 import { lerVersaoDaStack, resolverProjeto } from './services/project-service';
 import { portaAceitaConexao, SetupService } from './services/setup-service';
 import { WebUiService } from './services/webui-service';
+import { servicoDe, servicoSaudavel } from '@shared/stack';
 import { urlDoServico } from '@shared/servicos';
 
 /** `--smoke-test`: abre a janela, confere o preload e o IPC e sai (usado pelo CI para testar o instalador). */
@@ -32,6 +36,8 @@ const TIMEOUT_SMOKE_MS = 60_000;
 
 // A pasta de dados é a mesma em desenvolvimento e instalado (%APPDATA%\Soulcrate).
 app.setName('Soulcrate');
+// as notificações do Windows precisam do mesmo id do instalador (electron-builder.yml: appId)
+app.setAppUserModelId('br.com.soulcrate.app');
 if (SMOKE) app.setPath('userData', join(tmpdir(), `soulcrate-smoke-${process.pid}`));
 else if (!app.isPackaged && process.env.SOULCRATE_USER_DATA) app.setPath('userData', process.env.SOULCRATE_USER_DATA);
 else app.setPath('userData', join(app.getPath('appData'), 'Soulcrate'));
@@ -196,6 +202,48 @@ async function principal(): Promise<void> {
     health.definirIntervalo(INTERVALO_OCULTO_MS);
   };
 
+  // download em lote (Fase 3)
+  const listas = new ListasService({ executor, agora: Date.now });
+  // nos testes ponta a ponta, as notificações viram uma lista que o teste confere (nada aparece na tela de quem testa)
+  const notificacoesDuble = !app.isPackaged && process.env.SOULCRATE_DUBLE_NOTIFICACOES === '1';
+  const notificar = (n: NotificacaoLote): void => {
+    if (notificacoesDuble) {
+      const g = globalThis as unknown as { __notificacoes?: NotificacaoLote[] };
+      (g.__notificacoes ??= []).push(n);
+      return;
+    }
+    if (!Notification.isSupported()) return;
+    const nota = new Notification({ title: n.titulo, body: n.corpo });
+    nota.on('click', () => {
+      mostrarJanela();
+      emitir({ type: 'app.navigate', rota: '/lista/execucao' });
+    });
+    nota.show();
+  };
+  const lote = new LoteService({
+    lancador: new LancadorReal(),
+    projeto,
+    // sem sondagem ainda (atualizadoEm 0) não dá para dizer que está fora: o próprio script confere (código 3)
+    slskdNoAr: () => health.atual.atualizadoEm === 0 || servicoSaudavel(servicoDe(health.atual, 'slskd')),
+    emitir,
+    notificar,
+    agora: Date.now,
+    processoVivo: processoVivoReal,
+    aoErro,
+    slskdUrl: !app.isPackaged ? (process.env.SOULCRATE_SLSKD_URL ?? null) : null,
+  });
+  /** "Abrir com" e a linha de comando: um .txt/.csv vira uma lista na pasta do Soulcrate e abre no editor (§6.2) */
+  const abrirListaDoArgv = (argv: readonly string[]): void => {
+    const dir = projeto().dir;
+    const arquivo = listaDoArgv(argv, existeArquivo);
+    if (!dir || !arquivo) return;
+    try {
+      emitir({ type: 'app.openList', nome: listas.importarArquivo(dir, arquivo).nome });
+    } catch (e) {
+      aoErro(e);
+    }
+  };
+
   registrarIpc({
     janela: () => janela,
     urlDev,
@@ -208,6 +256,8 @@ async function principal(): Promise<void> {
     config,
     pasta,
     setup,
+    listas,
+    lote,
     pastaPadrao,
     projeto,
     validarConfig,
@@ -264,7 +314,10 @@ async function principal(): Promise<void> {
     janela = null;
   });
 
-  app.on('second-instance', mostrarJanela);
+  app.on('second-instance', (_e, argv) => {
+    mostrarJanela();
+    abrirListaDoArgv(argv);
+  });
   powerMonitor.on('resume', () => {
     health.invalidarDeteccao();
     void health.atualizar({ forcar: true });
@@ -289,6 +342,10 @@ async function principal(): Promise<void> {
   );
 
   health.iniciar();
+  // um lote iniciado antes de o app fechar continua rodando: volta a acompanhá-lo (e a notificar quando terminar)
+  if (!SMOKE) void lote.reconectar().catch(aoErro);
+  // a janela ainda está carregando: espera o renderer assinar os eventos antes de pedir para abrir a lista
+  if (!SMOKE) win.webContents.once('did-finish-load', () => setTimeout(() => abrirListaDoArgv(process.argv), 500));
 
   app.on('before-quit', () => {
     saindo = true;
@@ -298,6 +355,7 @@ async function principal(): Promise<void> {
     operacoes.cancelar();
     logs.cancelarTodas();
     webui.encerrar();
+    lote.encerrar();
     executorReal.encerrarTodos();
     bandeja?.destruir();
     log.info('Soulcrate encerrado');

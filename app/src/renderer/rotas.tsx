@@ -5,6 +5,9 @@ import { Assistente } from './paginas/Assistente';
 import { Configuracoes } from './paginas/Configuracoes';
 import { EmBreve } from './paginas/EmBreve';
 import { Inicio } from './paginas/Inicio';
+import { Execucao } from './paginas/lote/Execucao';
+import { Lista } from './paginas/lote/Lista';
+import { Opcoes } from './paginas/lote/Opcoes';
 import { Servicos } from './paginas/Servicos';
 import { WebUi } from './paginas/WebUi';
 
@@ -26,7 +29,23 @@ export const roteador = createHashRouter([
         path: 'lista',
         element: (
           <Pagina>
-            <EmBreve nome={msg.nav.lista} />
+            <Lista />
+          </Pagina>
+        ),
+      },
+      {
+        path: 'lista/opcoes',
+        element: (
+          <Pagina>
+            <Opcoes />
+          </Pagina>
+        ),
+      },
+      {
+        path: 'lista/execucao',
+        element: (
+          <Pagina>
+            <Execucao />
           </Pagina>
         ),
       },

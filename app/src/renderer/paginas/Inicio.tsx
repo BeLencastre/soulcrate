@@ -18,7 +18,9 @@ import { IconeLigar, IconeLinkExterno, IconeReconstruir, IconeSeta } from '../co
 import { Botao, CabecalhoPagina, Cartao, Chip, Led, Rotulo, type CorChip } from '../components/ui';
 import { seguro, useAcoes } from '../lib/acoes';
 import { api } from '../lib/api';
+import { resumirFim } from '@shared/lote-estado';
 import { useAgora, useStackStatus, useUi } from '../lib/estado';
+import { execucaoRodando, useExecucao } from '../lib/lote-store';
 
 const COR_DO_ESTADO: Record<EtapaEstado, CorChip> = {
   ok: 'verde',
@@ -159,6 +161,54 @@ function PainelLog({ status }: { status: StackStatus }) {
   );
 }
 
+/** O lote em andamento (ou o último desta sessão); sem nenhum, o convite para baixar uma lista. */
+function CartaoDoLote() {
+  const navegar = useNavigate();
+  const rodando = useExecucao(execucaoRodando);
+  const runId = useExecucao((s) => s.runId);
+  const estado = useExecucao((s) => s.estado);
+  const resumo = useExecucao((s) => s.resumo);
+  const t = msg.lote.inicio;
+
+  if (!runId) {
+    return (
+      <Cartao
+        borda="vazio"
+        como="section"
+        className="flex flex-col items-start gap-3 p-6"
+        data-testid="cartao-sem-lote"
+      >
+        <Rotulo>{msg.inicio.semLote}</Rotulo>
+        <p className="m-0 text-sm leading-normal text-texto-suave">{msg.inicio.semLoteDica}</p>
+        <Botao variante="primario" pequeno onClick={() => navegar('/lista')}>
+          {t.baixarLista}
+        </Botao>
+      </Cartao>
+    );
+  }
+  const total = estado.total || estado.faixas.length;
+  const feitas = estado.contagem.concluidas;
+  const fim = estado.fim ? resumirFim(estado.fim.summary) : null;
+  return (
+    <Cartao
+      como="section"
+      borda={rodando ? 'azul' : 'normal'}
+      className="flex flex-col items-start gap-3 p-6"
+      data-testid="cartao-lote-inicio"
+    >
+      <Rotulo>{rodando ? t.rodando : t.terminou}</Rotulo>
+      <span className="font-mono text-base font-bold">{estado.inicio?.list ?? resumo?.lista ?? '…'}</span>
+      <p className="m-0 text-sm leading-normal text-texto-suave">
+        {t.progresso(feitas, total)}
+        {fim ? ` · ${msg.lote.notificacao.contagem(fim)}` : ''}
+      </p>
+      <Botao pequeno onClick={() => navegar('/lista/execucao')}>
+        {t.ver}
+      </Botao>
+    </Cartao>
+  );
+}
+
 export function Inicio() {
   const status = useStackStatus();
   const operacao = useUi((s) => s.operacao);
@@ -207,10 +257,7 @@ export function Inicio() {
       </section>
 
       <div className="grid grid-cols-[repeat(auto-fit,minmax(min(420px,100%),1fr))] items-start gap-4">
-        <Cartao borda="vazio" como="section" className="flex flex-col items-start gap-3 p-6">
-          <Rotulo>{msg.inicio.semLote}</Rotulo>
-          <p className="m-0 text-sm leading-normal text-texto-suave">{msg.inicio.semLoteDica}</p>
-        </Cartao>
+        <CartaoDoLote />
 
         <Cartao como="section" className="flex flex-col gap-3 p-5" aria-label={msg.inicio.interfacesWeb}>
           <Rotulo>{msg.inicio.interfacesWeb}</Rotulo>
