@@ -270,14 +270,24 @@ export function Assistente() {
 
         <div className="flex min-w-0 flex-1 flex-col">
           {fim ? (
-            <div className="flex-1 overflow-y-auto px-12 py-10">
+            <div
+              tabIndex={0}
+              role="region"
+              aria-label={msg.assistente.titulo}
+              className="flex-1 overflow-y-auto px-12 py-10"
+            >
               <div className="max-w-[880px]">
                 <TelaFim />
               </div>
             </div>
           ) : (
             <form className="flex min-h-0 flex-1 flex-col" onSubmit={(e) => void avancar(e)} noValidate>
-              <div className="flex-1 overflow-y-auto px-12 py-10">
+              <div
+                tabIndex={0}
+                role="region"
+                aria-label={msg.assistente.titulo}
+                className="flex-1 overflow-y-auto px-12 py-10"
+              >
                 <div className="flex max-w-[880px] flex-col gap-7">
                   <div className="flex flex-col gap-[10px]">
                     <Rotulo>{msg.assistente.rotuloPasso(passo, TOTAL, atual.opcional)}</Rotulo>
