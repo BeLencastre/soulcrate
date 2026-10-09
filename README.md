@@ -17,6 +17,9 @@ flowchart LR
     D --> E[Rekordbox, pendrive, CDJ/XDJ]
 ```
 
+> **Status:** o **app desktop para Windows** está na versão `1.0.0` e a stack (Docker Compose, scripts e configuração do beets) na `1.1.0` (veja o [`CHANGELOG.md`](CHANGELOG.md)). A primeira release ainda **não foi publicada** no GitHub: até lá, o instalador sai do código com `npm run dist` (veja [Instalação pelo app](#instalação-pelo-app-windows)). Os `.bat` continuam funcionando em qualquer caso.
+
+![O app do Soulcrate: a tela Baixar lista, com o editor e a pré-visualização do que o lote vai ler](docs/img/03-lista.png)
 
 
 ---
@@ -38,6 +41,10 @@ flowchart LR
 
 **Usando no dia a dia**
 
+- [O app desktop](#o-app-desktop)
+  - [As telas](#as-telas)
+  - [Bandeja, preferências e suporte](#bandeja-preferências-e-suporte)
+  - [Atualização e desinstalação](#atualização-e-desinstalação)
 - [Uso no dia a dia](#uso-no-dia-a-dia)
   - [Mapa rápido](#mapa-rápido)
   - [Rotina: ligar, usar, desligar](#rotina-ligar-usar-desligar)
@@ -97,7 +104,7 @@ Ele roda **no seu próprio computador**, e os arquivos ficam com você. Não há
 - **Pastas limpas e previsíveis**, com nomes que o pendrive aceita.
 - **Compatível com Rekordbox, CDJ e XDJ**, com as tags no formato mais compatível com esses equipamentos.
 - **Transparência.** Para cada faixa que não veio, um relatório diz por quê e o que dá para fazer.
-- **Um clique.** Ligar, desligar, ver o estado e baixar uma lista são arquivos `.bat`.
+- **Um clique.** Ligar, desligar, ver o estado e baixar uma lista são arquivos `.bat`, ou botões no [app desktop](#o-app-desktop), que ainda mostra o progresso ao vivo e explica o que não veio.
 
 ## O problema
 
@@ -155,7 +162,7 @@ Se você parar no meio, ao rodar de novo ele continua de onde parou e pula o que
 - Quem já usa (ou quer usar) o Soulseek e está cansado de conferir arquivo por arquivo.
 - Quem tem um computador com Windows 10/11 e aceita instalar o [Docker Desktop](https://www.docker.com/products/docker-desktop/). Linux e macOS também funcionam, via linha de comando.
 
-No Windows há um **app com instalador** que faz a configuração por um assistente (sem editar arquivo nenhum). Também dá para instalar à mão, configurando o `.env` você mesmo. Nos dois casos a primeira subida da stack leva de 5 a 10 minutos. O passo a passo está em [Instalação](#instalação).
+No Windows há um **app desktop** que faz a configuração por um assistente (sem editar arquivo nenhum). Também dá para instalar à mão, configurando o `.env` você mesmo. Nos dois casos a primeira subida da stack leva de 5 a 10 minutos. O passo a passo está em [Instalação](#instalação).
 
 > [!NOTE]
 > O Soulseek é uma rede P2P. Leia o [Aviso](#aviso) antes de usar.
@@ -167,7 +174,7 @@ No Windows há um **app com instalador** que faz a configuração por um assiste
 
 |                    |                                                                                                           |
 | ------------------ | --------------------------------------------------------------------------------------------------------- |
-| Sistema            | Windows 10/11 (os scripts `.bat` são para Windows). Linux e macOS funcionam via `docker compose` e `pwsh` |
+| Sistema            | Windows 10/11 (o app e os scripts `.bat` são para Windows). Linux e macOS funcionam via `docker compose` e `pwsh`, sem o app |
 | Docker             | [Docker Desktop](https://www.docker.com/products/docker-desktop/) com backend WSL 2                       |
 | Disco              | ~3 GB para as imagens, mais o espaço da sua biblioteca. FLAC de house/techno tem 30–60 MB por faixa       |
 | Conta Soulseek     | Qualquer usuário/senha: a conta é criada no primeiro login                                                |
@@ -178,12 +185,27 @@ No Windows há um **app com instalador** que faz a configuração por um assiste
 
 ### Instalação pelo app (Windows)
 
-O jeito mais simples: baixe o `Soulcrate-Setup-<versão>.exe` na página de [Releases](https://github.com/BeLencastre/soulcrate/releases) e dê dois cliques. O app instala por usuário (sem senha de administrador), liga e desliga a stack, configura tudo por um assistente (o `.env` e o `slskd.yml` são gerados por ele, com as chaves iguais nos dois), roda o download em lote com progresso ao vivo, mostra o que não veio e por quê, e se atualiza sozinho. Os `.bat` continuam funcionando na mesma pasta.
+O jeito mais simples: o `Soulcrate-Setup-<versão>.exe` instala o app por usuário (sem senha de administrador), com atalho no menu Iniciar. O app liga e desliga a stack, configura tudo por um assistente (o `.env` e o `slskd.yml` são gerados por ele, com as chaves iguais nos dois), roda o download em lote com progresso ao vivo, mostra o que não veio e por quê, cuida da biblioteca e se atualiza sozinho. Os `.bat` continuam funcionando na mesma pasta. As telas estão descritas em [O app desktop](#o-app-desktop).
 
 > [!NOTE]
-> **O instalador ainda não é assinado**, então o Windows mostra o aviso do SmartScreen ("O Windows protegeu seu computador"). Clique em **Mais informações → Executar assim mesmo**, só se o arquivo veio da página de Releases deste repositório (confira o SHA-256 em `SHA256SUMS.txt`). Detalhes em [`docs/distribuicao.md`](docs/distribuicao.md).
+> **Ainda não há release publicada** na página de [Releases](https://github.com/BeLencastre/soulcrate/releases). Até lá, o instalador se gera a partir do código (precisa do Node.js 24):
+>
+> ```bash
+> cd app
+> npm ci
+> npm run dist      # gera dist/Soulcrate-Setup-<versão>.exe
+> ```
+>
+> Ou, para só experimentar o app sem instalar, `npm run dev`. Os detalhes estão em [`app/README.md`](app/README.md).
 
-O app precisa do [Docker Desktop](https://www.docker.com/products/docker-desktop/) (ele não o instala por você). Desinstalar **nunca apaga** a pasta do Soulcrate (`.env`, listas, relatórios e biblioteca); a atualização do app e da stack também não toca no que é seu. Quem já usa por um clone do Git escolhe "usar uma pasta que já existe" no assistente.
+> [!NOTE]
+> **O instalador não é assinado**, então o Windows mostra o aviso do SmartScreen ("O Windows protegeu seu computador"). Clique em **Mais informações → Executar assim mesmo**, só se o arquivo foi gerado por você ou veio da página de Releases deste repositório (nas releases, confira o SHA-256 em `SHA256SUMS.txt`). Detalhes em [`docs/distribuicao.md`](docs/distribuicao.md).
+
+O app precisa do [Docker Desktop](https://www.docker.com/products/docker-desktop/) (ele não o instala por você; se faltar, o Início explica e leva ao download). Desinstalar **nunca apaga** a pasta do Soulcrate (`.env`, listas, relatórios e biblioteca); a atualização do app e da stack também não toca no que é seu. Quem já usa por um clone do Git escolhe "usar uma pasta que já existe" no assistente: nada é copiado, e o assistente avisa se os arquivos da stack têm alterações locais.
+
+![Primeiro passo do assistente de configuração: onde fica a pasta do Soulcrate](docs/img/02-assistente.png)
+
+No assistente (sete passos), você escolhe a pasta do Soulcrate (padrão `%USERPROFILE%\Soulcrate`), as pastas de músicas, downloads e incompletos, a conta do Soulseek e o login da Web UI do slskd. O app gera as chaves, grava o `.env` e o `slskd.yml` (com backup do que já existia), liga a stack e termina sozinho o que, na instalação manual, é feito nas interfaces web: o administrador do Navidrome e a URL, a API key e a pasta `/music` do Soulbeet. Por isso, **quem instala pelo app pode pular a [Configuração inicial](#configuração-inicial)**.
 
 A **instalação manual**, pelo Git e pelos `.bat`, continua valendo:
 
@@ -279,6 +301,9 @@ Confira se está tudo de pé com `status.bat` (ou `docker compose ps`). Cada ser
 
 ## Configuração inicial
 
+> [!NOTE]
+> Estes passos são da instalação manual. O assistente do app já faz os itens 1 e 2 sozinho e confere a porta 2234 (item 3).
+
 1. **Navidrome**: abra [http://localhost:4533](http://localhost:4533) e crie o usuário administrador.
 2. **Soulbeet**: abra [http://localhost:9765](http://localhost:9765) e entre com o **mesmo usuário do Navidrome**.
   - **Settings → Config**
@@ -287,6 +312,86 @@ Confira se está tudo de pé com `status.bat` (ou `docker compose ps`). Cada ser
   - **Settings → Library**: adicione a pasta `/music`.
 3. **Porta do Soulseek** (recomendado): no roteador, redirecione **2234/TCP** para o IP deste PC. Sem isso os downloads funcionam, mas menos usuários conseguem te enviar arquivos.
 4. **Teste**: baixe uma faixa pelo Soulbeet e veja se ela aparece em `music/<Gênero>/<Artista>/`.
+
+## O app desktop
+
+O app (Windows, feito em Electron) é uma camada de orquestração e visualização sobre a mesma stack: a busca, os filtros e a escolha do arquivo continuam no `baixar-lista.ps1`, e a organização das faixas continua no beets. Por isso dá para **alternar entre o app e os `.bat`** na mesma pasta, sem perder nada: usam o mesmo `.env`, os mesmos `lotes/` e o mesmo estado das listas. A mesma lista não roda duas vezes ao mesmo tempo, nem entre o app e o `.bat`.
+
+### As telas
+
+A barra lateral tem seis telas e o estado da stack; quando há um lote rodando, um cartão com o progresso fica sempre à mão. O app abre no tema escuro (há também o claro).
+
+> As capturas abaixo usam **dados de demonstração** (uma biblioteca e um slskd de mentira), não uma instalação real. Elas são geradas por `npm run capturas`, em `app/`.
+
+#### Início
+
+As cinco etapas do ambiente (Docker, Docker Desktop, configuração, stack e serviços) e **Ligar**, **Desligar** e **Reconstruir**, com o log ao vivo. Se o Docker Desktop está fechado, o app o abre. Também avisa quando há versão nova do app ou dos arquivos da stack.
+
+![Tela Início: a stack no ar, com as cinco etapas do ambiente e as interfaces web](docs/img/01-inicio.png)
+
+#### Baixar lista
+
+Editor da lista com pré-visualização feita pelo próprio script (repetidas, "já na biblioteca", "já feita", linhas com problema). Importa `.txt`/`.csv` pelo botão ou arrastando para a janela e cria a lista a partir do exemplo.
+
+![Tela Baixar lista: o editor à esquerda e a pré-visualização do que o lote vai ler à direita](docs/img/03-lista.png)
+
+Depois vêm as **opções** do lote: as receitas da tabela de [Opções](#opções), com o que difere do padrão destacado e o comando equivalente.
+
+![Tela de opções do lote, com as receitas e os interruptores, e o que difere do padrão destacado](docs/img/04-opcoes.png)
+
+E o **painel ao vivo**: progresso, contadores, tabela por faixa (com filtro e busca), log bruto, parada segura e notificação do Windows ao terminar. **Fechar o app não interrompe o lote**: ao reabrir, o painel volta de onde estava.
+
+![Painel de execução do lote concluído: 10 baixadas e 1 não encontrada, com a tabela por faixa](docs/img/05-execucao.png)
+
+#### Histórico
+
+Tudo o que está em `lotes/`, inclusive o que foi rodado pelos `.bat`, com como cada execução terminou. Execuções antigas podem ser apagadas (vão para a Lixeira, com prévia) e uma lista pode ser reprocessada do zero (com confirmação).
+
+![Tela Histórico: a lista de execuções, a segunda gerada pelo "Tentar de novo"](docs/img/06-historico.png)
+
+O detalhe mostra cada faixa, com o arquivo na biblioteca e **Mostrar no Explorer**.
+
+![Detalhe de uma execução: contadores e a tabela de faixas com o arquivo de cada uma](docs/img/06-historico-detalhe.png)
+
+O **diagnóstico** explica por que cada faixa não veio, na linguagem da tabela de [Faixas que não vieram](#faixas-que-não-vieram): os arquivos mais parecidos, o catálogo do artista no Soulseek, o resultado do MusicBrainz e o "talvez seja", que **corrige a linha na lista com um clique**. **Tentar de novo** gera a lista das que faltaram, já com as correções.
+
+![Diagnóstico de uma faixa que não veio, com a sugestão "Dark Tower" e o motivo da recusa](docs/img/06-diagnostico.png)
+
+#### Biblioteca
+
+O "caixote": as faixas do beets com artista, título, BPM, tom, gênero e formato, com busca e indicadores do que falta (sem BPM, sem tom, em `_Sem Genero`, parados em `downloads/`). **Remover uma faixa nunca é imediato**: o app mostra tudo o que o filtro pega, avisa que o arquivo é apagado de vez (sem Lixeira) e só apaga depois da sua confirmação. Também faz a [manutenção](#manutenção-da-biblioteca) sem linha de comando (recalcular tom e BPM, importar o que sobrou em `downloads/`, sincronizar com o disco e reorganizar pastas, os dois últimos com pré-visualização), mostra quantos arquivos o slskd anuncia no Soulseek (com **Reescanear**) e a pasta para monitorar no Rekordbox. Nada disso roda com a stack desligada nem com um lote em andamento.
+
+![Tela Biblioteca: as faixas com BPM, tom e gênero, os indicadores e a manutenção](docs/img/09-biblioteca.png)
+
+#### Serviços
+
+As verificações do `status.bat` (contêineres, endpoints de saúde, plugins do beets, pastas compartilhadas e últimas importações), os logs de cada contêiner e as Web UIs do Soulbeet, slskd e Navidrome dentro do app, uma sessão separada para cada.
+
+![Tela Serviços: as cinco verificações e o log do slskd](docs/img/07-servicos.png)
+
+#### Configurações
+
+As mesmas seções do assistente em abas (Pastas, Conta Soulseek, Web UI do slskd, Rede, Avançado), a conferência do `.env` e do `slskd.yml`, **Aplicar e reiniciar**, as preferências do app e a tela **Sobre**.
+
+![Configurações, seção Aplicativo: iniciar com o Windows, bandeja, avisos, onde abrir as interfaces e o tema](docs/img/08-configuracoes-aplicativo.png)
+
+### Bandeja, preferências e suporte
+
+- **Bandeja do sistema:** o ícone muda de cor conforme o estado da stack e tem Abrir, Ligar, Desligar, atalhos para as interfaces e Sair. Fechar a janela pode apenas minimizá-la para a bandeja (a stack e o lote seguem rodando); para sair de vez, use **Sair** no ícone.
+- **Preferências** (Configurações → Aplicativo): tema escuro (padrão), claro ou igual ao Windows (a tela Início no tema claro está em [`docs/img/01-inicio-claro.png`](docs/img/01-inicio-claro.png)); iniciar com o Windows direto na bandeja; abrir as interfaces web dentro do app ou no navegador; avisos do Windows quando um lote termina ou as buscas são pausadas.
+- **Sobre** mostra as versões do app, da stack e dos componentes (lidas dos contêineres), os créditos e a licença.
+- **Pacote de suporte** (Sobre, ou Ajuda → Gerar pacote de suporte): um `.zip` com os logs do app, os últimos `execucao-*.log`, o `docker compose ps` e as versões, **com senhas e chaves removidas**. O `.env` e o `slskd.yml` nunca entram.
+- **Acessibilidade:** navegação completa por teclado ("Pular para o conteúdo", foco visível), contraste AA nos dois temas, e uma tela que trava não derruba a janela inteira.
+- **Privacidade:** a única conversa do app com a internet é a procura por atualização (GitHub Releases); não há telemetria. Segredos ficam só no processo principal e nunca chegam à interface.
+- **Logs do app:** `%APPDATA%\Soulcrate\logs\main.log` (Ajuda → Abrir pasta de logs).
+
+### Atualização e desinstalação
+
+- **O app se atualiza** ao abrir e a cada 24 horas, pelos GitHub Releases, e **só reinicia para atualizar quando nenhum lote está rodando**.
+- **Os arquivos da stack** (`docker-compose.yml`, scripts, `Dockerfile` do Soulbeet, config do beets) vêm junto com o app. Numa versão nova, ele troca o que você não editou e, para o que você editou, **mantém o seu e grava o novo ao lado como `.novo`**. Nunca toca no `.env`, no `slskd.yml`, nas listas, em `lotes/` nem na biblioteca.
+- **Desinstalar nunca apaga a pasta do Soulcrate**. O desinstalador só pergunta (padrão: manter) se remove as preferências e os logs do app.
+
+Mais detalhes em [`docs/distribuicao.md`](docs/distribuicao.md) (instalar, atualizar, desinstalar e publicar), [`docs/interface-electron.md`](docs/interface-electron.md) (especificação) e [`app/README.md`](app/README.md) (desenvolvimento).
 
 ## Uso no dia a dia
 
@@ -300,26 +405,26 @@ Confira se está tudo de pé com `status.bat` (ou `docker compose ps`). Cada ser
 | Navidrome (ouvir a biblioteca)           | [http://localhost:4533](http://localhost:4533)                              |
 | **Biblioteca final**                     | `music/<Gênero>/<Artista>/<Título>.flac/.mp3`                               |
 | Downloads em andamento / prontos         | `incomplete/` / `downloads/` (o beets esvazia a `downloads/`)               |
-| Relatórios do lote                       | `lotes/`                                                                    |
+| Relatórios do lote                       | `lotes/` (ou a tela **Histórico** do app)                                   |
 | Configuração do beets                    | `soulbeet/config/config.yaml`                                               |
 
 
 
-| Script             | Para quê                                                                                    |
-| ------------------ | ------------------------------------------------------------------------------------------- |
-| `subir.bat`        | Liga tudo (e reconstrói a imagem do Soulbeet se o `Dockerfile` mudou). Abre as 3 interfaces |
-| `parar.bat`        | Desliga tudo (`docker compose down`). A biblioteca não é afetada                            |
-| `status.bat`       | Contêineres, plugins, pastas compartilhadas e últimas linhas do log do beets                |
-| `baixar-lista.bat` | [Download em lote](#download-em-lote)                                                       |
+| Script             | No app                    | Para quê                                                                                    |
+| ------------------ | ------------------------- | ------------------------------------------------------------------------------------------- |
+| `subir.bat`        | Início → **Ligar**        | Liga tudo (e reconstrói a imagem do Soulbeet se o `Dockerfile` mudou). Abre as 3 interfaces |
+| `parar.bat`        | Início → **Desligar**     | Desliga tudo (`docker compose down`). A biblioteca não é afetada                            |
+| `status.bat`       | **Serviços**              | Contêineres, plugins, pastas compartilhadas e últimas linhas do log do beets                |
+| `baixar-lista.bat` | **Baixar lista**          | [Download em lote](#download-em-lote)                                                       |
 
 
 ### Rotina: ligar, usar, desligar
 
-1. Abra o **Docker Desktop** e espere ele ficar verde.
-2. Rode o `subir.bat`. Se nada mudou, sobe em segundos.
+1. Abra o **Docker Desktop** e espere ele ficar verde (o app abre para você).
+2. Rode o `subir.bat` ou use **Ligar** no app. Se nada mudou, sobe em segundos.
 3. Baixe faixas pelo [Soulbeet](#baixar-uma-faixa-pelo-soulbeet) ou por [lista](#download-em-lote).
 4. Abra o Rekordbox. Se a `music` for pasta monitorada, as faixas novas aparecem sozinhas ([Rekordbox e pendrive](#rekordbox-e-pendrive)).
-5. Quando terminar, rode o `parar.bat`, ou só feche o Docker Desktop.
+5. Quando terminar, rode o `parar.bat` (ou **Desligar** no app), ou só feche o Docker Desktop.
 
 Os contêineres têm `restart: unless-stopped`: se o Docker Desktop abrir com o Windows, a stack volta sozinha.
 
@@ -337,7 +442,7 @@ Use o Soulbeet para faixas avulsas ou quando quiser escolher o arquivo na mão. 
 
 ## Download em lote
 
-O `baixar-lista.bat` (que chama o `baixar-lista.ps1`) lê uma lista de faixas, busca cada uma no slskd, escolhe o melhor arquivo, baixa em paralelo e importa no beets.
+O `baixar-lista.bat` (que chama o `baixar-lista.ps1`) lê uma lista de faixas, busca cada uma no slskd, escolhe o melhor arquivo, baixa em paralelo e importa no beets. No app, a tela **Baixar lista** roda o mesmo script, com editor, opções e painel ao vivo; o que está abaixo vale para os dois.
 
 ### Escrevendo a lista
 
@@ -390,6 +495,7 @@ Cloudy - Yeah (Cloudy Remix)
   ```bat
   baixar-lista.bat minhas.txt -Paralelo 8 -AceitarWav
   ```
+- **No app:** tela **Baixar lista** → escolha ou cole a lista → **Opções** → iniciar.
 - **Linux/macOS:** `pwsh ./baixar-lista.ps1 -Lista lista.txt`.
 
 O Docker precisa estar no ar (o `.bat` avisa se não estiver). Pode **fechar a janela no meio**: ao rodar de novo a mesma lista, ele continua de onde parou. Downloads já enfileirados no slskd continuam por lá. Enquanto roda, o PC não entra em suspensão.
@@ -475,6 +581,22 @@ Para tentar de novo: `baixar-lista.bat lotes\nao-baixadas-<data>.txt -Retentar`.
 
 Apague com `BEET remove -d "title:..."` (confira antes com `BEET ls`) e rode a linha de novo numa **lista nova**: a lista antiga já a marca como feita (ou use `-Retentar -NaoPularExistentes`).
 
+**O Windows bloqueia o instalador do app ("O Windows protegeu seu computador")**
+
+O instalador não é assinado. Veja o aviso em [Instalação pelo app](#instalação-pelo-app-windows): **Mais informações → Executar assim mesmo**, só se o arquivo é seu ou veio das Releases deste repositório.
+
+**O app diz que o Docker Desktop está fechado ou não foi encontrado**
+
+Abra o Docker Desktop (o botão do Início faz isso) e espere a engine ficar pronta, o que pode levar um minuto. Se ele não está instalado, o Início leva ao download. O app não instala o Docker.
+
+**O app avisa da porta 2234 (Soulseek)**
+
+Com a stack desligada, "em uso" significa que outro programa deste PC ocupa a porta: feche-o antes de ligar, ou o slskd não consegue escutar. Com a stack no ar, "nada atende" pede para reiniciar a stack e conferir se o Docker consegue publicar a porta. Já o redirecionamento no roteador o app não consegue confirmar: veja o item 3 da [Configuração inicial](#configuração-inicial).
+
+**Preciso de ajuda e não sei o que enviar**
+
+Em Configurações → Sobre (ou Ajuda → Gerar pacote de suporte), gere o pacote de suporte: um `.zip` com os logs e o estado dos contêineres, sem senhas nem chaves.
+
 **Poucos resultados / downloads parados em** `Queued, Remotely`
 
 O usuário tem fila enorme ou não tem slot livre. O script troca sozinho depois de 4 min (`-FilaMaxMin`); aumente `-Paralelo` para compensar. Redirecione a porta 2234/TCP no roteador e mantenha a pasta `music` compartilhada (o slskd já compartilha por padrão). Usuários que não compartilham costumam ser despriorizados ou banidos por outros.
@@ -552,13 +674,14 @@ Depois de editar o `config.yaml`, basta reiniciar: `docker compose restart soulb
 
 ## Estrutura do projeto
 
-O repositório guarda o código. A instalação em uso fica em `%USERPROFILE%\Soulcrate`, e a biblioteca fica no mesmo disco, fora das duas pastas. Dentro dos contêineres os caminhos continuam `/music`, `/downloads` e `/incomplete`.
+O repositório guarda o código. A instalação em uso fica em `%USERPROFILE%\Soulcrate` (ou na pasta que você escolher no assistente do app), e a biblioteca fica no mesmo disco, fora das duas pastas. Dentro dos contêineres os caminhos continuam `/music`, `/downloads` e `/incomplete`. Quem usa o app não precisa clonar o repositório: o instalador traz os arquivos da stack e o assistente os copia para a pasta da instalação.
 
 ```text
 soulcrate/                      # repositório (código)
 ├── docker-compose.yml          # os 3 serviços e os volumes compartilhados
 ├── .env.example                # modelo de configuração (copie para .env)
 ├── VERSION                     # versão da stack (CHANGELOG.md tem o histórico)
+├── CHANGELOG.md / CONTRIBUTING.md / LICENSE
 ├── subir.bat / parar.bat       # sobe / derruba a stack
 ├── validar-config.ps1          # confere o .env e o slskd.yml (usado pelo subir.bat)
 ├── status.bat                  # saúde dos contêineres e plugins
@@ -571,9 +694,17 @@ soulcrate/                      # repositório (código)
 │   ├── fix-metadata.py         # corrige metadados de pacotes da imagem base (lastgenre)
 │   ├── config/config.yaml      # configuração do beets (perfil DJ)
 │   └── beets-plugins/keepmix.py
-├── docs/                       # especificação do app, protocolo do lote, regras da configuração
+├── docs/                       # especificação do app, distribuição, roteiro de teste manual, protocolo do lote, validação da
+│   │                           #   configuração, spikes e img/ (as capturas de tela do README)
 ├── tests/                      # testes (Pester) e o slskd falso usado por eles
-└── app/                        # app desktop (Electron): Fases 0 a 7 prontas (veja app/README.md e docs/distribuicao.md)
+├── .github/                    # workflows (CI e release do instalador) e modelos de issue
+└── app/                        # app desktop (Electron, React, TypeScript), versão 1.0.0
+    ├── src/main/               # processo principal: serviços (Docker, lote, biblioteca, configuração, atualização…)
+    ├── src/preload/            # a API mínima e tipada que a interface enxerga
+    ├── src/renderer/           # a interface: as telas e os componentes
+    ├── src/shared/             # contrato do IPC, mensagens em português, tipos do protocolo do lote
+    ├── resources/              # ícones do app e da bandeja, modelo do instalador
+    └── tests/                  # Vitest, Playwright (e2e e as capturas do README) e dublês do Docker
 
 %USERPROFILE%\Soulcrate/        # instalação (configuração, segredos e bancos)
 ├── .env                        # inclui DOWNLOADS_DIR, INCOMPLETE_DIR e MUSIC_DIR
@@ -581,7 +712,10 @@ soulcrate/                      # repositório (código)
 ├── lotes/                      # relatórios do download em lote
 ├── slskd/                      # slskd.yml, banco e logs
 ├── navidrome/                  # banco e cache do Navidrome
-└── soulbeet/data/              # banco do Soulbeet
+├── soulbeet/data/              # banco do Soulbeet
+└── .soulcrate/                 # só com o app: manifesto dos arquivos da stack que ele instalou
+
+%APPDATA%\Soulcrate/            # só com o app: preferências (settings.json) e logs (logs\main.log)
 
 C:/DJ/                          # biblioteca, no mesmo disco da instalação
 ├── Musics/                     # MUSIC_DIR
@@ -589,7 +723,7 @@ C:/DJ/                          # biblioteca, no mesmo disco da instalação
 └── Incomplete/                 # INCOMPLETE_DIR
 ```
 
-Para desenvolver ou rodar os testes, veja o [`CONTRIBUTING.md`](CONTRIBUTING.md).
+Para desenvolver ou rodar os testes, veja o [`CONTRIBUTING.md`](CONTRIBUTING.md) e o [`app/README.md`](app/README.md).
 
 ---
 
@@ -829,7 +963,7 @@ O `-Retentar` é necessário quando você roda **a mesma lista** de novo. Sem el
 | `-SemBeets`            | —      | Só baixa, sem importar                                 |
 
 
-Há também opções para programas que controlam o lote, como o app: `-Eventos` (andamento em JSON), `-ArquivoParada` (parada segura), `-IdExecucao` (nome dos arquivos) e `-SoAnalisar` (analisa a lista sem baixar). Elas e os códigos de saída estão em [`docs/eventos-lote.md`](docs/eventos-lote.md).
+Há também opções para programas que controlam o lote, como o app: `-Eventos` (andamento em JSON), `-ArquivoParada` (parada segura), `-IdExecucao` (nome dos arquivos) e `-SoAnalisar` (analisa a lista sem baixar, com `-AnalisarBiblioteca` e `-SaidaAnalise`). Elas e os códigos de saída estão em [`docs/eventos-lote.md`](docs/eventos-lote.md). Para apontar o script para outro endereço, há `-SlskdUrl` (padrão `http://localhost:5030`), `-BeetsLib` e `-BeetsDir`.
 
 **Receitas:**
 
@@ -931,6 +1065,8 @@ Plugins do beets ativos (`soulbeet/config/config.yaml`): `musicbrainz`, `mbtwopa
 | Docker Compose | `5.5.1`         | v2 ou mais novo (o que vem no Docker Desktop)                         |
 | PowerShell     | `5.1` (Windows) | 5.1 no Windows, ou `pwsh` 7+ no Linux/macOS para o `baixar-lista.ps1` |
 | Node.js        | `24.15`         | Só para desenvolver: testes de integração e o app (`app/.nvmrc`)      |
+| Electron       | `44.x`          | O app (`app/package.json`), com React 19 e TypeScript; já vem no instalador |
+| App Soulcrate  | `1.0.0`         | Versão própria, independente da `VERSION` da stack (`app/package.json`) |
 
 
 > [!TIP]
@@ -957,6 +1093,8 @@ docker compose up -d
 
 Sua biblioteca (`music/`), os bancos (`navidrome/`, `soulbeet/data/`, `slskd/data/`) e o `.env` não são afetados. Antes de atualizar, leia o [`CHANGELOG.md`](CHANGELOG.md): ele avisa quando uma versão muda algo no uso (como as interfaces passarem a abrir só neste PC).
 
+**Com o app**, as versões da stack chegam junto com a atualização do app: ele troca os arquivos que você não editou, grava um `.novo` ao lado dos que você editou e, se o `docker-compose.yml` ou a imagem do Soulbeet mudaram, o Início oferece **Reconstruir a stack**. Veja [Atualização e desinstalação](#atualização-e-desinstalação).
+
 ## Backup
 
 O que importa guardar:
@@ -969,6 +1107,7 @@ O que importa guardar:
 | `navidrome/navidrome.db` | Usuários, playlists e favoritos           |
 | `.env`                   | Configuração e senhas                     |
 | `slskd/slskd.yml`        | API key do slskd                          |
+| `lista*.txt`, `lotes/`   | Suas listas, relatórios e o estado de cada lista (o que já foi baixado) |
 
 
 ---
@@ -986,7 +1125,7 @@ O Soulseek é uma rede de compartilhamento P2P. Baixe apenas o que você tem dir
 
 ## Contribuindo
 
-Como rodar os testes, convenções de commit e de codificação dos arquivos: [`CONTRIBUTING.md`](CONTRIBUTING.md). Um app desktop está sendo planejado em [`docs/interface-electron.md`](docs/interface-electron.md).
+Como rodar os testes, convenções de commit e de codificação dos arquivos: [`CONTRIBUTING.md`](CONTRIBUTING.md). O app desktop tem a especificação em [`docs/interface-electron.md`](docs/interface-electron.md) e o guia de desenvolvimento em [`app/README.md`](app/README.md). Antes de cada release, rode o [roteiro de teste manual](docs/roteiro-manual.md); o passo a passo de publicar está em [`docs/distribuicao.md`](docs/distribuicao.md#7-publicar-uma-versão). Problemas e ideias: [abra uma issue](https://github.com/BeLencastre/soulcrate/issues/new/choose).
 
 ## Licença
 

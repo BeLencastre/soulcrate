@@ -24,6 +24,14 @@ cd app && npm run test:e2e                                # app: ponta a ponta (
 powershell -File tests\Gerar-Fixtures.ps1
 ```
 
+**Mudou uma tela do app?** Regenere as capturas do README (abrem o app com dados de demonstração e gravam em `docs/img/`) e confira o resultado antes de commitar:
+
+```bash
+cd app && npm run capturas
+```
+
+**Vai publicar uma release?** Rode o [roteiro de teste manual](docs/roteiro-manual.md) com a stack real e siga [`docs/distribuicao.md`](docs/distribuicao.md#7-publicar-uma-versão).
+
 ## Codificação dos arquivos
 
 - `.ps1` com acentos: **UTF-8 com BOM**. O Windows PowerShell 5.1 lê arquivo sem BOM como ANSI e quebra em silêncio (o teste `Repositorio.Tests.ps1` pega isso).
