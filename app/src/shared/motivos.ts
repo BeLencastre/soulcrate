@@ -6,6 +6,9 @@ import { RECEITAS, type OpcoesLote } from './opcoes-lote.js';
 
 export type TipoMotivo =
   | 'wav'
+  | 'aacAiff'
+  | 'aacBaixo'
+  | 'mp3320'
   | 'mp3Menor'
   | 'mp3Baixo'
   | 'formato'
@@ -50,16 +53,20 @@ const m = msg.historico.motivos;
 /** As opções da receita "Usuários lentos, filas longas" (FilaMaxMin e DownloadMaxMin). */
 const USUARIOS_LENTOS: Partial<OpcoesLote> = RECEITAS.find((r) => r.id === 'usuariosLentos')?.ajuste ?? {};
 /** "Quero tudo, nem que seja MP3 256": o que o README sugere para quem só tem faixa em formato recusado. */
-const QUER_TUDO: Partial<OpcoesLote> = { AceitarWav: true, AceitarMp3Menor: true };
+const QUER_TUDO: Partial<OpcoesLote> = { AceitarAacAiff: true, AceitarMp3320: true, AceitarMp3Menor: true };
 
 interface Regra {
   tipo: TipoMotivo;
   re: RegExp;
 }
 
-// A ordem importa: `formato <ext>` genérico vem depois do WAV/AIFF, que tem a opção própria.
+// A ordem importa: `formato <ext>` genérico vem depois do AIFF/AAC, que têm a opção própria.
 const REGRAS_DE_ARQUIVO: readonly Regra[] = [
-  { tipo: 'wav', re: /^formato (wav|aiff?) \(use -AceitarWav\)/i },
+  // lotes antigos (até a stack 1.1.0), quando o WAV precisava de -AceitarWav
+  { tipo: 'wav', re: /^formato wav \(use -AceitarWav\)/i },
+  { tipo: 'aacAiff', re: /^formato (aiff?|m4a|aac) \(use -Aceitar(?:AacAiff|Wav)\)/i },
+  { tipo: 'aacBaixo', re: /^aac (.+?) \(qualidade baixa\)/i },
+  { tipo: 'mp3320', re: /^mp3 (.+?) \(use -AceitarMp3320\)/i },
   { tipo: 'mp3Menor', re: /^mp3 (.+?) \(use -AceitarMp3Menor\)/i },
   { tipo: 'mp3Baixo', re: /^mp3 (.+?) \(qualidade baixa\)/i },
   { tipo: 'formato', re: /^formato (\S+)$/i },
@@ -86,7 +93,13 @@ function montar(tipo: TipoMotivo, bruto: string, n: number, detalhe: string, ctx
   const base = { tipo, bruto, n, sugere: {} as Partial<OpcoesLote>, botao: null as BotaoMotivo | null };
   switch (tipo) {
     case 'wav':
-      return { ...base, rotulo: m.wav.rotulo(detalhe), acao: m.wav.acao, sugere: QUER_TUDO };
+      return { ...base, rotulo: m.wav.rotulo(detalhe), acao: m.wav.acao };
+    case 'aacAiff':
+      return { ...base, rotulo: m.aacAiff.rotulo(detalhe), acao: m.aacAiff.acao, sugere: QUER_TUDO };
+    case 'aacBaixo':
+      return { ...base, rotulo: m.aacBaixo.rotulo(detalhe), acao: m.aacBaixo.acao };
+    case 'mp3320':
+      return { ...base, rotulo: m.mp3320.rotulo(detalhe), acao: m.mp3320.acao, sugere: QUER_TUDO };
     case 'mp3Menor':
       return { ...base, rotulo: m.mp3Menor.rotulo(detalhe), acao: m.mp3Menor.acao, sugere: QUER_TUDO };
     case 'mp3Baixo':
@@ -150,7 +163,7 @@ function montar(tipo: TipoMotivo, bruto: string, n: number, detalhe: string, ctx
   }
 }
 
-/** Um motivo do `reasons` do diagnóstico (`titulo diferente`, `formato wav (use -AceitarWav)`...) com a ação. */
+/** Um motivo do `reasons` do diagnóstico (`titulo diferente`, `formato aiff (use -AceitarAacAiff)`...) com a ação. */
 export function traduzirMotivo(bruto: string, n: number, ctx: ContextoMotivo = {}): MotivoTraduzido {
   const texto = bruto.trim();
   for (const r of REGRAS_DE_ARQUIVO) {

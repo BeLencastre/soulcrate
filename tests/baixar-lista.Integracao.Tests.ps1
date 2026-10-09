@@ -10,8 +10,8 @@ BeforeAll {
   . (Join-Path $PSScriptRoot 'AmbienteLote.ps1')
   $Catalogo = @(
     @{ usuario = 'u1'; arquivo = '@@a\Music\Azyr\Azyr - No Escape.flac' }
-    @{ usuario = 'u2'; arquivo = '@@b\Music\Creeds\Creeds - Push Up (Original Mix).mp3'; bitrate = 320 }
-    @{ usuario = 'u3'; arquivo = '@@c\Music\Vendex\Vendex - Plague.wav' }
+    @{ usuario = 'u2'; arquivo = '@@b\Music\Creeds\Creeds - Push Up (Original Mix).wav' }
+    @{ usuario = 'u3'; arquivo = '@@c\Music\Vendex\Vendex - Plague.aiff' }
   )
 }
 
@@ -26,7 +26,7 @@ Describe 'baixar-lista.ps1 (integracao)' -Tag 'Integracao' {
     It 'termina com codigo 0' { $r.ExitCode | Should -Be 0 }
     It 'baixa as faixas encontradas para downloads, na pasta remota do arquivo' {
       Join-Path $amb.Raiz 'downloads\Azyr\Azyr - No Escape.flac' | Should -Exist
-      Join-Path $amb.Raiz 'downloads\Creeds\Creeds - Push Up (Original Mix).mp3' | Should -Exist
+      Join-Path $amb.Raiz 'downloads\Creeds\Creeds - Push Up (Original Mix).wav' | Should -Exist
     }
     It 'grava o resultado de cada faixa' {
       $rel = Get-RelatorioLote $amb 'resultado-'
@@ -45,7 +45,7 @@ Describe 'baixar-lista.ps1 (integracao)' -Tag 'Integracao' {
     It 'explica no diagnostico por que nao achou' {
       $d = Get-Content -LiteralPath (Get-RelatorioLote $amb 'diagnostico-')[0].FullName -Encoding UTF8 -Raw
       $d | Should -Match '### Vendex - Plague'
-      $d | Should -Match 'motivos: formato wav \(use -AceitarWav\) x\d+'
+      $d | Should -Match 'motivos: formato aiff \(use -AceitarAacAiff\) x\d+'
     }
     It 'guarda o estado da lista' {
       $e = Get-Content -LiteralPath (Join-Path $amb.Raiz 'lotes\estado-lista.tsv') -Encoding UTF8
@@ -61,10 +61,10 @@ Describe 'baixar-lista.ps1 (integracao)' -Tag 'Integracao' {
       It 'pula o que ja foi feito' {
         ($r2.Saida -join "`n") | Should -Match 'Pulando: 4 ja feitas em execucoes anteriores'
       }
-      It 'com -Retentar e -AceitarWav, baixa a que so existia em WAV' {
-        $r3 = Invoke-Lote $amb -Linhas @('Azyr - No Escape', 'Creeds - Push Up (Original Mix)', 'Vendex - Plague', 'Fulano Inexistente - Nada Aqui') -Extra @('-Retentar', '-AceitarWav')
+      It 'com -Retentar e -AceitarAacAiff, baixa a que so existia em AIFF' {
+        $r3 = Invoke-Lote $amb -Linhas @('Azyr - No Escape', 'Creeds - Push Up (Original Mix)', 'Vendex - Plague', 'Fulano Inexistente - Nada Aqui') -Extra @('-Retentar', '-AceitarAacAiff')
         $r3.ExitCode | Should -Be 0
-        Join-Path $amb.Raiz 'downloads\Vendex\Vendex - Plague.wav' | Should -Exist
+        Join-Path $amb.Raiz 'downloads\Vendex\Vendex - Plague.aiff' | Should -Exist
       }
     }
   }
@@ -73,7 +73,7 @@ Describe 'baixar-lista.ps1 (integracao)' -Tag 'Integracao' {
     BeforeAll {
       $amb = New-AmbienteLote -Arquivos @(
         @{ usuario = 'ruim'; arquivo = '@@r\Music\Azyr\Azyr - No Escape.flac' }
-        @{ usuario = 'bom'; arquivo = '@@b\Music\Azyr\Azyr - No Escape.mp3'; bitrate = 320 }
+        @{ usuario = 'bom'; arquivo = '@@b\Music\Azyr\Azyr - No Escape.wav' }
       ) -UsuariosComErro @('ruim')
       $r = Invoke-Lote $amb -Linhas @('Azyr - No Escape')
     }
@@ -81,7 +81,7 @@ Describe 'baixar-lista.ps1 (integracao)' -Tag 'Integracao' {
 
     It 'tenta o proximo usuario quando o download falha' {
       ($r.Saida -join "`n") | Should -Match 'ruim: Completed, Errored'
-      Join-Path $amb.Raiz 'downloads\Azyr\Azyr - No Escape.mp3' | Should -Exist
+      Join-Path $amb.Raiz 'downloads\Azyr\Azyr - No Escape.wav' | Should -Exist
     }
   }
 
@@ -178,10 +178,10 @@ Describe 'baixar-lista.ps1 (integracao)' -Tag 'Integracao' {
       $d = @($ev | Where-Object type -eq 'item.diagnostic')
       $d.Count | Should -Be 2
       $p = $d | Where-Object line -eq 'Vendex - Plague'
-      $p.reasons.'formato wav (use -AceitarWav)' | Should -BeGreaterThan 0
-      $p.closest[0].reason | Should -Be 'formato wav (use -AceitarWav)'
+      $p.reasons.'formato aiff (use -AceitarAacAiff)' | Should -BeGreaterThan 0
+      $p.closest[0].reason | Should -Be 'formato aiff (use -AceitarAacAiff)'
       $p.closest[0].user | Should -Be 'u3'
-      $p.closest[0].file | Should -Match 'Vendex - Plague\.wav$'
+      $p.closest[0].file | Should -Match 'Vendex - Plague\.aiff$'
       @($p.searches).Count | Should -BeGreaterThan 0
       ($d | Where-Object line -eq 'Fulano Inexistente - Nada Aqui').responses | Should -Be 0
     }

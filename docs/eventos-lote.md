@@ -15,7 +15,7 @@ Exemplos reais de tudo o que está aqui ficam em [`app/tests/fixtures/lote/`](..
 | `-AnalisarBiblioteca` | Com `-SoAnalisar`: confere também o que já está na biblioteca (precisa da stack no ar) |
 | `-SaidaAnalise <arquivo>` | Com `-SoAnalisar`: grava o JSON nesse arquivo, e não na saída padrão |
 
-Todas as opções do lote (`-Paralelo`, `-AceitarWav` etc.) continuam valendo e aparecem no evento `run.start`.
+Todas as opções do lote (`-Paralelo`, `-AceitarAacAiff` etc.) continuam valendo e aparecem no evento `run.start`.
 
 ## Como rodar a partir de outro programa
 
@@ -106,17 +106,19 @@ Status em andamento (`item.status`): `pendente`, `buscando`, `verificar` (espera
 
 Status finais (`item.final`): `importada`, `baixada`, `baixada (beets falhou)`, `nao encontrada`, `falhou`, `ja na biblioteca`, `ja feita`.
 
+O campo `format` (em `item.status` e `item.final`) é um destes: `FLAC`, `WAV`, `AIFF`, `MP3 320`, `AAC` ou `MP3 256/VBR`. Execuções da stack 1.1.0 ou anterior podem trazer `WAV/AIFF`, que na época cobria os dois.
+
 Se a execução for parada, as faixas que estavam no meio não recebem `item.final`: o status delas aparece no `resultado-<id>.txt` (ex.: `BAIXANDO`), e na próxima execução da lista elas são tentadas de novo.
 
 ### Exemplo (resumido)
 
 ```jsonl
-{"v":1,"t":"…","type":"run.start","id":"exemplo","pid":19224,"list":"lista.txt","listName":"lista","total":6,"options":{"Paralelo":5,"AceitarWav":false,…},"files":{"result":"lotes/resultado-exemplo.txt",…},"powershell":"5.1.26100.9444"}
+{"v":1,"t":"…","type":"run.start","id":"exemplo","pid":19224,"list":"lista.txt","listName":"lista","total":6,"options":{"Paralelo":5,"AceitarAacAiff":false,…},"files":{"result":"lotes/resultado-exemplo.txt",…},"powershell":"5.1.26100.9444"}
 {"v":1,"t":"…","type":"run.skip","alreadyDone":0,"inLibrary":0,"toProcess":6,"libraryChecked":false}
 {"v":1,"t":"…","type":"item.status","key":"azyr no escape","line":"Azyr - No Escape","status":"pendente","search":{"kind":"q","query":"Azyr No Escape","stage":1,"stages":3}}
 {"v":1,"t":"…","type":"item.status","key":"azyr no escape","line":"Azyr - No Escape","status":"baixando","user":"ruim","format":"FLAC","attempt":1,"remoteQueued":false}
 {"v":1,"t":"…","type":"item.attemptFailed","key":"azyr no escape","user":"ruim","attempt":1,"reason":"ruim: Completed, Errored"}
-{"v":1,"t":"…","type":"item.final","key":"azyr no escape","line":"Azyr - No Escape","status":"baixada","note":"","via":"","local":"downloads/Azyr/Azyr - No Escape.mp3","user":"u1","format":"MP3 320"}
+{"v":1,"t":"…","type":"item.final","key":"azyr no escape","line":"Azyr - No Escape","status":"baixada","note":"","via":"","local":"downloads/Azyr/Azyr - No Escape.wav","user":"u1","format":"WAV"}
 {"v":1,"t":"…","type":"run.end","reason":"completed","exitCode":0,"message":"","summary":{"baixada":4,"nao encontrada":2},"files":{"result":"lotes/resultado-exemplo.txt",…}}
 ```
 

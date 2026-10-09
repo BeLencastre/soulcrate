@@ -39,7 +39,8 @@ export const STATUS_FINAIS = [
 export type StatusEmAndamento = (typeof STATUS_EM_ANDAMENTO)[number];
 export type StatusFinal = (typeof STATUS_FINAIS)[number];
 
-export type Formato = 'FLAC' | 'WAV/AIFF' | 'MP3 320' | 'MP3 256/VBR';
+/** `WAV/AIFF` só aparece em execuções feitas até a stack 1.1.0; hoje WAV e AIFF são formatos separados. */
+export type Formato = 'FLAC' | 'WAV' | 'AIFF' | 'WAV/AIFF' | 'MP3 320' | 'AAC' | 'MP3 256/VBR';
 
 interface Base<T extends string> {
   v: number;

@@ -58,8 +58,8 @@ describe('execução completa (fixture real do baixar-lista.ps1)', () => {
 
   it('guarda usuário, formato e arquivo da faixa que baixou, e a observação do que não achou', () => {
     const azyr = fim.faixas[0] as FaixaLote;
-    expect(azyr).toMatchObject({ status: 'baixada', usuario: 'u1', formato: 'MP3 320', tentativa: 2 });
-    expect(azyr.local).toBe('downloads/Azyr/Azyr - No Escape.mp3');
+    expect(azyr).toMatchObject({ status: 'baixada', usuario: 'u1', formato: 'WAV', tentativa: 2 });
+    expect(azyr.local).toBe('downloads/Azyr/Azyr - No Escape.wav');
     const plague = fim.faixas[2] as FaixaLote;
     expect(plague.temDiagnostico).toBe(true);
     expect(observacaoDaFaixa(plague)).toMatch(/formato\/qualidade recusados/);

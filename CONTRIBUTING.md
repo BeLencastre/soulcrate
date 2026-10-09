@@ -24,6 +24,10 @@ cd app && npm run test:e2e                                # app: ponta a ponta (
 powershell -File tests\Gerar-Fixtures.ps1
 ```
 
+**Mudou as regras de formato ou uma opção do lote** (`Test-File` no `baixar-lista.lib.ps1`, parâmetros do `baixar-lista.ps1`)? Ande junto com: os testes de `tests/baixar-lista.lib.Tests.ps1` e da integração; a tabela "Decida pelo motivo" e a seção de opções do **README**; `app/src/shared/opcoes-lote.ts` (opções, grupos e receitas), `motivos.ts` (o texto exato de cada recusa e a opção que ela sugere) e `mensagens.ts`. Os testes `motivos.test.ts` e `opcoes-lote.test.ts` conferem o README contra o código, então eles avisam se um dos lados ficou para trás. Opção que sai do script vira "obsoleta" em `OPCOES_OBSOLETAS` (aceita sem erro, sem efeito), em vez de quebrar comandos e rascunhos antigos.
+
+Ao regenerar as fixtures com `Gerar-Fixtures.ps1`, as datas dos eventos saem com o horário do dia. Os testes do app usam datas e durações fixas; mantenha o `run.start` das fixtures no horário que os testes esperam (`2026-10-07T15:48:09.420-03:00` em `eventos-completo.jsonl`) deslocando todas as datas por igual, e ajuste só as durações que os testes conferem.
+
 **Mudou uma tela do app?** Regenere as capturas do README (abrem o app com dados de demonstração e gravam em `docs/img/`) e confira o resultado antes de commitar:
 
 ```bash
@@ -67,4 +71,4 @@ Mudanças que quebram compatibilidade (parâmetro removido, formato de evento al
 - O **app** tem a versão própria em `app/package.json` (independente da versão da stack).
 - Registre as mudanças visíveis em [`CHANGELOG.md`](CHANGELOG.md), na seção "Não lançado".
 - **Mudar um arquivo da stack muda o que o app instala nas pastas dos usuários**: o app novo troca o que ninguém editou e deixa um `.novo` ao lado do que foi editado ([`docs/distribuicao.md`](docs/distribuicao.md#4-atualização-dos-arquivos-da-stack)). Se o arquivo é novo (ou deixou de existir), ajuste a lista `app/src/shared/stack-arquivos.ts`; o teste `pasta-service.test.ts` confere que ela anda junto com o repositório.
-- **Lançar uma versão do app**: ajuste `version` em `app/package.json`, atualize o `CHANGELOG.md`, crie a tag `v<versão>` e envie. O passo a passo, o teste de instalar → atualizar → desinstalar e a assinatura estão em [`docs/distribuicao.md`](docs/distribuicao.md#7-publicar-uma-versão).
+- **Lançar uma versão do app**: ajuste `version` em `app/package.json` (e em `app/package-lock.json`), a `VERSION` se a stack mudou, atualize o `CHANGELOG.md` e o README (versões e capturas), abra o pull request e, com ele na `main`, crie a tag `v<versão>` e envie. O passo a passo, o teste de instalar → atualizar → desinstalar e a assinatura estão em [`docs/distribuicao.md`](docs/distribuicao.md#7-publicar-uma-versão).

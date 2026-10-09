@@ -2,10 +2,10 @@
 ### Vendex - Plague
     buscas: [artista] Vendex | Vendex Plague | Plague
     (1 busca(s) pulada(s): a busca so pelo artista ja veio completa)
-    motivos: formato wav (use -AceitarWav) x2; titulo diferente x1
+    motivos: formato aiff (use -AceitarAacAiff) x2; titulo diferente x1
     arquivos mais parecidos:
-      formato wav (use -AceitarWav)            u3 :: @@c\Music\Vendex\Vendex - Plague.wav
-      formato wav (use -AceitarWav)            u3 :: @@c\Music\Vendex\Vendex - Plague.wav
+      formato aiff (use -AceitarAacAiff)       u3 :: @@c\Music\Vendex\Vendex - Plague.aiff
+      formato aiff (use -AceitarAacAiff)       u3 :: @@c\Music\Vendex\Vendex - Plague.aiff
       titulo diferente                         u4 :: @@d\Music\Vendex\Vendex - Abbadon.flac
     talvez seja: Plague
     catalogo de 'Vendex' no Soulseek (2 titulos, os mais compartilhados primeiro): Abbadon | Plague

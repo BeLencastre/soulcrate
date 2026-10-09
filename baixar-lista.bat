@@ -3,7 +3,7 @@ REM Download em lote. Uso:
 REM   baixar-lista.bat                      -> usa lista.txt
 REM   baixar-lista.bat minhas.txt           -> outra lista (.txt ou .csv do Spotify/Exportify)
 REM   arraste um .txt/.csv em cima deste arquivo
-REM   baixar-lista.bat lista.txt -Paralelo 6 -Retentar -AceitarWav
+REM   baixar-lista.bat lista.txt -Paralelo 6 -Retentar -AceitarAacAiff
 cd /d "%~dp0"
 title Download em lote - Soulcrate
 set "LISTA=%~1"

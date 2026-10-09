@@ -36,10 +36,10 @@ describe('padrões', () => {
     }
   });
 
-  it('as 19 opções do README estão nos grupos da tela, cada uma uma vez', () => {
+  it('as 20 opções do README estão nos grupos da tela, cada uma uma vez', () => {
     const ids = [...GRUPOS_BOOLEANOS.flatMap((g) => g.itens), ...GRUPOS_NUMERICOS.flatMap((g) => g.itens)];
-    expect(ids).toHaveLength(19);
-    expect(new Set(ids).size).toBe(19);
+    expect(ids).toHaveLength(20);
+    expect(new Set(ids).size).toBe(20);
     expect([...ids].sort()).toEqual([...OPCOES_BOOLEANAS, ...OPCOES_NUMERICAS].sort());
   });
 
@@ -67,9 +67,9 @@ describe('argumentos', () => {
   });
 
   it('manda só o que difere: números com o valor, liga/desliga sem valor', () => {
-    const o = { ...novasOpcoes(), Paralelo: 8, AceitarWav: true, FilaMaxMin: 10 };
-    expect(opcoesAlteradas(o)).toEqual(['Paralelo', 'FilaMaxMin', 'AceitarWav']);
-    expect(argumentosDasOpcoes(o)).toEqual(['-Paralelo', '8', '-FilaMaxMin', '10', '-AceitarWav']);
+    const o = { ...novasOpcoes(), Paralelo: 8, AceitarAacAiff: true, FilaMaxMin: 10 };
+    expect(opcoesAlteradas(o)).toEqual(['Paralelo', 'FilaMaxMin', 'AceitarAacAiff']);
+    expect(argumentosDasOpcoes(o)).toEqual(['-Paralelo', '8', '-FilaMaxMin', '10', '-AceitarAacAiff']);
   });
 
   it('voltar ao padrão tira o argumento', () => {
@@ -90,6 +90,18 @@ describe('validarOpcoes (o renderer não é confiável)', () => {
     expect(validarOpcoes({})).toEqual(novasOpcoes());
   });
 
+  it('AceitarWav (obsoleta: o WAV é sempre aceito) é aceita sem erro e não vira opção nem argumento', () => {
+    const o = validarOpcoes({ AceitarWav: true, Paralelo: 8 });
+    expect(o).toEqual({ ...novasOpcoes(), Paralelo: 8 });
+    expect(Object.keys(o)).not.toContain('AceitarWav');
+    expect(argumentosDasOpcoes(o)).toEqual(['-Paralelo', '8']);
+  });
+
+  it('o padrão aceita só FLAC e WAV: AAC/AIFF, MP3 320 e MP3 menor começam desligados', () => {
+    const o = novasOpcoes();
+    expect([o.AceitarAacAiff, o.AceitarMp3320, o.AceitarMp3Menor]).toEqual([false, false, false]);
+  });
+
   it('aceita parte das opções e completa com o padrão', () => {
     expect(validarOpcoes({ Paralelo: 8, SemBeets: true })).toEqual({ ...novasOpcoes(), Paralelo: 8, SemBeets: true });
   });
@@ -103,7 +115,7 @@ describe('validarOpcoes (o renderer não é confiável)', () => {
     ['acima do limite', { Paralelo: 51 }],
     ['negativo', { FilaMaxMin: -1 }],
     ['lista no lugar de objeto', [1, 2]],
-    ['texto no lugar de objeto', 'AceitarWav'],
+    ['texto no lugar de objeto', 'AceitarAacAiff'],
   ])('recusa %s', (_nome, entrada) => {
     expect(() => validarOpcoes(entrada)).toThrow();
   });
@@ -121,7 +133,7 @@ describe('receitas do README', () => {
     const flags = Object.fromEntries(RECEITAS.map((r) => [r.id, flagsDaReceita(r)]));
     expect(flags.listaGrande).toBe('-Paralelo 8');
     expect(flags.usuariosLentos).toBe('-FilaMaxMin 10 -DownloadMaxMin 40');
-    expect(flags.querTudo).toBe('-AceitarWav -AceitarMp3Menor');
+    expect(flags.querTudo).toBe('-AceitarAacAiff -AceitarMp3320 -AceitarMp3Menor');
     expect(flags.buscasSemResposta).toBe('-BuscasPorJanela 20 -PausaBloqueioMin 30');
     expect(flags.soBaixar).toBe('-SemBeets');
     const readme = readFileSync(join(REPO, 'README.md'), 'utf8');
@@ -139,7 +151,7 @@ describe('receitas do README', () => {
     expect(receitaAtiva(querTudo, base)).toBe(false);
     const aplicada = aplicarReceita(base, querTudo);
     expect(receitaAtiva(querTudo, aplicada)).toBe(true);
-    expect(receitaAtiva(querTudo, { ...aplicada, AceitarWav: false })).toBe(false);
+    expect(receitaAtiva(querTudo, { ...aplicada, AceitarAacAiff: false })).toBe(false);
   });
 
   it('cada receita passa na validação', () => {

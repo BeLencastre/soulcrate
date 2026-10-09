@@ -339,7 +339,7 @@ describe('tela Lista', () => {
 
   it('o rodapé diz o que difere do padrão e leva às opções', async () => {
     await abrirLista();
-    useRascunho.getState().definirOpcoes({ ...novasOpcoes(), Paralelo: 8, AceitarWav: true });
+    useRascunho.getState().definirOpcoes({ ...novasOpcoes(), Paralelo: 8, AceitarAacAiff: true });
     montar('/lista');
     expect(screen.getByText('Opções: padrão, com 2 alterações')).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'Revisar opções' })).toHaveAttribute('href', '/lista/opcoes');
@@ -523,7 +523,16 @@ describe('tela Opções', () => {
     for (const g of ['Qualidade', 'Títulos', 'Comportamento']) {
       expect(screen.getByRole('region', { name: g })).toBeInTheDocument();
     }
-    expect(screen.getAllByRole('switch')).toHaveLength(10);
+    expect(screen.getAllByRole('switch')).toHaveLength(11);
+    // Qualidade: FLAC e WAV são sempre aceitos; o resto é opção (padrão: desligado)
+    const qualidade = screen.getByRole('region', { name: 'Qualidade' });
+    expect(qualidade).toHaveTextContent('FLAC e WAV são sempre aceitos');
+    const chaves = within(qualidade).getAllByRole('switch');
+    expect(chaves).toHaveLength(3);
+    for (const c of chaves) expect(c).not.toBeChecked();
+    for (const nome of [/Aceitar AAC e AIFF/, /Aceitar MP3 320/, /Aceitar MP3 256 e VBR/]) {
+      expect(within(qualidade).getByRole('switch', { name: nome })).toBeInTheDocument();
+    }
     // avançadas: fechadas até abrir
     expect(screen.queryByText('Downloads simultâneos')).toBeNull();
     fireEvent.click(screen.getByRole('button', { name: /Avançadas/ }));
@@ -540,23 +549,27 @@ describe('tela Opções', () => {
 
   it('ligar uma opção mostra "≠ PADRÃO", conta no resumo e entra no comando', () => {
     montar('/lista/opcoes');
-    fireEvent.click(screen.getByRole('switch', { name: /Aceitar WAV e AIFF/ }));
-    expect(useRascunho.getState().opcoes.AceitarWav).toBe(true);
+    fireEvent.click(screen.getByRole('switch', { name: /Aceitar AAC e AIFF/ }));
+    expect(useRascunho.getState().opcoes.AceitarAacAiff).toBe(true);
     expect(
-      within(document.querySelector('[data-opcao="AceitarWav"]') as HTMLElement).getByText('≠ PADRÃO'),
+      within(document.querySelector('[data-opcao="AceitarAacAiff"]') as HTMLElement).getByText('≠ PADRÃO'),
     ).toBeInTheDocument();
     expect(screen.getByTestId('resumo-opcoes')).toHaveTextContent('1 opção diferente do padrão do script');
-    expect(screen.getByTestId('comando-equivalente')).toHaveTextContent('baixar-lista.bat set.txt -AceitarWav');
+    expect(screen.getByTestId('comando-equivalente')).toHaveTextContent('baixar-lista.bat set.txt -AceitarAacAiff');
   });
 
   it('receita de um clique ajusta as opções e fica marcada; clicar em outra opção a desmarca', () => {
     montar('/lista/opcoes');
     const receita = document.querySelector('[data-receita="querTudo"]') as HTMLElement;
-    expect(receita).toHaveTextContent('-AceitarWav -AceitarMp3Menor');
+    expect(receita).toHaveTextContent('-AceitarAacAiff -AceitarMp3320 -AceitarMp3Menor');
     fireEvent.click(receita);
-    expect(useRascunho.getState().opcoes).toMatchObject({ AceitarWav: true, AceitarMp3Menor: true });
+    expect(useRascunho.getState().opcoes).toMatchObject({
+      AceitarAacAiff: true,
+      AceitarMp3320: true,
+      AceitarMp3Menor: true,
+    });
     expect(receita).toHaveAttribute('aria-pressed', 'true');
-    fireEvent.click(screen.getByRole('switch', { name: /Aceitar WAV e AIFF/ }));
+    fireEvent.click(screen.getByRole('switch', { name: /Aceitar AAC e AIFF/ }));
     expect(receita).toHaveAttribute('aria-pressed', 'false');
   });
 
@@ -627,7 +640,7 @@ describe('tela Execução', () => {
     expect(within(tabela).getByText('Azyr')).toBeInTheDocument();
     expect(within(tabela).getAllByText('Baixada (não organizada)').length).toBeGreaterThan(0);
     expect(within(tabela).getByText('u1')).toBeInTheDocument();
-    expect(within(tabela).getByText('MP3 320')).toBeInTheDocument();
+    expect(within(tabela).getByText('WAV')).toBeInTheDocument();
   });
 
   it('as barras e os textos não dependem só da cor: a barra tem descrição para leitores de tela', async () => {

@@ -2,7 +2,8 @@
 // montagem dos argumentos. Só aceita as opções conhecidas: nada do renderer vira argumento sem passar por aqui.
 
 export const OPCOES_BOOLEANAS = [
-  'AceitarWav',
+  'AceitarAacAiff',
+  'AceitarMp3320',
   'AceitarMp3Menor',
   'TituloAproximado',
   'NaoTolerarGrafia',
@@ -13,6 +14,12 @@ export const OPCOES_BOOLEANAS = [
   'SemBeets',
   'SemBuscaArtista',
 ] as const;
+
+/**
+ * Opções que já existiram e hoje não fazem nada: o lote é aceito (sem erro) quando vem de um rascunho ou de um comando
+ * antigo, mas elas não são mais mostradas nem repassadas. `AceitarWav`: o WAV passou a ser sempre aceito.
+ */
+export const OPCOES_OBSOLETAS = ['AceitarWav'] as const;
 
 export const OPCOES_NUMERICAS = [
   'Paralelo',
@@ -56,7 +63,7 @@ export const LIMITES: Record<OpcaoNumericaId, LimiteNumerico> = {
 /** Grupos da tela de Opções, na ordem em que aparecem (os textos estão em `msg.lote.opcoes`). */
 export const GRUPOS_BOOLEANOS: readonly { id: 'qualidade' | 'titulos' | 'comportamento'; itens: OpcaoBooleanaId[] }[] =
   [
-    { id: 'qualidade', itens: ['AceitarWav', 'AceitarMp3Menor'] },
+    { id: 'qualidade', itens: ['AceitarAacAiff', 'AceitarMp3320', 'AceitarMp3Menor'] },
     { id: 'titulos', itens: ['TituloAproximado', 'NaoTolerarGrafia', 'SemCatalogo', 'PularForaDoCatalogo'] },
     { id: 'comportamento', itens: ['Retentar', 'NaoPularExistentes', 'SemBeets', 'SemBuscaArtista'] },
   ];
@@ -68,7 +75,8 @@ export const GRUPOS_NUMERICOS: readonly { id: 'ritmo' | 'filas'; itens: OpcaoNum
 ];
 
 export const OPCOES_PADRAO: Readonly<OpcoesLote> = Object.freeze({
-  AceitarWav: false,
+  AceitarAacAiff: false,
+  AceitarMp3320: false,
   AceitarMp3Menor: false,
   TituloAproximado: false,
   NaoTolerarGrafia: false,
@@ -113,6 +121,7 @@ export function validarOpcoes(bruto: unknown): OpcoesLote {
   const o = bruto as Record<string, unknown>;
   const r = novasOpcoes();
   for (const [id, valor] of Object.entries(o)) {
+    if ((OPCOES_OBSOLETAS as readonly string[]).includes(id)) continue;
     if (ehOpcaoBooleana(id)) {
       if (typeof valor !== 'boolean') throw new Error(`Opção ${id} inválida.`);
       r[id] = valor;
@@ -138,7 +147,7 @@ export function alterouAlgo(opcoes: OpcoesLote): boolean {
   return opcoesAlteradas(opcoes).length > 0;
 }
 
-/** `-Paralelo 8 -AceitarWav`: só o que difere do padrão (o script já assume os padrões). */
+/** `-Paralelo 8 -AceitarAacAiff`: só o que difere do padrão (o script já assume os padrões). */
 export function argumentosDasOpcoes(opcoes: OpcoesLote): string[] {
   const args: string[] = [];
   for (const id of opcoesAlteradas(opcoes)) {
@@ -166,7 +175,7 @@ export interface Receita {
 export const RECEITAS: readonly Receita[] = [
   { id: 'listaGrande', ajuste: { Paralelo: 8 } },
   { id: 'usuariosLentos', ajuste: { FilaMaxMin: 10, DownloadMaxMin: 40 } },
-  { id: 'querTudo', ajuste: { AceitarWav: true, AceitarMp3Menor: true } },
+  { id: 'querTudo', ajuste: { AceitarAacAiff: true, AceitarMp3320: true, AceitarMp3Menor: true } },
   { id: 'tentarDeNovo', ajuste: { Retentar: true } },
   { id: 'soBaixar', ajuste: { SemBeets: true } },
   { id: 'buscasSemResposta', ajuste: { BuscasPorJanela: 20, PausaBloqueioMin: 30 } },

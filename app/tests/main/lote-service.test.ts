@@ -155,7 +155,7 @@ describe('iniciar', () => {
   });
 
   it('inicia o lançador com powershell.exe, -EncodedCommand e a pasta do Soulcrate como diretório', async () => {
-    const r = await iniciar('set.txt', { ...novasOpcoes(), Paralelo: 8, AceitarWav: true });
+    const r = await iniciar('set.txt', { ...novasOpcoes(), Paralelo: 8, AceitarAacAiff: true });
     expect(r.ok).toBe(true);
     const c = lancador.chamadas[0];
     expect(c?.comando).toBe('powershell.exe');
@@ -173,7 +173,7 @@ describe('iniciar', () => {
     expect(cmd).toContain(`'-IdExecucao', '${id}'`);
     expect(cmd).toContain(`'-Eventos', 'lotes/eventos-${id}.jsonl'`);
     expect(cmd).toContain(`'-ArquivoParada', 'lotes/parar-${id}.flag'`);
-    expect(cmd).toContain("'-Paralelo', '8', '-AceitarWav'");
+    expect(cmd).toContain("'-Paralelo', '8', '-AceitarAacAiff'");
     expect(cmd).toContain(join(dir, 'lotes', `saida-${id}.log`));
     expect(existsSync(lotes())).toBe(true); // o redirecionamento precisa da pasta antes de o script criá-la
   });

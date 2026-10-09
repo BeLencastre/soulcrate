@@ -478,7 +478,7 @@ describe('tela Detalhe da execução', () => {
 
   it('lista os relatórios que existem e abre cada um; "Opções usadas" mostra o que difere do padrão', async () => {
     const d = detalhe();
-    d.opcoes = { ...novasOpcoes(), Paralelo: 8, AceitarWav: true };
+    d.opcoes = { ...novasOpcoes(), Paralelo: 8, AceitarAacAiff: true };
     api.reports.getRun.mockResolvedValue(d);
     api.reports.openFile.mockResolvedValue(true);
     montar(`/historico/${ID}`);
@@ -488,7 +488,7 @@ describe('tela Detalhe da execução', () => {
     expect(relatorios).not.toHaveTextContent('catalogo-');
     fireEvent.click(within(relatorios).getByRole('button', { name: `Abrir diagnostico-${ID}.txt` }));
     expect(api.reports.openFile).toHaveBeenCalledWith(ID, 'diagnostico');
-    expect(screen.getByTestId('opcoes-usadas')).toHaveTextContent('-Paralelo 8 -AceitarWav');
+    expect(screen.getByTestId('opcoes-usadas')).toHaveTextContent('-Paralelo 8 -AceitarAacAiff');
   });
 
   it('execução do .bat não registrou as opções, e o app diz isso', async () => {
@@ -619,14 +619,14 @@ describe('tela Diagnóstico das faixas que não vieram', () => {
         .getAllByText(/×/)
         .map((e) => e.textContent),
     ).toEqual(['×2', '×1']);
-    expect(motivos).toHaveTextContent('Formato WAV');
+    expect(motivos).toHaveTextContent('Formato AIFF');
     expect(motivos).toHaveTextContent('Rode de novo com essa opção');
     expect(motivos).toHaveTextContent('Título diferente');
     expect(motivos).toHaveTextContent('Escolha um dos títulos sugeridos acima');
 
     const parecidos = screen.getByTestId('arquivos-parecidos');
-    expect(parecidos).toHaveTextContent('formato wav (use -AceitarWav)');
-    expect(parecidos).toHaveTextContent('@@c\\Music\\Vendex\\Vendex - Plague.wav');
+    expect(parecidos).toHaveTextContent('formato aiff (use -AceitarAacAiff)');
+    expect(parecidos).toHaveTextContent('@@c\\Music\\Vendex\\Vendex - Plague.aiff');
     const catalogo = screen.getByTestId('catalogo');
     expect(catalogo).toHaveTextContent('Catálogo de Vendex no Soulseek');
     expect(catalogo).toHaveTextContent('Abbadon');
@@ -796,9 +796,9 @@ describe('tela Diagnóstico das faixas que não vieram', () => {
       const rodape = await screen.findByTestId('rodape-tentar-de-novo');
       expect(rodape).toHaveTextContent('Tentar de novo as 2');
       expect(rodape).toHaveTextContent(`nao-baixadas-${ID}.txt`);
-      // a fixture rodou com SemBeets e SemCatalogo; o formato recusado pede -AceitarWav e -AceitarMp3Menor
+      // a fixture rodou com SemBeets e SemCatalogo; o formato recusado pede -AceitarAacAiff, -AceitarMp3320 e -AceitarMp3Menor
       expect(screen.getByTestId('opcoes-sugeridas').textContent).toBe(
-        '-AceitarWav -AceitarMp3Menor -SemCatalogo -SemBeets',
+        '-AceitarAacAiff -AceitarMp3320 -AceitarMp3Menor -SemCatalogo -SemBeets',
       );
     });
 
@@ -828,7 +828,13 @@ describe('tela Diagnóstico das faixas que não vieram', () => {
       expect(api.lists.read).toHaveBeenCalledWith(`nao-baixadas-${ID}.txt`);
       const s = useRascunho.getState();
       expect(s.lista?.nome).toBe(`nao-baixadas-${ID}.txt`);
-      expect(s.opcoes).toMatchObject({ AceitarWav: true, AceitarMp3Menor: true, SemBeets: true, Retentar: false });
+      expect(s.opcoes).toMatchObject({
+        AceitarAacAiff: true,
+        AceitarMp3320: true,
+        AceitarMp3Menor: true,
+        SemBeets: true,
+        Retentar: false,
+      });
     });
 
     it('a receita "usuários lentos" de um motivo faz o mesmo caminho', async () => {

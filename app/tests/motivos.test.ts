@@ -17,18 +17,32 @@ const REPO = join(import.meta.dirname, '..', '..');
  */
 const CASOS: { readme: RegExp; bruto: string; tipo: TipoMotivo; acao: RegExp; sugere?: object; botao?: string }[] = [
   {
-    readme: /^formato wav\/aiff \(use -AceitarWav\)$/,
-    bruto: 'formato wav (use -AceitarWav)',
-    tipo: 'wav',
-    acao: /-AceitarWav/,
-    sugere: { AceitarWav: true, AceitarMp3Menor: true },
+    readme: /^formato aiff\/m4a\/aac \(use -AceitarAacAiff\)$/,
+    bruto: 'formato aiff (use -AceitarAacAiff)',
+    tipo: 'aacAiff',
+    acao: /-AceitarAacAiff/,
+    sugere: { AceitarAacAiff: true, AceitarMp3320: true, AceitarMp3Menor: true },
+  },
+  {
+    readme: /^formato aiff\/m4a\/aac \(use -AceitarAacAiff\)$/,
+    bruto: 'formato m4a (use -AceitarAacAiff)',
+    tipo: 'aacAiff',
+    acao: /-AceitarAacAiff/,
+    sugere: { AceitarAacAiff: true, AceitarMp3320: true, AceitarMp3Menor: true },
+  },
+  {
+    readme: /^mp3 320 kbps \(use -AceitarMp3320\)$/,
+    bruto: 'mp3 320 kbps (use -AceitarMp3320)',
+    tipo: 'mp3320',
+    acao: /-AceitarMp3320/,
+    sugere: { AceitarAacAiff: true, AceitarMp3320: true, AceitarMp3Menor: true },
   },
   {
     readme: /^mp3 256 kbps$/,
     bruto: 'mp3 256 kbps (use -AceitarMp3Menor)',
     tipo: 'mp3Menor',
     acao: /-AceitarMp3Menor/,
-    sugere: { AceitarWav: true, AceitarMp3Menor: true },
+    sugere: { AceitarAacAiff: true, AceitarMp3320: true, AceitarMp3Menor: true },
   },
   {
     readme: /^mp3 2xx kbps VBR \(use -AceitarMp3Menor\)$/,
@@ -44,8 +58,15 @@ const CASOS: { readme: RegExp; bruto: string; tipo: TipoMotivo; acao: RegExp; su
     sugere: {},
   },
   {
-    readme: /^formato m4a\/opus\/ogg$/,
-    bruto: 'formato m4a',
+    readme: /^aac 128 kbps \(qualidade baixa\)$/,
+    bruto: 'aac 128 kbps (qualidade baixa)',
+    tipo: 'aacBaixo',
+    acao: /Compre a faixa ou procure outra versão/,
+    sugere: {},
+  },
+  {
+    readme: /^formato opus\/ogg\/wma$/,
+    bruto: 'formato opus',
     tipo: 'formato',
     acao: /Compre a faixa ou baixe pelo Soulbeet/,
     botao: 'soulbeet',
@@ -116,7 +137,7 @@ describe('tabela "Decida pelo motivo" do README', () => {
   });
 
   it('encontrou a tabela e todas as linhas dela', () => {
-    expect(linhas).toHaveLength(13);
+    expect(linhas).toHaveLength(15);
   });
 
   it('toda linha do README tem um caso aqui (se o README ganhar um motivo, este teste avisa)', () => {
@@ -145,11 +166,18 @@ describe('tabela "Decida pelo motivo" do README', () => {
 });
 
 describe('traduzirMotivo', () => {
-  it('"formato wav" e "formato m4a" não se confundem', () => {
-    expect(traduzirMotivo('formato wav (use -AceitarWav)', 1).tipo).toBe('wav');
-    expect(traduzirMotivo('formato aif (use -AceitarWav)', 1).tipo).toBe('wav');
+  it('"formato aiff/m4a" (com a opção) e "formato opus" (sem opção) não se confundem', () => {
+    expect(traduzirMotivo('formato aif (use -AceitarAacAiff)', 1).tipo).toBe('aacAiff');
+    expect(traduzirMotivo('formato aac (use -AceitarAacAiff)', 1).rotulo).toBe('Formato AAC');
     expect(traduzirMotivo('formato opus', 1).tipo).toBe('formato');
     expect(traduzirMotivo('formato ogg', 1).rotulo).toBe('Formato ogg');
+  });
+
+  it('lotes antigos (stack até 1.1.0): o WAV recusado por -AceitarWav não pede opção nenhuma, o AIFF pede -AceitarAacAiff', () => {
+    const wav = traduzirMotivo('formato wav (use -AceitarWav)', 1);
+    expect(wav.tipo).toBe('wav');
+    expect(wav.sugere).toEqual({});
+    expect(traduzirMotivo('formato aiff (use -AceitarWav)', 1).tipo).toBe('aacAiff');
   });
 
   it('o rótulo traz o que o script escreveu entre aspas', () => {
@@ -209,12 +237,13 @@ describe('tentativas de download que falharam', () => {
 describe('opcoesSugeridas', () => {
   it('reúne o que os motivos pedem, sem repetir', () => {
     const motivos = [
-      traduzirMotivo('formato wav (use -AceitarWav)', 2),
+      traduzirMotivo('formato aiff (use -AceitarAacAiff)', 2),
       traduzirMotivo('mp3 256 kbps (use -AceitarMp3Menor)', 1),
       ...traduzirTentativas(['fila longa em a (>4 min)']),
     ];
     expect(opcoesSugeridas(motivos)).toEqual({
-      AceitarWav: true,
+      AceitarAacAiff: true,
+      AceitarMp3320: true,
       AceitarMp3Menor: true,
       FilaMaxMin: 10,
       DownloadMaxMin: 40,

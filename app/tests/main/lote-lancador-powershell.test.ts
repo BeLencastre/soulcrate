@@ -16,8 +16,8 @@ import { ate, removerPasta } from './ajudantes';
 const temPowerShell =
   process.platform === 'win32' && spawnSync('powershell', ['-NoProfile', '-Command', '1']).status === 0;
 
-const SCRIPT_DE_BRINQUEDO = `param([string]$Lista, [string]$IdExecucao, [string]$Eventos, [string]$ArquivoParada, [int]$Paralelo = 5, [switch]$AceitarWav)
-$o = [ordered]@{ Lista = $Lista; IdExecucao = $IdExecucao; Eventos = $Eventos; ArquivoParada = $ArquivoParada; Paralelo = $Paralelo; AceitarWav = [bool]$AceitarWav; Raiz = $PSScriptRoot; Cwd = (Get-Location).Path }
+const SCRIPT_DE_BRINQUEDO = `param([string]$Lista, [string]$IdExecucao, [string]$Eventos, [string]$ArquivoParada, [int]$Paralelo = 5, [switch]$AceitarAacAiff)
+$o = [ordered]@{ Lista = $Lista; IdExecucao = $IdExecucao; Eventos = $Eventos; ArquivoParada = $ArquivoParada; Paralelo = $Paralelo; AceitarAacAiff = [bool]$AceitarAacAiff; Raiz = $PSScriptRoot; Cwd = (Get-Location).Path }
 [IO.File]::WriteAllText((Join-Path $PSScriptRoot 'recebido.json'), (ConvertTo-Json $o), (New-Object Text.UTF8Encoding $false))
 [Console]::OutputEncoding = [Text.Encoding]::UTF8
 Write-Host 'ola, ação'
@@ -49,7 +49,7 @@ describe.skipIf(!temPowerShell)('lançador do lote (PowerShell de verdade)', () 
         dir,
         lista: 'lista de sábado.txt',
         idExecucao: id,
-        opcoes: { ...novasOpcoes(), Paralelo: 8, AceitarWav: true },
+        opcoes: { ...novasOpcoes(), Paralelo: 8, AceitarAacAiff: true },
       }),
       saida: join(dir, arq.saida),
       erro: join(dir, arq.erro),
@@ -73,7 +73,7 @@ describe.skipIf(!temPowerShell)('lançador do lote (PowerShell de verdade)', () 
       Eventos: arq.eventos,
       ArquivoParada: arq.parada,
       Paralelo: 8,
-      AceitarWav: true,
+      AceitarAacAiff: true,
       Raiz: realpathSync.native(dir),
       Cwd: realpathSync.native(dir),
     });

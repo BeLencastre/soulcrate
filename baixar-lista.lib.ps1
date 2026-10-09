@@ -4,7 +4,7 @@
   tolerancia a grafia e conferencia no catalogo.
 
   Carregado pelo baixar-lista.ps1 (dot-source) e pelos testes em tests\. As funcoes leem as
-  opcoes do script (ex.: $NaoTolerarGrafia, $AceitarWav, $BadUsers) do escopo de quem chama.
+  opcoes do script (ex.: $NaoTolerarGrafia, $AceitarAacAiff, $BadUsers) do escopo de quem chama.
 #>
 
 # ============================================================================
@@ -29,6 +29,8 @@ function Esc([string]$s) { return [uri]::EscapeDataString($s) }
 # Texto / matching
 # ============================================================================
 $StopWords = @('feat','ft','featuring','and','the','vs','x','e')
+# Formato de cada Tier (a ordem de preferencia no download): so o que serve chega a ter Tier
+$FormatoPorTier = @('FLAC','WAV','AIFF','MP3 320','AAC','MP3 256/VBR')
 $AudioExt  = @('flac','mp3','wav','aif','aiff','m4a','aac','ogg','opus','wma','alac','ape','wv')
 $Translit  = @{ [char]0x00F8 = 'o'; [char]0x00E6 = 'ae'; [char]0x00DF = 'ss'; [char]0x0142 = 'l'; [char]0x0111 = 'd'; [char]0x00FE = 'th'; [char]0x0153 = 'oe'; [char]0x0131 = 'i' }
 
@@ -297,14 +299,27 @@ function Test-File($req, $f) {
     $est = [int]([long]$f.size * 8 / [int]$f.length / 1000)
     $br = $(if ($est -ge 310) { 320 } elseif ($est -ge 250) { 256 } else { $est })
   }
+  if ($br -le 0 -and $ext -in @('m4a','aac') -and [long]$f.size -gt 0 -and [int]$f.length -gt 0) {
+    $br = [int]([long]$f.size * 8 / [int]$f.length / 1000)                   # AAC sem bitrate informado: estima por tamanho/duracao
+  }
+  # FLAC e WAV sempre servem. AIFF e AAC so com -AceitarAacAiff; MP3 320 so com -AceitarMp3320; MP3 256/VBR so com
+  # -AceitarMp3Menor (que ja inclui o 320).
   switch ($ext) {
     'flac' { $tier = 0 }
-    { $_ -in @('wav','aif','aiff') } { if ($AceitarWav) { $tier = 1 } else { $fmtWhy = "formato $ext (use -AceitarWav)" } }
+    'wav' { $tier = 1 }
+    { $_ -in @('aif','aiff') } { if ($AceitarAacAiff) { $tier = 2 } else { $fmtWhy = "formato $ext (use -AceitarAacAiff)" } }
     'mp3' {
-      if ($br -ge 315) { $tier = 2 }
-      elseif ($AceitarMp3Menor -and ($br -ge 256 -or ($vbr -and $br -ge 220))) { $tier = 3 }
-      elseif ($br -ge 256 -or ($vbr -and $br -ge 220)) { $fmtWhy = "mp3 $br kbps$(if ($vbr) {' VBR'}) (use -AceitarMp3Menor)" }
+      if ($br -ge 315) { if ($AceitarMp3320 -or $AceitarMp3Menor) { $tier = 3 } else { $fmtWhy = "mp3 $br kbps (use -AceitarMp3320)" } }
+      elseif ($br -ge 256 -or ($vbr -and $br -ge 220)) {
+        if ($AceitarMp3Menor) { $tier = 5 } else { $fmtWhy = "mp3 $br kbps$(if ($vbr) {' VBR'}) (use -AceitarMp3Menor)" }
+      }
       else { $fmtWhy = "mp3 $br kbps (qualidade baixa)" }
+    }
+    { $_ -in @('m4a','aac') } {
+      # o bitrate vem primeiro: AAC abaixo de 250 kbps nao serve nem com a opcao (mesma regra do "MP3 baixo")
+      if ($br -lt 250) { $fmtWhy = "aac $br kbps (qualidade baixa)" }
+      elseif ($AceitarAacAiff) { $tier = 4 }
+      else { $fmtWhy = "formato $ext (use -AceitarAacAiff)" }
     }
     default { $fmtWhy = "formato $ext" }
   }

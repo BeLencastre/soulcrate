@@ -8,6 +8,42 @@ O **app desktop** e a **stack** (Docker Compose, scripts e configuração do bee
 
 Nada ainda.
 
+## App 1.0.1 (2026-10-09)
+
+Muda o que o download em lote aceita por padrão e traz a stack 1.2.0. **Atenção:** o MP3 320 deixou de ser aceito por padrão (veja abaixo).
+
+### Mudado
+
+- **Baixar lista → Opções → Qualidade:** o lote passa a aceitar **só FLAC e WAV** por padrão (o grupo avisa "FLAC e WAV são sempre aceitos"). O resto virou opção, todas desligadas:
+  - **Aceitar AAC e AIFF** (`-AceitarAacAiff`): AIFF e AAC (`.m4a`/`.aac`) de 256 kbps ou mais. AAC abaixo de 250 kbps é recusado mesmo com a opção.
+  - **Aceitar MP3 320** (`-AceitarMp3320`): o MP3 320 kbps, que antes era aceito sempre.
+  - **Aceitar MP3 256 e VBR (V0)** (`-AceitarMp3Menor`): continua como antes, mas agora **também aceita o MP3 320**.
+- A ordem de preferência ficou FLAC, WAV, AIFF, MP3 320, AAC e MP3 256/VBR; só entram os formatos que você aceitou. A receita **Quero tudo, nem que seja MP3 256** liga as três opções.
+- O diagnóstico e o "Tentar de novo" entendem os motivos novos (`formato aiff (use -AceitarAacAiff)`, `mp3 320 kbps (use -AceitarMp3320)`, `aac 128 kbps (qualidade baixa)`) e sugerem a opção certa. Execuções antigas continuam legíveis no Histórico.
+- A tabela "Decida pelo motivo" e a seção de opções do README foram atualizadas.
+
+### Removido
+
+- `-AceitarWav`: o WAV agora é sempre aceito. A opção continua existindo no script, sem efeito, para não quebrar comandos antigos, mas saiu da tela de Opções.
+
+## Stack 1.2.0
+
+Versão da stack que o app 1.0.1 traz. Muda só o `baixar-lista.ps1` (e a biblioteca `baixar-lista.lib.ps1`).
+
+### Adicionado
+
+- Download em lote: `-AceitarAacAiff` (AIFF e AAC de 256 kbps ou mais) e `-AceitarMp3320` (MP3 320 kbps). O bitrate do AAC que o usuário não informa é estimado por tamanho ÷ duração, como o do MP3.
+- Download em lote: o evento `format` distingue `WAV`, `AIFF`, `AAC` (antes `WAV/AIFF`) e as mensagens do relatório citam os novos motivos. Veja [`docs/eventos-lote.md`](docs/eventos-lote.md).
+
+### Mudado
+
+- **Download em lote: por padrão só FLAC e WAV são aceitos.** O MP3 320 precisa de `-AceitarMp3320` (antes entrava sempre) e o WAV deixou de precisar de opção. Quem rodava com o padrão e dependia do MP3 320 passa a ver essas faixas como "existe, mas so em formato/qualidade recusados" no diagnóstico; rode-as de novo com `-AceitarMp3320`.
+- `-AceitarMp3Menor` agora inclui o MP3 320.
+
+### Removido
+
+- `-AceitarWav` (sem efeito: o WAV é sempre aceito). O parâmetro ainda é aceito e ignorado.
+
 ## App 1.0.0 (2026-10-09)
 
 Primeira versão do app desktop (Windows, Electron). Traz a stack 1.1.0. Instala por usuário, configura tudo por um assistente, liga e desliga a stack, roda o download em lote com progresso ao vivo, explica o que não veio, cuida da biblioteca e se atualiza sozinho. Os `.bat` continuam funcionando na mesma pasta.
