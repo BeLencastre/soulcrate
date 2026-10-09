@@ -34,8 +34,8 @@ describe('argumentosDoLote', () => {
   });
 
   it('acrescenta só as opções que diferem do padrão', () => {
-    const a = argumentosDoLote({ ...base, opcoes: { ...novasOpcoes(), Paralelo: 8, AceitarWav: true } });
-    expect(a.slice(14)).toEqual(['-Paralelo', '8', '-AceitarWav']);
+    const a = argumentosDoLote({ ...base, opcoes: { ...novasOpcoes(), Paralelo: 8, AceitarAacAiff: true } });
+    expect(a.slice(14)).toEqual(['-Paralelo', '8', '-AceitarAacAiff']);
   });
 
   it('só aponta o slskd para outro endereço quando pedido (testes ponta a ponta)', () => {

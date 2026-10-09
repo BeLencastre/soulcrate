@@ -105,7 +105,7 @@ describe('resumo de uma execução (a linha do histórico)', () => {
     expect(r.fim).toBe('completed');
     expect(r.lista).toBe('lista.txt');
     expect(r.contagem).toEqual({ total: 6, ok: 4, naoVieram: 2, puladas: 0, atencao: 0, naoTerminadas: 0 });
-    expect(r.duracaoMs).toBe(26_347);
+    expect(r.duracaoMs).toBe(25_342);
     expect(r.temFaltas).toBe(true);
     expect(r.progresso).toBeNull();
   });
@@ -217,7 +217,7 @@ describe('execução completa (fixture real do baixar-lista.ps1)', () => {
     const abaddon = bruta.faixas[3];
     expect(abaddon?.via).toBe('busca pelo artista');
     expect(abaddon?.local).toBe('downloads/Vendex/Vendex - Abbadon.flac');
-    expect(bruta.faixas[0]?.formato).toBe('MP3 320');
+    expect(bruta.faixas[0]?.formato).toBe('WAV');
     expect(bruta.arquivos.diagnostic).toBe('lotes/diagnostico-exemplo.txt');
   });
 
@@ -243,11 +243,11 @@ describe('execução completa (fixture real do baixar-lista.ps1)', () => {
     expect(filtrarFaixasHistorico(f, 'bib', 'plague')).toEqual([]);
   });
 
-  it('diagnóstico do "Vendex - Plague": existe, mas só em WAV; os motivos vêm do mais frequente ao menos', () => {
+  it('diagnóstico do "Vendex - Plague": existe, mas só em AIFF; os motivos vêm do mais frequente ao menos', () => {
     const d = diagnosticarFaixa(faixaEm(bruta, 2), bruta, null);
     expect(d.status).toBe('nao encontrada');
     expect(d.motivos.map((m) => [m.tipo, m.n])).toEqual([
-      ['wav', 2],
+      ['aacAiff', 2],
       ['titulo', 1],
     ]);
     expect(d.resumo).toBe(msg.historico.resumoDaFalta.soFormato);
@@ -260,9 +260,9 @@ describe('execução completa (fixture real do baixar-lista.ps1)', () => {
     ]);
     expect(d.arquivos).toHaveLength(3);
     expect(d.arquivos[0]).toEqual({
-      motivo: 'formato wav (use -AceitarWav)',
+      motivo: 'formato aiff (use -AceitarAacAiff)',
       usuario: 'u3',
-      arquivo: '@@c\\Music\\Vendex\\Vendex - Plague.wav',
+      arquivo: '@@c\\Music\\Vendex\\Vendex - Plague.aiff',
     });
     expect(d.catalogo).toEqual([
       { titulo: 'Abbadon', usuarios: 1 },
@@ -305,13 +305,15 @@ describe('execução completa (fixture real do baixar-lista.ps1)', () => {
       arquivo: 'nao-baixadas-20261007-154809.txt',
       faixas: 2,
       retentar: false,
-      sugeridas: ['AceitarWav', 'AceitarMp3Menor'],
+      sugeridas: ['AceitarAacAiff', 'AceitarMp3320', 'AceitarMp3Menor'],
     });
     // as opções da execução (a fixture rodou com SemBeets e SemCatalogo) continuam, e o sugerido se soma
     expect(parte.retentativa?.opcoes).toMatchObject({
       SemBeets: true,
       SemCatalogo: true,
-      AceitarWav: true,
+      AceitarAacAiff: true,
+      AceitarMp3320: true,
+      AceitarMp3Menor: true,
       Retentar: false,
     });
     expect(parte.opcoes?.SemBeets).toBe(true);
@@ -488,7 +490,7 @@ describe('execução antiga: resultado-*.txt e diagnostico-*.txt do baixar-lista
     expect(fulano.motivos.map((m) => m.tipo)).toEqual(['semRespostas']);
     const plague = diagnosticarFaixa(faixaEm(bruta, 2), bruta, null);
     expect(plague.respostas).toBeNull();
-    expect(plague.motivos.map((m) => m.tipo)).toEqual(['wav', 'titulo']);
+    expect(plague.motivos.map((m) => m.tipo)).toEqual(['aacAiff', 'titulo']);
   });
 
   it('diagnóstico com título do catálogo que traz a quantidade de usuários e o "..." do corte', () => {
@@ -526,9 +528,21 @@ describe('explicarVia', () => {
 
 describe('opcoesDaExecucao', () => {
   it('aceita as opções que o app conhece e ignora o resto (SlskdUrl, valores fora do intervalo)', () => {
-    const o = opcoesDaExecucao({ Paralelo: 8, AceitarWav: true, SlskdUrl: 'http://x', Buscas: 999, SemBeets: 'sim' });
-    expect(o).toMatchObject({ Paralelo: 8, AceitarWav: true, Buscas: 2, SemBeets: false });
+    const o = opcoesDaExecucao({
+      Paralelo: 8,
+      AceitarAacAiff: true,
+      SlskdUrl: 'http://x',
+      Buscas: 999,
+      SemBeets: 'sim',
+    });
+    expect(o).toMatchObject({ Paralelo: 8, AceitarAacAiff: true, Buscas: 2, SemBeets: false });
     expect(Object.keys(o ?? {})).not.toContain('SlskdUrl');
+  });
+
+  it('execução de uma versão antiga: AceitarWav (obsoleta, o WAV é sempre aceito) é ignorada', () => {
+    const o = opcoesDaExecucao({ Paralelo: 8, AceitarWav: true });
+    expect(o).toMatchObject({ Paralelo: 8, AceitarAacAiff: false });
+    expect(Object.keys(o ?? {})).not.toContain('AceitarWav');
   });
 
   it('execução antiga não registrou opções', () => {

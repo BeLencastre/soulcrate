@@ -59,7 +59,7 @@ const runStart = (id: string, lista = 'lista.txt', total = 1, extra: object = {}
     list: lista,
     listName: 'lista',
     total,
-    options: { Paralelo: 5, AceitarWav: false },
+    options: { Paralelo: 5, AceitarAacAiff: false },
     files: { state: 'lotes/estado-lista.tsv' },
     powershell: '5.1',
     ...extra,
@@ -160,7 +160,7 @@ describe('listar', () => {
     const novo = r[0];
     expect(novo).toMatchObject({
       lista: 'lista.txt',
-      duracaoMs: 26_347,
+      duracaoMs: 25_342,
       temFaltas: true,
       contagem: { total: 6, ok: 4, naoVieram: 2, puladas: 0 },
     });
@@ -313,7 +313,7 @@ describe('detalhe', () => {
     expect(d?.faixas).toHaveLength(6);
     expect(d?.podeReprocessar).toBe(false); // não se sabe qual é a lista
     const plague = d?.diagnosticos.find((x) => x.key === 'vendex plague');
-    expect(plague?.motivos.map((m) => m.tipo)).toEqual(['wav', 'titulo']);
+    expect(plague?.motivos.map((m) => m.tipo)).toEqual(['aacAiff', 'titulo']);
     expect(plague?.sugestoes).toEqual(['Plague']);
     expect(d?.retentativa?.faixas).toBe(2);
   });

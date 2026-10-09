@@ -666,17 +666,24 @@ export const msg = {
       diminuir: (titulo: string) => `Diminuir: ${titulo}`,
       aumentar: (titulo: string) => `Aumentar: ${titulo}`,
       grupos: {
-        qualidade: { nome: 'Qualidade', desc: 'O que aceitar além de FLAC e MP3 320' },
+        qualidade: { nome: 'Qualidade', desc: 'FLAC e WAV são sempre aceitos. Marque o que mais aceitar' },
         titulos: { nome: 'Títulos', desc: 'Como comparar o título da linha com o do arquivo' },
         comportamento: { nome: 'Comportamento', desc: 'O que fazer com o que já foi feito' },
         ritmo: { nome: 'Ritmo', desc: '' },
         filas: { nome: 'Filas e tentativas', desc: '' },
       },
       itens: {
-        AceitarWav: { titulo: 'Aceitar WAV e AIFF', desc: 'Aceita WAV e AIFF antes do MP3.' },
+        AceitarAacAiff: {
+          titulo: 'Aceitar AAC e AIFF',
+          desc: 'AIFF (sem perda) e AAC de 256 kbps ou mais, depois de FLAC e WAV.',
+        },
+        AceitarMp3320: {
+          titulo: 'Aceitar MP3 320',
+          desc: 'Quando a faixa não existe nos formatos acima.',
+        },
         AceitarMp3Menor: {
           titulo: 'Aceitar MP3 256 e VBR (V0)',
-          desc: 'Quando a faixa não existe em FLAC nem em MP3 320.',
+          desc: 'Também aceita MP3 320. Só quando não há nada melhor.',
         },
         TituloAproximado: {
           titulo: 'Aceitar títulos com palavras a mais',
@@ -1144,11 +1151,23 @@ export const msg = {
     motivos: {
       wav: {
         rotulo: (ext: string) => `Formato ${ext.toUpperCase()}`,
-        acao: 'Só existe em WAV ou AIFF, que o lote só aceita com -AceitarWav. Rode de novo com essa opção.',
+        acao: 'Lote de uma versão antiga: o WAV agora é sempre aceito. Rode de novo a lista.',
+      },
+      aacAiff: {
+        rotulo: (ext: string) => `Formato ${ext.toUpperCase()}`,
+        acao: 'Só existe em AIFF ou AAC, que o lote só aceita com -AceitarAacAiff. Rode de novo com essa opção.',
+      },
+      aacBaixo: {
+        rotulo: (detalhe: string) => `AAC ${detalhe}`,
+        acao: 'Só existe em AAC de qualidade baixa (menos de 250 kbps). Compre a faixa ou procure outra versão.',
+      },
+      mp3320: {
+        rotulo: (detalhe: string) => `MP3 ${detalhe}`,
+        acao: 'Só existe em MP3 320 kbps, que o lote só aceita com -AceitarMp3320. Rode de novo com essa opção.',
       },
       mp3Menor: {
         rotulo: (detalhe: string) => `MP3 ${detalhe}`,
-        acao: 'Só existe em MP3 abaixo de 320 kbps, que o lote só aceita com -AceitarMp3Menor. Rode de novo com essa opção.',
+        acao: 'Só existe em MP3 abaixo de 320 kbps, que o lote só aceita com -AceitarMp3Menor (que já inclui o MP3 320). Rode de novo com essa opção.',
       },
       mp3Baixo: {
         rotulo: (detalhe: string) => `MP3 ${detalhe}`,

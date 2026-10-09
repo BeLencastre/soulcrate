@@ -3,7 +3,7 @@
 
   Le uma lista (.txt com "Artista - Titulo (Mix)" por linha, ou .csv exportado
   do Spotify/Exportify/TuneMyMusic), busca cada faixa no slskd, escolhe o melhor
-  arquivo (FLAC, senao MP3 320), baixa e importa com o MESMO beets do Soulbeet.
+  arquivo (FLAC ou WAV; AIFF, AAC e MP3 so se voce pedir), baixa e importa com o MESMO beets do Soulbeet.
 
   Feito para listas grandes:
     - pula o que ja esta na biblioteca e o que ja foi feito em execucoes anteriores
@@ -40,8 +40,10 @@ param(
   [int]$FilaUltimoMin = 30,           # ...quando e o ULTIMO usuario que tem a faixa, espera mais antes de desistir (a espera na fila nao ocupa vaga de download)
   [int]$DownloadMaxMin = 20,          # tempo maximo por tentativa
   [int]$LoteBeets = 10,               # faixas por chamada do beets
-  [switch]$AceitarMp3Menor,           # aceita MP3 256 kbps se nao houver FLAC/320
-  [switch]$AceitarWav,                # aceita WAV/AIFF (sem perda) antes do MP3
+  [switch]$AceitarAacAiff,            # aceita AIFF (sem perda) e AAC (256 kbps ou mais); FLAC e WAV sempre sao aceitos
+  [switch]$AceitarMp3320,             # aceita MP3 320 kbps (por padrao so FLAC e WAV)
+  [switch]$AceitarMp3Menor,           # aceita MP3 256 kbps e VBR (V0) tambem; ja inclui o MP3 320
+  [switch]$AceitarWav,                # OBSOLETO (sem efeito): o WAV agora e sempre aceito. Mantido para nao quebrar comandos antigos
   [switch]$Retentar,                  # tenta de novo o que falhou/nao foi encontrado antes
   [switch]$NaoPularExistentes,        # baixa mesmo se ja estiver na biblioteca
   [switch]$SemBeets,                  # so baixa (nao importa no beets)
@@ -786,7 +788,7 @@ function Start-Download($it) {
     try {
       [void](Invoke-Slskd POST "/transfers/downloads/$(Esc $c.User)" @(@{ filename = $c.File; size = $c.Size }))
       $it.Cur = $c; $it.Started = Get-Date; $it.Status = "baixando"; $it.RemoteQueued = $false; $it.ActiveAt = $null
-      $fmt = @('FLAC','WAV/AIFF','MP3 320','MP3 256/VBR')[$c.Tier]
+      $fmt = $FormatoPorTier[$c.Tier]
       Write-Host ("  -> {0}  [{1} de {2}, tentativa {3}]" -f $it.Line, $fmt, $c.User, ($it.Idx + 1)) -ForegroundColor DarkCyan
       return
     } catch {
@@ -932,7 +934,7 @@ function Sync-EventosItens {
     if ($FinalStatus -contains $it.Status) {
       Write-Evento 'item.final' ([ordered]@{ key = [string]$it.Key; line = [string]$it.Line; status = [string]$it.Status; note = [string]$it.Note
                                              via = [string]$it.Via; local = $(if ($it.Local) { Get-CaminhoRel $it.Local } else { $null })
-                                             user = $(if ($cur) { [string]$cur.User } else { $null }); format = $(if ($cur) { @('FLAC','WAV/AIFF','MP3 320','MP3 256/VBR')[$cur.Tier] } else { $null }) })
+                                             user = $(if ($cur) { [string]$cur.User } else { $null }); format = $(if ($cur) { $FormatoPorTier[$cur.Tier] } else { $null }) })
       continue
     }
     $e = [ordered]@{ key = [string]$it.Key; line = [string]$it.Line; status = [string]$it.Status }
@@ -942,7 +944,7 @@ function Sync-EventosItens {
     }
     if ($it.Status -eq 'pronta') { $e.candidates = @($it.Cands).Count }
     if ($cur -and $it.Status -eq 'baixando') {
-      $e.user = [string]$cur.User; $e.format = @('FLAC','WAV/AIFF','MP3 320','MP3 256/VBR')[$cur.Tier]; $e.attempt = $it.Idx + 1; $e.remoteQueued = [bool]$it.RemoteQueued
+      $e.user = [string]$cur.User; $e.format = $FormatoPorTier[$cur.Tier]; $e.attempt = $it.Idx + 1; $e.remoteQueued = [bool]$it.RemoteQueued
     }
     Write-Evento 'item.status' $e
   }
@@ -1048,7 +1050,7 @@ $script:ArquivosExecucao = [ordered]@{
 if ($EventosPath) {
   $opcoes = [ordered]@{}
   foreach ($n in @('Paralelo', 'Buscas', 'BuscasPorJanela', 'Tentativas', 'FilaMaxMin', 'FilaUltimoMin', 'DownloadMaxMin', 'LoteBeets', 'PausaBloqueioMin',
-                   'AceitarMp3Menor', 'AceitarWav', 'Retentar', 'NaoPularExistentes', 'SemBeets', 'SemBuscaArtista', 'TituloAproximado',
+                   'AceitarAacAiff', 'AceitarMp3320', 'AceitarMp3Menor', 'Retentar', 'NaoPularExistentes', 'SemBeets', 'SemBuscaArtista', 'TituloAproximado',
                    'NaoTolerarGrafia', 'SemCatalogo', 'PularForaDoCatalogo', 'SlskdUrl')) {
     $v = Get-Variable -Name $n -ValueOnly
     $opcoes[$n] = $(if ($v -is [Management.Automation.SwitchParameter]) { $v.IsPresent } else { $v })
@@ -1259,7 +1261,7 @@ finally {
   $nFora = @($items | Where-Object { $_.Fora -and $_.Status -eq "nao encontrada" }).Count
   if ($nFora) { Write-Host "$nFora nao encontrada(s) nem existem no catalogo do artista (titulo provavelmente errado na lista): veja $CatReport" -ForegroundColor Yellow }
   if ($BadUsers.Count) { Write-Host ("Usuarios que travaram (evitados nas faixas seguintes): " + (($BadUsers.GetEnumerator() | Sort-Object Value -Descending | Select-Object -First 5 | ForEach-Object { "$($_.Key) x$($_.Value)" }) -join ', ')) -ForegroundColor DarkGray }
-  if ($fmtOnly) { Write-Host "$fmtOnly faixa(s) existem, mas so em WAV/AIFF ou MP3 abaixo de 320: rode as nao baixadas com -AceitarWav -AceitarMp3Menor" -ForegroundColor Yellow }
+  if ($fmtOnly) { Write-Host "$fmtOnly faixa(s) existem, mas so em AIFF/AAC, MP3 ou outro formato recusado: rode as nao baixadas com -AceitarAacAiff -AceitarMp3320 -AceitarMp3Menor" -ForegroundColor Yellow }
   if ($fail.Count) { Write-Host "Para tentar de novo so as que faltaram:  baixar-lista.bat lotes\nao-baixadas-$stamp.txt -AceitarMp3Menor -AceitarWav" -ForegroundColor Yellow }
 
   # ---------------------------------------------------------------- fim (codigo de saida e run.end)

@@ -17,7 +17,7 @@ flowchart LR
     D --> E[Rekordbox, pendrive, CDJ/XDJ]
 ```
 
-> **Status:** o **app desktop para Windows** está na versão `1.0.0` e a stack (Docker Compose, scripts e configuração do beets) na `1.1.0` (veja o [`CHANGELOG.md`](CHANGELOG.md)). A primeira release ainda **não foi publicada** no GitHub: até lá, o instalador sai do código com `npm run dist` (veja [Instalação pelo app](#instalação-pelo-app-windows)). Os `.bat` continuam funcionando em qualquer caso.
+> **Status:** o **app desktop para Windows** está na versão `1.0.1` e a stack (Docker Compose, scripts e configuração do beets) na `1.2.0` (veja o [`CHANGELOG.md`](CHANGELOG.md)). O instalador está na página de [Releases](https://github.com/BeLencastre/soulcrate/releases) (veja [Instalação pelo app](#instalação-pelo-app-windows)). Os `.bat` continuam funcionando em qualquer caso.
 
 ![O app do Soulcrate: a tela Baixar lista, com o editor e a pré-visualização do que o lote vai ler](docs/img/03-lista.png)
 
@@ -89,7 +89,7 @@ flowchart LR
 O Soulcrate é um **garimpeiro de músicas para DJs**. Você diz quais faixas quer, uma a uma ou colando uma lista inteira, e ele:
 
 1. **Procura** cada faixa na rede [Soulseek](https://www.slsknet.org), uma rede de compartilhamento de músicas entre usuários;
-2. **Escolhe e baixa** a melhor versão disponível (FLAC, ou MP3 320 kbps);
+2. **Escolhe e baixa** a melhor versão disponível (FLAC ou WAV; AIFF, AAC e MP3 se você permitir);
 3. **Etiqueta** a faixa com BPM, tom harmônico e capa;
 4. **Organiza** tudo em pastas por gênero e artista;
 5. **Entrega** uma biblioteca que o Rekordbox lê direto, pronta para ir para o pendrive.
@@ -127,7 +127,7 @@ Cada dor acima tem uma resposta direta:
 | Antes                                      | Com o Soulcrate                                                                            |
 | ------------------------------------------ | ------------------------------------------------------------------------------------------ |
 | Buscar e conferir arquivo por arquivo      | Uma lista `.txt` ou `.csv` (inclusive de playlist do Spotify); ele busca e escolhe sozinho |
-| Arquivos de qualidade duvidosa             | Só FLAC ou MP3 320 kbps, por padrão; prévias e arquivos curtos são recusados               |
+| Arquivos de qualidade duvidosa             | Só FLAC ou WAV, por padrão (AIFF, AAC e MP3 320 são opção); prévias e arquivos curtos são recusados |
 | Versão trocada ou arquivo de outro artista | Confere artista, título e mix pedido antes de aceitar um arquivo                           |
 | Títulos errados na lista                   | Confere os títulos no catálogo do MusicBrainz e avisa quando o título não existe           |
 | Sem BPM, tom ou capa                       | Grava BPM, tom harmônico e capa embutida em cada faixa                                     |
@@ -188,7 +188,7 @@ No Windows há um **app desktop** que faz a configuração por um assistente (se
 O jeito mais simples: o `Soulcrate-Setup-<versão>.exe` instala o app por usuário (sem senha de administrador), com atalho no menu Iniciar. O app liga e desliga a stack, configura tudo por um assistente (o `.env` e o `slskd.yml` são gerados por ele, com as chaves iguais nos dois), roda o download em lote com progresso ao vivo, mostra o que não veio e por quê, cuida da biblioteca e se atualiza sozinho. Os `.bat` continuam funcionando na mesma pasta. As telas estão descritas em [O app desktop](#o-app-desktop).
 
 > [!NOTE]
-> **Ainda não há release publicada** na página de [Releases](https://github.com/BeLencastre/soulcrate/releases). Até lá, o instalador se gera a partir do código (precisa do Node.js 24):
+> **Baixe o instalador** na página de [Releases](https://github.com/BeLencastre/soulcrate/releases) (`Soulcrate-Setup-<versão>.exe`). Para gerá-lo a partir do código, precisa do Node.js 24:
 >
 > ```bash
 > cd app
@@ -493,7 +493,7 @@ Cloudy - Yeah (Cloudy Remix)
 - **Arrastar** um `.txt`/`.csv` em cima do `baixar-lista.bat` → usa esse arquivo.
 - **Com opções**, abra um terminal na pasta e rode:
   ```bat
-  baixar-lista.bat minhas.txt -Paralelo 8 -AceitarWav
+  baixar-lista.bat minhas.txt -Paralelo 8 -AceitarAacAiff
   ```
 - **No app:** tela **Baixar lista** → escolha ou cole a lista → **Opções** → iniciar.
 - **Linux/macOS:** `pwsh ./baixar-lista.ps1 -Lista lista.txt`.
@@ -525,7 +525,7 @@ A **mesma lista não roda duas vezes ao mesmo tempo**: se você abrir o `baixar-
 2. Faça hot cues e memory cues e coloque nas playlists.
 3. Exporte para o pendrive como de costume.
 
-**Formato:** FLAC toca no Rekordbox e nos XDJ/CDJ recentes (XDJ-XZ, XDJ-RX3, XDJ-AZ, CDJ-3000). Se for tocar num equipamento antigo, confirme o suporte a FLAC antes da gig ou mantenha MP3 320/AIFF dessas faixas.
+**Formato:** FLAC toca no Rekordbox e nos XDJ/CDJ recentes (XDJ-XZ, XDJ-RX3, XDJ-AZ, CDJ-3000). Se for tocar num equipamento antigo, confirme o suporte a FLAC antes da gig ou mantenha AIFF ou MP3 320 dessas faixas (e rode com `-AceitarAacAiff` ou `-AceitarMp3320` para baixá-los).
 
 ## Solução de problemas
 
@@ -571,7 +571,7 @@ A stack está no ar (`subir.bat`)? A API key está em `SLSKD_API_KEY_SOULBEET` n
 Abra o `lotes/diagnostico-<data>.txt` (veja [Faixas que não vieram](#faixas-que-não-vieram)):
 
 - **"talvez seja" / título que não aparece no catálogo**: a linha provavelmente está errada; corrija com o título real.
-- **"existe, mas so em formato/qualidade recusados"**: rode as não baixadas com `-AceitarWav -AceitarMp3Menor`.
+- **"existe, mas so em formato/qualidade recusados"**: rode as não baixadas com `-AceitarAacAiff -AceitarMp3320 -AceitarMp3Menor`.
 - **muitas faixas seguidas com 0 respostas**: ou o título não existe/ninguém compartilha, ou o servidor do Soulseek bloqueou as buscas. O script faz uma busca de teste para saber qual dos dois e só pausa no bloqueio; se continuar, use `-BuscasPorJanela 20`.
 - **muitas** `nao encontrada` **mesmo com centenas de respostas**: veja `lotes/catalogo-<data>.txt`. Se a faixa aparece como `NAO EXISTE`, o título da lista provavelmente está errado.
 
@@ -698,7 +698,7 @@ soulcrate/                      # repositório (código)
 │   │                           #   configuração, spikes e img/ (as capturas de tela do README)
 ├── tests/                      # testes (Pester) e o slskd falso usado por eles
 ├── .github/                    # workflows (CI e release do instalador) e modelos de issue
-└── app/                        # app desktop (Electron, React, TypeScript), versão 1.0.0
+└── app/                        # app desktop (Electron, React, TypeScript), versão 1.0.1
     ├── src/main/               # processo principal: serviços (Docker, lote, biblioteca, configuração, atualização…)
     ├── src/preload/            # a API mínima e tipada que a interface enxerga
     ├── src/renderer/           # a interface: as telas e os componentes
@@ -799,15 +799,15 @@ Cada arquivo encontrado passa por estes filtros. O motivo de cada recusa aparece
 | Palavras extras          | Proibidas no trecho do título; permitidas no trecho do artista (feat. etc.). Números e tons Camelot (`5A`, `12B`) são liberados (`Paranoia 5A 160`). Nomes estilo scene (`09-kobosil-while_the_stars`) e com colchetes (`[01][Vendex][Emotional_Khaos]`) são separados em trechos. Com `-TituloAproximado`, um título com palavras a mais é aceito **por último** (`Vendex - Vengeance` → `Vengeance Of The Masked`) e marcado no relatório |
 | Outro artista            | Se o artista pedido só aparece na **pasta** e o nome do arquivo traz outro artista, é recusado. Ex.: pasta "Novah Curates Hard Dance", arquivo "Acid - Marie Vaunt"                                                                                                                                                                                                                                                                         |
 | Versão                   | Remix/edit/radio... só se estiverem na sua linha                                                                                                                                                                                                                                                                                                                                                                                            |
-| Formato (por último)     | FLAC; senão MP3 **320 kbps**. WAV/AIFF só com `-AceitarWav`; MP3 256 ou VBR (V0, ~220–300 kbps) só com `-AceitarMp3Menor`. Quando o usuário não informa o bitrate do MP3, ele é estimado por tamanho ÷ duração                                                                                                                                                                                                                              |
+| Formato (por último)     | **FLAC e WAV são sempre aceitos.** AIFF e AAC (256 kbps ou mais) só com `-AceitarAacAiff`; MP3 **320 kbps** só com `-AceitarMp3320`; MP3 256 ou VBR (V0, ~220–300 kbps) só com `-AceitarMp3Menor` (que já inclui o 320). Quando o usuário não informa o bitrate do MP3 ou do AAC, ele é estimado por tamanho ÷ duração                                                                                                                                                                                                                              |
 
 
-O formato é conferido **por último**. Assim o diagnóstico diz "era a faixa certa, mas em WAV" em vez de esconder o arquivo certo atrás de um motivo genérico.
+O formato é conferido **por último**. Assim o diagnóstico diz "era a faixa certa, mas em AIFF" em vez de esconder o arquivo certo atrás de um motivo genérico.
 
 #### Preferência entre os arquivos aprovados
 
 1. Título exato antes de título aproximado (`-TituloAproximado`).
-2. O melhor formato (FLAC > WAV/AIFF > MP3 320 > MP3 256/VBR).
+2. O melhor formato (FLAC > WAV > AIFF > MP3 320 > AAC > MP3 256/VBR; só entram os que você aceitou).
 3. Original, Extended ou Club Mix no nome (quando você não pediu um mix).
 4. Um usuário com **slot livre**, depois **fila menor**, depois **velocidade maior**.
 
@@ -836,7 +836,7 @@ Ao iniciar, se o slskd estiver anunciando **0 arquivos compartilhados**, o scrip
   ?  buscas sem resposta: conferindo se o servidor do Soulseek bloqueou (busca de teste: 'daft punk')...
      servidor respondendo normalmente ...  Sem pausa.              ← eram títulos que ninguém tem
   !! busca de teste tambem sem resposta: ... Pausando buscas por 15 min   ← bloqueio de verdade
-  -> Azyr - No Escape  [MP3 320 de dare204, tentativa 1]  ← download enfileirado
+  -> Azyr - No Escape  [FLAC de dare204, tentativa 1]  ← download enfileirado
      x Azyr - No Escape: dare204: Completed, Errored    ← falhou, vai tentar o próximo usuário
   OK BAIXADA: Azyr - No Escape                          ← arquivo pronto em downloads/
   [beets] importando lote de 10 faixa(s) em segundo plano...
@@ -858,7 +858,7 @@ A linha de progresso aparece a cada 30 s. "Aguardando" são faixas que ainda vã
 | `baixada (beets falhou)` | Está em `downloads/`, mas o beets deu erro. Veja `beets-*.log`                                                                                       |
 | `ja na biblioteca`       | Já existia em `music/`, não baixou de novo                                                                                                           |
 | `ja feita`               | Concluída numa execução anterior desta lista                                                                                                         |
-| `nao encontrada`         | Nenhum arquivo passou nos filtros. Se o motivo for "existe, mas so em formato/qualidade recusados", a faixa está lá em WAV/AIFF ou MP3 abaixo de 320 |
+| `nao encontrada`         | Nenhum arquivo passou nos filtros. Se o motivo for "existe, mas so em formato/qualidade recusados", a faixa está lá em AIFF/AAC, em MP3 ou em outro formato que você não aceitou |
 | `falhou`                 | Havia candidatos, mas todos os usuários falharam                                                                                                     |
 
 
@@ -912,10 +912,12 @@ Esses arquivos podem ser apagados quando quiser (o `.lock`, só com o lote parad
 
 | Motivo                                                                                    | O que fazer                                                                                                       |
 | ----------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------- |
-| `formato wav/aiff (use -AceitarWav)`                                                      | Rode com `-AceitarWav`                                                                                            |
+| `formato aiff/m4a/aac (use -AceitarAacAiff)`                                              | Rode com `-AceitarAacAiff`                                                                                        |
+| `mp3 320 kbps (use -AceitarMp3320)`                                                       | Rode com `-AceitarMp3320`                                                                                         |
 | `mp3 256 kbps` / `mp3 2xx kbps VBR (use -AceitarMp3Menor)`                                | Rode com `-AceitarMp3Menor`                                                                                       |
 | `mp3 192/128 kbps (qualidade baixa)`                                                      | Só existe em qualidade baixa. Compre a faixa ou procure outra versão                                              |
-| `formato m4a/opus/ogg`                                                                    | Só existe nesses formatos (não aceitos). Compre a faixa ou baixe pelo Soulbeet                                    |
+| `aac 128 kbps (qualidade baixa)`                                                          | Só existe em AAC abaixo de 250 kbps. Compre a faixa ou procure outra versão                                       |
+| `formato opus/ogg/wma`                                                                    | Só existe nesses formatos (não aceitos). Compre a faixa ou baixe pelo Soulbeet                                    |
 | `titulo diferente` + lista de títulos do artista                                          | O título da linha provavelmente está errado. Corrija com um dos títulos listados                                  |
 | `outro artista no nome`                                                                   | O arquivo é de outro artista (estava numa pasta com o nome do seu). A recusa estava certa                         |
 | `titulo so aparece junto do nome do artista`                                              | O título é uma palavra que também aparece no nome dos artistas (ex.: "X"). A recusa estava certa                  |
@@ -932,7 +934,7 @@ Se a faixa aparece como `NAO EXISTE` no `catalogo-<data>.txt`, o título da list
 **3. Rode de novo só as que faltaram:**
 
 ```bat
-baixar-lista.bat lotes\nao-baixadas-<data>.txt -Retentar -AceitarWav -AceitarMp3Menor
+baixar-lista.bat lotes\nao-baixadas-<data>.txt -Retentar -AceitarAacAiff -AceitarMp3320 -AceitarMp3Menor
 ```
 
 O `-Retentar` é necessário quando você roda **a mesma lista** de novo. Sem ele, o que falhou antes é pulado.
@@ -951,8 +953,9 @@ O `-Retentar` é necessário quando você roda **a mesma lista** de novo. Sem el
 | `-FilaUltimoMin N`     | 30     | Idem, quando é o último usuário que tem a faixa        |
 | `-DownloadMaxMin N`    | 20     | Tempo máximo de cada transferência (sem contar a fila) |
 | `-LoteBeets N`         | 10     | Faixas por chamada do beets                            |
-| `-AceitarWav`          | —      | Aceita WAV/AIFF antes do MP3                           |
-| `-AceitarMp3Menor`     | —      | Aceita MP3 256 kbps e MP3 VBR (V0)                     |
+| `-AceitarAacAiff`      | —      | Aceita AIFF e AAC (256 kbps ou mais)                   |
+| `-AceitarMp3320`       | —      | Aceita MP3 320 kbps                                    |
+| `-AceitarMp3Menor`     | —      | Aceita MP3 256 kbps e VBR (V0); já inclui o MP3 320    |
 | `-TituloAproximado`    | —      | Aceita por último títulos com palavras a mais          |
 | `-NaoTolerarGrafia`    | —      | Exige o título sem erros de digitação                  |
 | `-SemCatalogo`         | —      | Não confere os títulos no MusicBrainz antes de buscar  |
@@ -972,7 +975,7 @@ Há também opções para programas que controlam o lote, como o app: `-Eventos`
 | ------------------------------------------------------------ | ----------------------------------------------------------------------------------------------- |
 | Lista grande, internet boa                                   | `baixar-lista.bat lista.txt -Paralelo 8`                                                        |
 | Usuários lentos, filas longas                                | `baixar-lista.bat lista.txt -FilaMaxMin 10 -DownloadMaxMin 40`                                  |
-| Quero tudo, nem que seja MP3 256                             | `baixar-lista.bat lista.txt -AceitarWav -AceitarMp3Menor`                                       |
+| Quero tudo, nem que seja MP3 256                             | `baixar-lista.bat lista.txt -AceitarAacAiff -AceitarMp3320 -AceitarMp3Menor`                       |
 | Tentar de novo as que falharam nesta lista                   | `baixar-lista.bat lista.txt -Retentar`                                                          |
 | Trocar um arquivo ruim que já está na biblioteca             | Apague-o ([Manutenção](#manutenção-da-biblioteca)) e rode com `-NaoPularExistentes`             |
 | Só baixar, organizar depois                                  | `baixar-lista.bat lista.txt -SemBeets`                                                          |
@@ -1066,7 +1069,7 @@ Plugins do beets ativos (`soulbeet/config/config.yaml`): `musicbrainz`, `mbtwopa
 | PowerShell     | `5.1` (Windows) | 5.1 no Windows, ou `pwsh` 7+ no Linux/macOS para o `baixar-lista.ps1` |
 | Node.js        | `24.15`         | Só para desenvolver: testes de integração e o app (`app/.nvmrc`)      |
 | Electron       | `44.x`          | O app (`app/package.json`), com React 19 e TypeScript; já vem no instalador |
-| App Soulcrate  | `1.0.0`         | Versão própria, independente da `VERSION` da stack (`app/package.json`) |
+| App Soulcrate  | `1.0.1`         | Versão própria, independente da `VERSION` da stack (`app/package.json`) |
 
 
 > [!TIP]

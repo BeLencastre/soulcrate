@@ -22,7 +22,7 @@ BeforeAll {
 Describe 'baixar-lista.lib' {
   BeforeEach {
     # opcoes do script, com os valores padrao
-    $NaoTolerarGrafia = $false; $TituloAproximado = $false; $AceitarWav = $false; $AceitarMp3Menor = $false
+    $NaoTolerarGrafia = $false; $TituloAproximado = $false; $AceitarAacAiff = $false; $AceitarMp3320 = $false; $AceitarMp3Menor = $false
     $SemBuscaArtista = $false; $BadUsers = @{}; $ArtistLineCount = @{}
   }
 
@@ -202,15 +202,29 @@ Describe 'baixar-lista.lib' {
   }
 
   Describe 'Test-File: formato (conferido por ultimo)' {
-    It 'MP3 320 e aceito (tier 2)' {
-      (Test-Arquivo 'Azyr - No Escape' 'Azyr - No Escape.mp3' @{ bitRate = 320 }).Tier | Should -Be 2
+    It 'FLAC e WAV sao sempre aceitos (tiers 0 e 1)' {
+      (Test-Arquivo 'Azyr - No Escape' 'Azyr - No Escape.flac').Tier | Should -Be 0
+      (Test-Arquivo 'Azyr - No Escape' 'Azyr - No Escape.wav').Tier | Should -Be 1
     }
-    It 'MP3 256 so com -AceitarMp3Menor' {
+    It 'MP3 320 so com -AceitarMp3320' {
+      $r = Test-Arquivo 'Azyr - No Escape' 'Azyr - No Escape.mp3' @{ bitRate = 320 }
+      $r.Reason | Should -Be 'mp3 320 kbps (use -AceitarMp3320)'
+      $r.Score | Should -Be 4
+      $AceitarMp3320 = $true
+      (Test-Arquivo 'Azyr - No Escape' 'Azyr - No Escape.mp3' @{ bitRate = 320 }).Tier | Should -Be 3
+    }
+    It 'MP3 256 so com -AceitarMp3Menor (e -AceitarMp3320 nao basta)' {
       $r = Test-Arquivo 'Azyr - No Escape' 'Azyr - No Escape.mp3' @{ bitRate = 256 }
       $r.Reason | Should -Be 'mp3 256 kbps (use -AceitarMp3Menor)'
       $r.Score | Should -Be 4
+      $AceitarMp3320 = $true
+      (Test-Arquivo 'Azyr - No Escape' 'Azyr - No Escape.mp3' @{ bitRate = 256 }).Reason | Should -Be 'mp3 256 kbps (use -AceitarMp3Menor)'
+      $AceitarMp3320 = $false; $AceitarMp3Menor = $true
+      (Test-Arquivo 'Azyr - No Escape' 'Azyr - No Escape.mp3' @{ bitRate = 256 }).Tier | Should -Be 5
+    }
+    It '-AceitarMp3Menor ja inclui o MP3 320' {
       $AceitarMp3Menor = $true
-      (Test-Arquivo 'Azyr - No Escape' 'Azyr - No Escape.mp3' @{ bitRate = 256 }).Tier | Should -Be 3
+      (Test-Arquivo 'Azyr - No Escape' 'Azyr - No Escape.mp3' @{ bitRate = 320 }).Tier | Should -Be 3
     }
     It 'MP3 VBR (V0) so com -AceitarMp3Menor' {
       (Test-Arquivo 'Azyr - No Escape' 'Azyr - No Escape.mp3' @{ bitRate = 240; Vbr = $true }).Reason | Should -Be 'mp3 240 kbps VBR (use -AceitarMp3Menor)'
@@ -221,15 +235,41 @@ Describe 'baixar-lista.lib' {
     }
     It 'estima o bitrate do MP3 pelo tamanho quando o usuario nao informa' {
       # 300 s a ~330 kbps (audio 320 + capa/tags)
-      (Test-Arquivo 'Azyr - No Escape' 'Azyr - No Escape.mp3' @{ size = 12375000 }).Tier | Should -Be 2
+      (Test-Arquivo 'Azyr - No Escape' 'Azyr - No Escape.mp3' @{ size = 12375000 }).Reason | Should -Be 'mp3 320 kbps (use -AceitarMp3320)'
+      $AceitarMp3320 = $true
+      (Test-Arquivo 'Azyr - No Escape' 'Azyr - No Escape.mp3' @{ size = 12375000 }).Tier | Should -Be 3
     }
-    It 'WAV/AIFF so com -AceitarWav' {
-      (Test-Arquivo 'Azyr - No Escape' 'Azyr - No Escape.wav').Reason | Should -Be 'formato wav (use -AceitarWav)'
-      $AceitarWav = $true
-      (Test-Arquivo 'Azyr - No Escape' 'Azyr - No Escape.aiff').Tier | Should -Be 1
+    It 'AIFF so com -AceitarAacAiff' {
+      $r = Test-Arquivo 'Azyr - No Escape' 'Azyr - No Escape.aiff'
+      $r.Reason | Should -Be 'formato aiff (use -AceitarAacAiff)'
+      $r.Score | Should -Be 4
+      $AceitarAacAiff = $true
+      (Test-Arquivo 'Azyr - No Escape' 'Azyr - No Escape.aiff').Tier | Should -Be 2
+      (Test-Arquivo 'Azyr - No Escape' 'Azyr - No Escape.aif').Tier | Should -Be 2
+    }
+    It 'AAC (m4a/aac) so com -AceitarAacAiff' {
+      (Test-Arquivo 'Azyr - No Escape' 'Azyr - No Escape.m4a' @{ bitRate = 256 }).Reason | Should -Be 'formato m4a (use -AceitarAacAiff)'
+      $AceitarAacAiff = $true
+      (Test-Arquivo 'Azyr - No Escape' 'Azyr - No Escape.m4a' @{ bitRate = 256 }).Tier | Should -Be 4
+      (Test-Arquivo 'Azyr - No Escape' 'Azyr - No Escape.aac' @{ bitRate = 320 }).Tier | Should -Be 4
+    }
+    It 'AAC de qualidade baixa e recusado mesmo com a opcao' {
+      (Test-Arquivo 'Azyr - No Escape' 'Azyr - No Escape.m4a' @{ bitRate = 128 }).Reason | Should -Be 'aac 128 kbps (qualidade baixa)'
+      $AceitarAacAiff = $true
+      (Test-Arquivo 'Azyr - No Escape' 'Azyr - No Escape.m4a' @{ bitRate = 128 }).Reason | Should -Be 'aac 128 kbps (qualidade baixa)'
+    }
+    It 'estima o bitrate do AAC pelo tamanho quando o usuario nao informa' {
+      $AceitarAacAiff = $true
+      # 300 s a ~270 kbps
+      (Test-Arquivo 'Azyr - No Escape' 'Azyr - No Escape.m4a' @{ size = 10125000 }).Tier | Should -Be 4
+      # 300 s a ~128 kbps
+      (Test-Arquivo 'Azyr - No Escape' 'Azyr - No Escape.m4a' @{ size = 4800000 }).Reason | Should -Be 'aac 128 kbps (qualidade baixa)'
+    }
+    It 'prefere FLAC, WAV, AIFF, MP3 320, AAC e MP3 256 nessa ordem (menor tier primeiro)' {
+      $FormatoPorTier | Should -Be @('FLAC', 'WAV', 'AIFF', 'MP3 320', 'AAC', 'MP3 256/VBR')
     }
     It 'outros formatos sao recusados' {
-      (Test-Arquivo 'Azyr - No Escape' 'Azyr - No Escape.m4a').Reason | Should -Be 'formato m4a'
+      (Test-Arquivo 'Azyr - No Escape' 'Azyr - No Escape.ogg').Reason | Should -Be 'formato ogg'
     }
   }
 
@@ -237,13 +277,13 @@ Describe 'baixar-lista.lib' {
     It 'ordena por formato, depois slot livre, fila e velocidade; um arquivo por usuario' {
       $item = [pscustomobject]@{ Req = (Parse-Line 'Azyr - No Escape'); Reasons = @{}; Diag = (New-Object System.Collections.ArrayList) }
       $resp = @(
-        [pscustomobject]@{ username = 'mp3'; hasFreeUploadSlot = $true; queueLength = 0; uploadSpeed = 9; files = @((New-F 'Azyr - No Escape.mp3' -bitRate 320)) }
+        [pscustomobject]@{ username = 'wav'; hasFreeUploadSlot = $true; queueLength = 0; uploadSpeed = 9; files = @((New-F 'Azyr - No Escape.wav')) }
         [pscustomobject]@{ username = 'flac-fila'; hasFreeUploadSlot = $false; queueLength = 5; uploadSpeed = 9; files = @((New-F 'Azyr - No Escape.flac')) }
         [pscustomobject]@{ username = 'flac-livre'; hasFreeUploadSlot = $true; queueLength = 0; uploadSpeed = 1; files = @((New-F 'Azyr - No Escape.flac'), (New-F 'Azyr - No Escape (copia).flac')) }
         [pscustomobject]@{ username = 'errado'; hasFreeUploadSlot = $true; queueLength = 0; uploadSpeed = 1; files = @((New-F 'Azyr - Plague.flac')) }
       )
       $c = Get-Candidates $item $resp
-      @($c | ForEach-Object User) | Should -Be @('flac-livre', 'flac-fila', 'mp3')
+      @($c | ForEach-Object User) | Should -Be @('flac-livre', 'flac-fila', 'wav')
       $item.Reasons['titulo diferente'] | Should -Be 1
     }
     It 'manda para o fim o usuario que ja travou 2 vezes' {
@@ -251,7 +291,7 @@ Describe 'baixar-lista.lib' {
       $item = [pscustomobject]@{ Req = (Parse-Line 'Azyr - No Escape'); Reasons = @{}; Diag = (New-Object System.Collections.ArrayList) }
       $resp = @(
         [pscustomobject]@{ username = 'lento'; hasFreeUploadSlot = $true; queueLength = 0; uploadSpeed = 9; files = @((New-F 'Azyr - No Escape.flac')) }
-        [pscustomobject]@{ username = 'ok'; hasFreeUploadSlot = $true; queueLength = 0; uploadSpeed = 1; files = @((New-F 'Azyr - No Escape.mp3' -bitRate 320)) }
+        [pscustomobject]@{ username = 'ok'; hasFreeUploadSlot = $true; queueLength = 0; uploadSpeed = 1; files = @((New-F 'Azyr - No Escape.wav')) }
       )
       $c = Get-Candidates $item $resp
       @($c | ForEach-Object User) | Should -Be @('ok', 'lento')

@@ -15,9 +15,9 @@ $utf8 = New-Object Text.UTF8Encoding $false
 
 $catalogo = @(
   @{ usuario = 'ruim'; arquivo = '@@r\Music\Azyr\Azyr - No Escape.flac' }
-  @{ usuario = 'u1'; arquivo = '@@a\Music\Azyr\Azyr - No Escape.mp3'; bitrate = 320 }
+  @{ usuario = 'u1'; arquivo = '@@a\Music\Azyr\Azyr - No Escape.wav' }
   @{ usuario = 'u2'; arquivo = '@@b\Music\Creeds\Creeds - Push Up (Original Mix).flac' }
-  @{ usuario = 'u3'; arquivo = '@@c\Music\Vendex\Vendex - Plague.wav' }
+  @{ usuario = 'u3'; arquivo = '@@c\Music\Vendex\Vendex - Plague.aiff' }
   @{ usuario = 'u4'; arquivo = '@@d\Music\Vendex\Vendex - Abbadon.flac' }
   @{ usuario = 'u5'; arquivo = '@@e\Music\Byørn\Byørn - 2 LOUD.flac' }
 )

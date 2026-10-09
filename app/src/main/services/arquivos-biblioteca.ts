@@ -85,7 +85,10 @@ function pastasContem(rel: string, nomes: readonly string[]): boolean {
 
 const EXTENSAO_DO_FORMATO: Record<string, string[]> = {
   FLAC: ['.flac'],
+  WAV: ['.wav'],
+  AIFF: ['.aif', '.aiff'],
   'WAV/AIFF': ['.wav', '.aif', '.aiff'],
+  AAC: ['.m4a', '.aac'],
   'MP3 320': ['.mp3'],
   'MP3 256/VBR': ['.mp3'],
 };

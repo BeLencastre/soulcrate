@@ -755,7 +755,7 @@ export function respostasDaNota(nota: string): number | null {
   return m ? Number(m[1]) : null;
 }
 
-const TIPOS_DE_FORMATO = new Set(['wav', 'mp3Menor', 'mp3Baixo', 'formato']);
+const TIPOS_DE_FORMATO = new Set(['wav', 'aacAiff', 'aacBaixo', 'mp3320', 'mp3Menor', 'mp3Baixo', 'formato']);
 
 function resumoDaFalta(
   status: DiagnosticoFaixa['status'],
