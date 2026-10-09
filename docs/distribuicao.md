@@ -21,7 +21,7 @@
 2. (Opcional, recomendado) Confira o arquivo contra o `SHA256SUMS.txt` da mesma release:
 
    ```powershell
-   (Get-FileHash .\Soulcrate-Setup-0.2.0.exe -Algorithm SHA256).Hash.ToLower()
+   (Get-FileHash .\Soulcrate-Setup-1.0.0.exe -Algorithm SHA256).Hash.ToLower()
    ```
 
    O resultado tem que ser igual ao da linha do arquivo em `SHA256SUMS.txt`.
@@ -104,14 +104,24 @@ O fluxo está em [`.github/workflows/release.yml`](../.github/workflows/release.
 2. Crie e envie a tag **com o mesmo número**, precedido de `v`:
 
    ```bash
-   git tag v0.2.0
-   git push origin v0.2.0
+   git tag v1.0.0
+   git push origin v1.0.0
    ```
 
 3. O workflow roda `npm run check`, os testes ponta a ponta, gera o instalador e cria um **rascunho** de release com `Soulcrate-Setup-<versão>.exe`, o `.blockmap`, o `latest.yml` (que o `electron-updater` lê) e o `SHA256SUMS.txt`.
 4. Instale o rascunho num Windows de teste, confira as notas (em português, voltadas ao usuário) e **publique** a release. Só então os apps instalados enxergam a atualização.
 
-Antes de cada release, rode também o roteiro manual da [§7](interface-electron.md#7-estratégia-de-testes) da especificação.
+Antes de cada release, rode também o roteiro manual: [`roteiro-manual.md`](roteiro-manual.md) (a matriz da [§7](interface-electron.md#7-estratégia-de-testes) da especificação, em forma de checklist).
+
+**Checklist da primeira release (1.0.0):**
+
+1. O pull request com a versão (`app/package.json` em `1.0.0`, `VERSION` em `1.1.0`, `CHANGELOG.md`) passou no CI e entrou na `main`.
+2. O CI da `main` está verde (jobs de scripts, do app e do instalador).
+3. `git tag v1.0.0 && git push origin v1.0.0`. O workflow gera o **rascunho** da release.
+4. Baixe o `.exe` do rascunho, confira o SHA-256 e rode o [roteiro manual](roteiro-manual.md) numa máquina de teste. Anote o resultado no registro do roteiro.
+5. Revise as notas da release (cole a seção "App 1.0.0" do `CHANGELOG.md`) e **publique**.
+6. Depois de publicada, no `README.md`: troque o aviso "Ainda não há release publicada" por um link direto para a release, tire a frase "ainda não foi publicada" do bloco **Status** e confira o link de [Releases](https://github.com/BeLencastre/soulcrate/releases).
+7. Para testar a atualização de verdade (cenário G do roteiro), publique uma segunda versão (`1.0.1`) com uma mudança mínima.
 
 **Testar o ciclo instalar → atualizar → desinstalar** (critério de aceite da Fase 7), o que o CI faz a cada push:
 

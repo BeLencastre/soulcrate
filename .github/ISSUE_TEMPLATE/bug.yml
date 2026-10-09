@@ -1,0 +1,66 @@
+name: Problema (bug)
+description: Algo no app, nos scripts ou na stack não funciona como deveria.
+title: "[Bug] "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Obrigado por avisar. Antes de abrir, dê uma olhada em **Solução de problemas** no README.
+
+        > **Cuidado com segredos.** Nunca cole nem anexe o seu `.env` ou o `slskd.yml`. O **pacote de suporte** do app (Configurações → Sobre → *Gerar pacote de suporte*) já sai sem senhas e chaves, mas confira o conteúdo antes de enviar.
+  - type: dropdown
+    id: como
+    attributes:
+      label: Como você usa o Soulcrate?
+      options:
+        - App desktop (instalador)
+        - Scripts (.bat) com o repositório clonado
+        - Linha de comando (Linux/macOS)
+    validations:
+      required: true
+  - type: textarea
+    id: aconteceu
+    attributes:
+      label: O que aconteceu
+      description: Descreva o problema. Se houver uma mensagem de erro, cole o texto dela.
+    validations:
+      required: true
+  - type: textarea
+    id: esperado
+    attributes:
+      label: O que você esperava que acontecesse
+    validations:
+      required: true
+  - type: textarea
+    id: passos
+    attributes:
+      label: Como repetir
+      description: Os passos, do início. Se for do download em lote, diga as opções usadas e, se puder, uma linha de lista que reproduz.
+      placeholder: |
+        1. Abri a tela Baixar lista
+        2. ...
+    validations:
+      required: false
+  - type: input
+    id: versoes
+    attributes:
+      label: Versões
+      description: Em Configurações → Sobre (app) ou nos arquivos `VERSION` e `app/package.json` (scripts).
+      placeholder: "App 1.0.0, stack 1.1.0"
+    validations:
+      required: true
+  - type: input
+    id: windows
+    attributes:
+      label: Sistema e Docker Desktop
+      placeholder: "Windows 11 23H2, Docker Desktop 4.x"
+    validations:
+      required: false
+  - type: textarea
+    id: suporte
+    attributes:
+      label: Pacote de suporte ou logs
+      description: Arraste aqui o .zip do pacote de suporte (ou os trechos de log relevantes, sem senhas).
+    validations:
+      required: false

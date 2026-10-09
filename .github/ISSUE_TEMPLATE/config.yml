@@ -1,0 +1,5 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Solução de problemas (README)
+    url: https://github.com/BeLencastre/soulcrate#solução-de-problemas
+    about: Os problemas mais comuns (Docker, porta 2234, SmartScreen, download em lote) já têm resposta aqui.

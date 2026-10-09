@@ -1,0 +1,22 @@
+name: Dúvida
+description: Não sei como fazer algo no Soulcrate.
+title: "[Dúvida] "
+labels: ["question"]
+body:
+  - type: markdown
+    attributes:
+      value: O README tem o passo a passo de instalação, do download em lote e da manutenção da biblioteca. Se a resposta não estiver lá, pergunte abaixo (sem senhas nem chaves).
+  - type: textarea
+    id: duvida
+    attributes:
+      label: Qual é a sua dúvida
+      description: Diga o que você quer fazer e onde travou.
+    validations:
+      required: true
+  - type: input
+    id: versoes
+    attributes:
+      label: Versões
+      placeholder: "App 1.0.0, stack 1.1.0"
+    validations:
+      required: false

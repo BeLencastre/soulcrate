@@ -1,0 +1,24 @@
+name: Pedido de melhoria
+description: Uma ideia para o app, os scripts ou a stack.
+title: "[Ideia] "
+labels: ["enhancement"]
+body:
+  - type: textarea
+    id: problema
+    attributes:
+      label: Qual problema isso resolve?
+      description: Conte a situação em que você sentiu falta (o set, a lista, o equipamento).
+    validations:
+      required: true
+  - type: textarea
+    id: ideia
+    attributes:
+      label: Como você imagina que funcione
+    validations:
+      required: true
+  - type: textarea
+    id: alternativas
+    attributes:
+      label: O que você faz hoje para contornar
+    validations:
+      required: false

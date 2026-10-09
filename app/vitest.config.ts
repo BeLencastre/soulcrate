@@ -5,6 +5,6 @@ export default defineConfig({
   resolve: { alias: { '@shared': resolve(import.meta.dirname, 'src/shared') } },
   test: {
     include: ['tests/**/*.test.{ts,tsx}'],
-    exclude: ['tests/e2e/**', 'node_modules/**'],
+    exclude: ['tests/e2e/**', 'tests/capturas/**', 'node_modules/**'],
   },
 });

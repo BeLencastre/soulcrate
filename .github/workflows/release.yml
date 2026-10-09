@@ -4,7 +4,7 @@ name: Release do app
 # apps instalados só enxerga releases PUBLICADAS: o rascunho espera alguém conferir o instalador e as notas e publicar.
 #
 # Como lançar: ajuste "version" em app/package.json, faça o commit e crie a tag com o mesmo número:
-#   git tag v0.2.0 && git push origin v0.2.0
+#   git tag v1.0.0 && git push origin v1.0.0
 
 on:
   push:
