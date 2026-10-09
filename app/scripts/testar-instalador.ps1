@@ -19,8 +19,8 @@
   você já usa o Soulcrate instalado: o script recusa se achar uma instalação anterior.
 
 .EXAMPLE
-  ./scripts/testar-instalador.ps1 -Anterior dist-anterior/Soulcrate-Setup-0.0.1.exe -Atual dist/Soulcrate-Setup-0.2.0.exe `
-    -VersaoAnterior 0.0.1 -VersaoAtual 0.2.0
+  ./scripts/testar-instalador.ps1 -Anterior dist-anterior/Soulcrate-Setup-0.0.1.exe -Atual dist/Soulcrate-Setup-1.0.0.exe `
+    -VersaoAnterior 0.0.1 -VersaoAtual 1.0.0
 #>
 [CmdletBinding()]
 param(

@@ -402,7 +402,14 @@ test('arquivos da stack: troca o que ninguém editou, mantém o que o usuário e
   mkdirSync(join(amb.projeto, '.soulcrate'), { recursive: true });
   writeFileSync(
     join(amb.projeto, '.soulcrate', 'manifesto.json'),
-    JSON.stringify({ versaoDaStack: '0.9.0', arquivos: { 'docker-compose.yml': sha256(composeAntigo) } }),
+    JSON.stringify({
+      versaoDaStack: '0.9.0',
+      // o VERSION do fixture também veio do app (ninguém o editou): sem isto ele valeria como "do usuário" e ganharia um .novo
+      arquivos: {
+        'docker-compose.yml': sha256(composeAntigo),
+        VERSION: sha256(readFileSync(join(amb.projeto, 'VERSION'), 'utf8')),
+      },
+    }),
   );
   // ...e a configuração do beets foi personalizada pelo usuário (o manifesto não conhece essa versão dela)
   mkdirSync(join(amb.projeto, 'soulbeet', 'config'), { recursive: true });

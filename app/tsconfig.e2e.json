@@ -5,5 +5,13 @@
     "types": ["node"],
     "tsBuildInfoFile": "node_modules/.tmp/tsconfig.e2e.tsbuildinfo"
   },
-  "include": ["tests/e2e", "tests/dubles/*.ts", "playwright.config.ts", "src/renderer/global.d.ts", "src/shared"]
+  "include": [
+    "tests/e2e",
+    "tests/capturas",
+    "tests/dubles/*.ts",
+    "playwright.config.ts",
+    "playwright.capturas.config.ts",
+    "src/renderer/global.d.ts",
+    "src/shared"
+  ]
 }

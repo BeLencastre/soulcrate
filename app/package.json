@@ -1,6 +1,6 @@
 {
   "name": "soulcrate-app",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "private": true,
   "description": "App desktop do Soulcrate (Electron). Especificação em docs/interface-electron.md.",
   "license": "MIT",
@@ -15,6 +15,7 @@
     "build": "electron-vite build",
     "preview": "electron-vite preview",
     "icones": "node scripts/gerar-icones.mjs",
+    "capturas": "npm run build && playwright test -c playwright.capturas.config.ts",
     "stack:preparar": "node scripts/preparar-stack.mjs",
     "pack:dir": "npm run stack:preparar && npm run build && electron-builder --dir",
     "dist": "npm run stack:preparar && npm run build && electron-builder --win nsis --publish never",
