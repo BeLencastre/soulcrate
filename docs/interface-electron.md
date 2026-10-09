@@ -1,8 +1,8 @@
 # Especificação: interface desktop do Soulcrate (Electron)
 
-> Status: **"Antes" concluído, exceto §4.4 (produto e design) · Fases 0 a 7 implementadas** · Versão do documento: 0.7 · Outubro de 2026
+> Status: **"Antes" concluído, exceto §4.4 (produto e design) · Fases 0 a 7 implementadas · lançamento da 1.0.0 preparado** · Versão do documento: 0.8 · Outubro de 2026
 >
-> A §4 registra o que foi feito em cada item e a §5 traz, em cada fase implementada, um "Como ficou". As decisões da [§10](#10-decisões-em-aberto) que as investigações resolveram estão marcadas como decididas. O que sobra é o lançamento da [§8](#8-depois-lançamento-e-manutenção): beta fechado, roteiro manual num Windows limpo e a release 1.0.
+> A §4 registra o que foi feito em cada item e a §5 traz, em cada fase implementada, um "Como ficou". As decisões da [§10](#10-decisões-em-aberto) que as investigações resolveram estão marcadas como decididas. O lançamento da [§8](#8-depois-lançamento-e-manutenção) está preparado (versão 1.0.0, notas, modelos de issue e o roteiro em [`roteiro-manual.md`](roteiro-manual.md)); o que sobra é rodar o roteiro com a stack real e publicar a release.
 >
 > Este documento descreve o plano completo para criar o app desktop do Soulcrate: o que precisa mudar no projeto **antes**, como o app é construído **durante** a implementação e o que fica para **depois** do lançamento.
 
@@ -620,14 +620,14 @@ As fases 4 e 5 podem andar em paralelo depois da 3.
 
 ### 8.1 Lançamento
 
-1. **Beta fechado** com os DJs que participaram da §4.4, por pelo menos duas semanas de uso real. Coletar problemas por um formulário de issue com modelo.
-2. Corrigir bloqueadores; revisar textos e mensagens de erro com base nas dúvidas reais.
-3. **Release 1.0** no GitHub Releases com instalador, notas de versão e checksums SHA-256.
+1. ~~Beta fechado com os DJs, por pelo menos duas semanas de uso real.~~ **Dispensado** (D21): a primeira release já é a 1.0.0. Os problemas chegam por issues, com os modelos de `.github/ISSUE_TEMPLATE` (bug, pedido e dúvida) e o pacote de suporte anexado.
+2. Rodar o [roteiro manual](roteiro-manual.md) com a stack real e corrigir o que aparecer.
+3. **Release 1.0.0** no GitHub Releases com instalador, notas de versão e checksums SHA-256 (o passo a passo está em [`distribuicao.md`](distribuicao.md#7-publicar-uma-versão)).
 
 ### 8.2 Documentação
 
 - **README:** nova seção "Instalação pelo app" no topo de "Começando", com o caminho pelo Git e pelos `.bat` mantido como alternativa ("instalação manual"). Atualizar "Para quem é" (deixa de ser "não é um aplicativo com instalador"), "Requisitos", "Uso no dia a dia" e "Estrutura do projeto" (pasta `app/`).
-- **Capturas de tela** das telas principais no README.
+- **Capturas de tela** das telas principais no README (**feito**: `npm run capturas`, em `app/`, as regenera em `docs/img/`).
 - **Guia de desenvolvimento** em `app/README.md`: como rodar em modo dev, testes, build, release, como gravar fixtures.
 - Atualizar a seção "Versões" do README com a versão do Electron e do app.
 - Registrar no `docs/` as decisões tomadas na [§10](#10-decisões-em-aberto) (formato ADR curto).
@@ -682,7 +682,7 @@ As fases 4 e 5 podem andar em paralelo depois da 3.
 | --- | --- | --- | --- |
 | D1 | Onde fica a pasta do Soulcrate no app instalado | `%USERPROFILE%\Soulcrate` × escolha livre × dentro da pasta do app | **Decidido:** padrão `%USERPROFILE%\Soulcrate`, com escolha livre no assistente; nunca dentro da pasta de instalação |
 | D2 | Expor as portas só em `127.0.0.1` (S2) | Sim × não | **Decidido:** sim, por padrão; `BIND_ADDR=0.0.0.0` no `.env` libera para a rede |
-| D3 | Assinatura de código | Certificado OV/EV × Azure Trusted Signing × sem assinatura | Começar sem assinatura no beta; decidir antes da 1.0 conforme custo. **Na Fase 7:** sem assinatura, com o SmartScreen documentado ([`distribuicao.md`](distribuicao.md#1-instalar-e-o-aviso-do-smartscreen)) e o caminho para assinar pronto no workflow de release; a decisão continua em aberto |
+| D3 | Assinatura de código | Certificado OV/EV × Azure Trusted Signing × sem assinatura | Começar sem assinatura; decidir conforme custo. **Na Fase 7 e na 1.0.0:** sem assinatura (não há certificado), com o SmartScreen documentado ([`distribuicao.md`](distribuicao.md#1-instalar-e-o-aviso-do-smartscreen)) e o caminho para assinar pronto no workflow de release. Assinar fica para uma versão futura, e o SHA-256 da release é a conferência de quem baixa |
 | D4 | Endpoint de saúde do slskd e do Soulbeet | Endpoint HTTP dedicado × checagem de porta | **Decidido:** slskd `/health`; Soulbeet, checagem HTTP da raiz (o `/api/system/health` exige login) |
 | D5 | Configuração automática do Navidrome e do Soulbeet | Automática × guiada | **Decidido:** automática (SP5 e SP6 confirmaram as APIs) |
 | D6 | npm × pnpm | — | **Decidido:** npm |
@@ -700,6 +700,7 @@ As fases 4 e 5 podem andar em paralelo depois da 3.
 | D18 | Onde abrem as Web UIs (Fase 6) | Preferência global × sempre no app × sempre no navegador | **Decidido:** preferência ("Dentro do app" por padrão). O botão principal de cada serviço no Início e o menu da bandeja a seguem; o ícone ao lado sempre oferece o outro destino, para escolher na hora sem mexer na preferência |
 | D19 | O que entra no pacote de suporte e como os segredos saem (Fase 6) | Só filtro de padrões × filtro de padrões e de valores | **Decidido:** os dois. O filtro de padrões (§6.1) não pega uma senha que aparece solta numa mensagem de erro; o de valores troca por `***` as senhas e chaves que estão de fato no `.env` e no `slskd.yml`, onde quer que apareçam. O `.env` e o `slskd.yml` em si nunca entram; entra o `.env` com os segredos mascarados. Os `execucao-*.log` da §5 são os `lotes/execucao-<id>.log` do script (mais o `erro-<id>.log` quando tem conteúdo) |
 | D20 | Como o tema chega à tela (Fase 6) | `data-tema` no HTML por script × `nativeTheme.themeSource` e `prefers-color-scheme` | **Decidido:** `nativeTheme`. O main liga a preferência ao Electron antes de criar a janela e o CSS só olha a media query: nenhum script pinta a página (sem piscar), a janela nasce com o fundo certo e as Web UIs integradas seguem o mesmo tema |
+| D21 | A primeira versão publicada e o beta fechado (§8.1) | Beta `0.x` por duas semanas com DJs × publicar já a `1.0.0` | **Decidido:** a primeira release é a **1.0.0**, sem beta fechado. O que o beta pegaria fica por conta do [roteiro manual](roteiro-manual.md) e do canal de issues (modelos em `.github/ISSUE_TEMPLATE`). O app e a stack têm versões independentes: o app 1.0.0 traz a stack 1.1.0 |
 
 ---
 
