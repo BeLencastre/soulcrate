@@ -4,6 +4,7 @@
 // nunca as recebe; as chaves nascem no main e ficam lá (§6.1).
 import type { AppError } from './erros.js';
 import type { ConfigStatus } from './stack.js';
+import type { MigracaoInfo } from './stack-atualizacao.js';
 
 // ---------------------------------------------------------------- Variáveis do .env gerenciadas pelo assistente
 
@@ -160,6 +161,8 @@ export interface ResultadoPasta {
   jaExistia: boolean;
   /** a configuração que a pasta já tem, para preencher os passos seguintes */
   config: ConfigPublica | null;
+  /** só numa pasta que já existia (clone do Git): alterações locais nos arquivos da stack, para avisar */
+  migracao?: MigracaoInfo | null;
 }
 
 // ---------------------------------------------------------------- Gravação (passo 7)

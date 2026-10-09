@@ -12,6 +12,7 @@ interface Comparadores<R = unknown> {
   toBeDisabled(): R;
   toBeEnabled(): R;
   toHaveValue(valor: string): R;
+  toBeChecked(): R;
 }
 
 declare module 'vitest' {
@@ -54,6 +55,10 @@ expect.extend({
   toBeEnabled(recebido: unknown) {
     const el = comoElemento(recebido) as HTMLButtonElement;
     return { pass: !el.disabled, message: () => `esperava habilitado: ${el.outerHTML.slice(0, 120)}` };
+  },
+  toBeChecked(recebido: unknown) {
+    const el = comoElemento(recebido) as HTMLInputElement;
+    return { pass: el.checked, message: () => `esperava marcado: ${el.outerHTML.slice(0, 120)}` };
   },
   toHaveValue(recebido: unknown, valor: string) {
     const el = comoElemento(recebido) as HTMLInputElement;

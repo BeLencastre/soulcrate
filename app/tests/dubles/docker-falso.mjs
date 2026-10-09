@@ -48,6 +48,12 @@ if (arquivo)
 const dormir = (ms) => new Promise((r) => setTimeout(r, ms));
 
 const SERVICOS = ['slskd', 'soulbeet', 'navidrome'];
+// a imagem de cada serviço, como o `docker compose ps` a informa (a tela Sobre lê a versão do Navidrome daqui)
+const IMAGENS = {
+  slskd: 'slskd/slskd:0.26.0',
+  soulbeet: 'local/soulbeet-dj:latest',
+  navidrome: 'deluan/navidrome:0.64.2',
+};
 const estado = ler();
 estado.containers ??= {};
 
@@ -125,6 +131,11 @@ async function beets(args) {
     gravar(c);
   };
   const noDisco = (f) => !lib.musicaDir || existsSync(join(lib.musicaDir, f.arquivo));
+
+  if (cmd === 'version') {
+    console.log('beets version 2.11.0\nPython version 3.11.2\nplugins: autobpm, keyfinder');
+    return;
+  }
 
   if (cmd === 'ls') {
     const iF = resto.indexOf('-f');
@@ -268,6 +279,7 @@ async function main() {
         JSON.stringify({
           Service: nome,
           Name: nome,
+          Image: IMAGENS[nome],
           State: c.estado,
           Health: c.saude ?? '',
           Status: status,

@@ -9,6 +9,7 @@ import type { MainEvent, MarcadorBuild, OperacaoTipo, OperationId, WebUiEstado }
 import type { ServicoId } from '@shared/servicos';
 import { statusInicial, type StackStatus } from '@shared/stack';
 import { api } from './api';
+import { chaveArquivosDaStack, chaveAtualizacao } from './atualizacao';
 import { CHAVE_BIBLIOTECA, useManutencao } from './biblioteca';
 import { CHAVE_HISTORICO } from './historico';
 import { useExecucao, useRascunho } from './lote-store';
@@ -128,8 +129,16 @@ export const useUi = create<EstadoUi>((set) => ({
 /** Liga os eventos do main ao cache do Query e ao Zustand. Chamado uma vez, no App. */
 export function ligarEventos(qc: QueryClient, navegar: (rota: string) => void): () => void {
   return api.onEvent((e) => {
-    if (e.type === 'stack.status') qc.setQueryData(chaveStatus, e.status);
-    else if (e.type === 'app.navigate') navegar(e.rota);
+    if (e.type === 'stack.status') {
+      // outra pasta do Soulcrate: o que se sabia sobre os arquivos da stack da anterior não vale mais
+      const antes = qc.getQueryData<StackStatus>(chaveStatus)?.projeto.dir;
+      if (antes !== undefined && antes !== e.status.projeto.dir) {
+        void qc.invalidateQueries({ queryKey: chaveArquivosDaStack });
+      }
+      qc.setQueryData(chaveStatus, e.status);
+    } else if (e.type === 'app.navigate') navegar(e.rota);
+    else if (e.type === 'update.state') qc.setQueryData(chaveAtualizacao, e.estado);
+    else if (e.type === 'stackFiles.changed') void qc.invalidateQueries({ queryKey: chaveArquivosDaStack });
     else if (e.type === 'batch.events' || e.type === 'batch.log') {
       useExecucao.getState().aoEvento(e);
       // uma execução começou ou terminou: o histórico tem uma linha nova (ou mudou a de sempre)

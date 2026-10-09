@@ -45,8 +45,8 @@ export function marcadoresDoEditor(linhas: readonly LinhaAnalise[]): Map<number,
 }
 
 export const COR_DO_MARCADOR: Record<CorMarcador, string> = {
-  verde: '#47C58A',
-  laranja: '#FF8B4A',
-  cinza: '#6A6F78',
-  azul: '#62A8FF',
+  verde: 'var(--color-led-verde)',
+  laranja: 'var(--color-led-laranja)',
+  cinza: 'var(--color-led-cinza-2)',
+  azul: 'var(--color-led-azul)',
 };

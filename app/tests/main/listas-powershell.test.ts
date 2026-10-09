@@ -81,7 +81,8 @@ describe.skipIf(!temPowerShell)('análise da lista pelo baixar-lista.ps1 de verd
     expect(com.analise.alreadyDone).toBe(1);
     expect(com.analise.toProcess).toBe(2);
     expect(sem.ultimaExecucaoEm).toBeGreaterThan(0);
-  });
+    // são dois PowerShell de verdade em sequência: com o resto da suíte rodando em paralelo, 5 s não bastam
+  }, 30_000);
 
   it('CSV do Spotify é lido pelas colunas', async () => {
     writeFileSync(

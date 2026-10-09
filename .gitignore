@@ -46,6 +46,9 @@ tests/resultado-pester-*.xml
 app/node_modules/
 app/out/
 app/dist/
+# instaladores de teste do ciclo instalar/atualizar/desinstalar (app/scripts/testar-instalador.ps1)
+app/dist-anterior/
+app/dist-teste/
 app/coverage/
 # arquivos da stack montados para o instalador (npm run stack:preparar)
 app/resources/stack/

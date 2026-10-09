@@ -3,7 +3,7 @@
 // pós-configuração (o Soulbeet recebe a API key nova sozinho). Senhas nunca voltam do main.
 import { useMemo, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { useNavigate } from 'react-router';
+import { useNavigate, useSearchParams } from 'react-router';
 import {
   entradaDaConfig,
   type ConfigEntrada,
@@ -14,7 +14,9 @@ import { erroInesperado, type AppError } from '@shared/erros';
 import { msg } from '@shared/mensagens';
 import type { AchadoConfig } from '@shared/stack';
 import { CartaoErro } from '../components/CartaoErro';
+import { ErroDeLeitura } from '../components/historico/estados';
 import { ListaTarefas } from '../components/ListaTarefas';
+import { SecaoAplicativo, SecaoSobre } from '../components/secoes-app';
 import {
   CartaoChave,
   SecaoAjustes,
@@ -30,16 +32,17 @@ import { api } from '../lib/api';
 import { useStackStatus, useUi } from '../lib/estado';
 import { useValidacao } from '../lib/formulario';
 
-type Secao = 'conferencia' | 'pastas' | 'soulseek' | 'webui' | 'rede' | 'avancado' | 'app';
+type Secao = 'conferencia' | 'pastas' | 'soulseek' | 'webui' | 'rede' | 'avancado' | 'app' | 'sobre';
 
 const SECOES_STACK: Secao[] = ['conferencia', 'pastas', 'soulseek', 'webui', 'rede', 'avancado'];
-const SECOES_APP: Secao[] = ['app'];
+const SECOES_APP: Secao[] = ['app', 'sobre'];
+const TODAS_AS_SECOES: readonly string[] = [...SECOES_STACK, ...SECOES_APP];
 
 const CHAVE_CONFIG = ['config', 'read'] as const;
 
 function LinhaAchado({ a }: { a: AchadoConfig }) {
   return (
-    <li className="flex items-start gap-3 border-t border-[#22252a] py-[10px] text-[13px]" data-achado={a.id}>
+    <li className="flex items-start gap-3 border-t border-linha py-[10px] text-[13px]" data-achado={a.id}>
       <Chip cor={a.nivel === 'erro' ? 'vermelho' : 'laranja'}>
         {a.nivel === 'erro' ? msg.configuracoes.erro : msg.configuracoes.aviso}
       </Chip>
@@ -75,9 +78,12 @@ export function Configuracoes() {
     queryFn: () => api.config.read(),
   });
   const configStatus = status.configuracao;
-  const settings = useQuery({ queryKey: ['app', 'settings'], queryFn: () => api.app.getSettings() });
 
-  const [secao, setSecao] = useState<Secao | null>(null);
+  // a seção aberta fica na URL (`?secao=sobre`): o menu Ajuda e a bandeja levam direto a ela, e o voltar funciona
+  const [params, setParams] = useSearchParams();
+  const doEndereco = params.get('secao');
+  const secao = TODAS_AS_SECOES.includes(doEndereco ?? '') ? (doEndereco as Secao) : null;
+  const setSecao = (s: Secao) => setParams({ secao: s }, { replace: true });
   const secaoAtual: Secao =
     secao ?? (configStatus.estado === 'valida' && configStatus.avisos === 0 ? 'pastas' : 'conferencia');
 
@@ -145,32 +151,9 @@ export function Configuracoes() {
     }
   }
 
-  async function mudarBandeja(valor: boolean) {
-    qc.setQueryData(['app', 'settings'], await api.app.setSettings({ minimizarParaBandeja: valor }));
-  }
-
   const ultimaLinha = operacao && !operacao.terminou ? (operacao.linhas.at(-1)?.texto ?? null) : null;
 
   // ------------------------------------------------------------ seções
-
-  const preferencias = (
-    <Cartao como="section" className="flex flex-col gap-3 p-5" aria-label={msg.configuracoes.preferencias}>
-      <Rotulo>{msg.configuracoes.preferencias}</Rotulo>
-      <label className="flex cursor-pointer items-start gap-3">
-        <input
-          type="checkbox"
-          className="mt-[3px] size-4 accent-ambar"
-          checked={settings.data?.minimizarParaBandeja ?? true}
-          disabled={!settings.data}
-          onChange={(e) => void mudarBandeja(e.target.checked)}
-        />
-        <span className="flex flex-col gap-1">
-          <span className="text-sm font-semibold">{msg.configuracoes.bandeja}</span>
-          <span className="text-[13px] leading-normal text-texto-suave">{msg.configuracoes.bandejaDica}</span>
-        </span>
-      </label>
-    </Cartao>
-  );
 
   if (!dir) {
     return (
@@ -187,7 +170,14 @@ export function Configuracoes() {
             {msg.configuracoes.abrirAssistente}
           </Botao>
         </Cartao>
-        {preferencias}
+        <section aria-label={msg.configuracoes.secoes.app} className="flex max-w-[760px] flex-col gap-6">
+          <h2 className="m-0 text-[22px] font-extrabold">{msg.configuracoes.secoes.app}</h2>
+          <SecaoAplicativo />
+        </section>
+        <section aria-label={msg.configuracoes.secoes.sobre} className="flex max-w-[760px] flex-col gap-6">
+          <h2 className="m-0 text-[22px] font-extrabold">{msg.configuracoes.secoes.sobre}</h2>
+          <SecaoSobre />
+        </section>
       </div>
     );
   }
@@ -314,7 +304,9 @@ export function Configuracoes() {
       case 'avancado':
         return propsSecao ? <SecaoAjustes {...propsSecao} /> : null;
       case 'app':
-        return preferencias;
+        return <SecaoAplicativo />;
+      case 'sobre':
+        return <SecaoSobre />;
     }
   })();
 
@@ -349,14 +341,14 @@ export function Configuracoes() {
         <div
           role="status"
           data-testid="alteracoes-pendentes"
-          className="flex flex-wrap items-center gap-[14px] rounded-lg border border-[#5c4517] bg-[#241c0c] px-[18px] py-[14px]"
+          className="flex flex-wrap items-center gap-[14px] rounded-lg border border-ambar-borda bg-ambar-fundo px-[18px] py-[14px]"
         >
           <svg
             width="18"
             height="18"
             viewBox="0 0 24 24"
             fill="none"
-            stroke="#F2B53A"
+            stroke="var(--color-ambar)"
             strokeWidth="2"
             strokeLinecap="round"
             strokeLinejoin="round"
@@ -368,7 +360,7 @@ export function Configuracoes() {
           </svg>
           <span className="flex min-w-[260px] flex-1 flex-col gap-[2px]">
             <span className="font-bold">{msg.configuracoes.pendente.titulo}</span>
-            <span className="text-[13px] text-[#e2d3b4]">
+            <span className="text-[13px] text-aviso-texto">
               {invalido
                 ? msg.configuracoes.pendente.invalida
                 : noAr
@@ -445,8 +437,12 @@ export function Configuracoes() {
           aria-label={msg.configuracoes.secoes[secaoAtual]}
         >
           <h2 className="m-0 text-[22px] font-extrabold">{msg.configuracoes.secoes[secaoAtual]}</h2>
-          {config.isLoading && secaoAtual !== 'conferencia' && secaoAtual !== 'app' ? (
-            <p className="hint m-0">{msg.configuracoes.carregando}</p>
+          {config.isLoading && !['conferencia', 'app', 'sobre'].includes(secaoAtual) ? (
+            <p role="status" className="hint m-0">
+              {msg.configuracoes.carregando}
+            </p>
+          ) : config.isError && !['conferencia', 'app', 'sobre'].includes(secaoAtual) ? (
+            <ErroDeLeitura causa={config.error} aoTentarDeNovo={() => void config.refetch()} />
           ) : (
             conteudo
           )}

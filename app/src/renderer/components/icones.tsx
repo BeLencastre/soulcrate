@@ -122,13 +122,13 @@ export const IconeCadeado = (p: Props) => (
 export function Logo({ tamanho = 30 }: { tamanho?: number }) {
   return (
     <svg width={tamanho} height={tamanho} viewBox="0 0 32 32" fill="none" aria-hidden="true">
-      <rect x="2" y="9" width="28" height="20" rx="3" fill="#F2B53A" />
-      <rect x="6" y="3" width="3" height="16" rx="1" fill="#ECE9E3" />
-      <rect x="11" y="5" width="3" height="14" rx="1" fill="#ECE9E3" />
-      <rect x="16" y="2" width="3" height="17" rx="1" fill="#ECE9E3" />
-      <rect x="21" y="6" width="3" height="13" rx="1" fill="#ECE9E3" />
-      <rect x="2" y="15" width="28" height="14" rx="3" fill="#F2B53A" />
-      <rect x="11" y="20" width="10" height="3" rx="1.5" fill="#1A1204" />
+      <rect x="2" y="9" width="28" height="20" rx="3" fill="var(--color-ambar-logo)" />
+      <rect x="6" y="3" width="3" height="16" rx="1" fill="var(--color-texto)" />
+      <rect x="11" y="5" width="3" height="14" rx="1" fill="var(--color-texto)" />
+      <rect x="16" y="2" width="3" height="17" rx="1" fill="var(--color-texto)" />
+      <rect x="21" y="6" width="3" height="13" rx="1" fill="var(--color-texto)" />
+      <rect x="2" y="15" width="28" height="14" rx="3" fill="var(--color-ambar-logo)" />
+      <rect x="11" y="20" width="10" height="3" rx="1.5" fill="var(--color-sobre-ambar-logo)" />
     </svg>
   );
 }

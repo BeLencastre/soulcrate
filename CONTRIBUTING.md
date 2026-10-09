@@ -58,3 +58,5 @@ Mudanças que quebram compatibilidade (parâmetro removido, formato de evento al
 - A **stack** tem a versão no arquivo [`VERSION`](VERSION) (SemVer). Mude-a quando mudar algo em `docker-compose.yml`, `soulbeet/`, `slskd/slskd.example.yml`, `.env.example` ou nos scripts.
 - O **app** tem a versão própria em `app/package.json` (independente da versão da stack).
 - Registre as mudanças visíveis em [`CHANGELOG.md`](CHANGELOG.md), na seção "Não lançado".
+- **Mudar um arquivo da stack muda o que o app instala nas pastas dos usuários**: o app novo troca o que ninguém editou e deixa um `.novo` ao lado do que foi editado ([`docs/distribuicao.md`](docs/distribuicao.md#4-atualização-dos-arquivos-da-stack)). Se o arquivo é novo (ou deixou de existir), ajuste a lista `app/src/shared/stack-arquivos.ts`; o teste `pasta-service.test.ts` confere que ela anda junto com o repositório.
+- **Lançar uma versão do app**: ajuste `version` em `app/package.json`, atualize o `CHANGELOG.md`, crie a tag `v<versão>` e envie. O passo a passo, o teste de instalar → atualizar → desinstalar e a assinatura estão em [`docs/distribuicao.md`](docs/distribuicao.md#7-publicar-uma-versão).

@@ -4,6 +4,7 @@
 import { join } from 'node:path';
 import { criarErro, type AppError } from '@shared/erros';
 import { lerCompartilhamento, type ResultadoCompartilhamento } from '@shared/biblioteca';
+import { versaoDoSlskd } from '@shared/sobre';
 import type { ProjetoStatus } from '@shared/stack';
 import { redigirSegredos } from '../seguranca';
 import { lerChaveSlskd, lerEnv } from './config-validacao';
@@ -47,6 +48,21 @@ export class SlskdService {
       return { ok: true, compartilhamento: await this.ler() };
     } catch (e) {
       return this.comoResultado(e);
+    }
+  }
+
+  /** A versão que o slskd em execução informa (`GET /api/v0/application`); null se ele não responde ou não a traz. */
+  async versao(): Promise<string | null> {
+    try {
+      const r = await this.chamar('GET', '/application');
+      if (!r.ok) {
+        void r.body?.cancel();
+        return null;
+      }
+      return versaoDoSlskd(await r.json().catch(() => null));
+    } catch (e) {
+      if (e instanceof FalhaDaChamada) return null;
+      throw e;
     }
   }
 

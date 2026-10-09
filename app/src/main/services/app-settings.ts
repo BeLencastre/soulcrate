@@ -1,24 +1,43 @@
 // AppSettings (§3.2): preferências do app (não da stack), em um JSON na pasta userData.
 import { mkdirSync, readFileSync, renameSync, writeFileSync } from 'node:fs';
 import { dirname } from 'node:path';
-import type { AppSettings } from '@shared/ipc';
+import type { AppSettings, OndeAbrirWebUi, TemaPreferido } from '@shared/ipc';
 
 export const SETTINGS_PADRAO: AppSettings = {
   minimizarParaBandeja: true,
   avisoBandejaDispensado: false,
   pastaDoProjeto: null,
+  iniciarComWindows: false,
+  tema: 'escuro',
+  abrirWebUi: 'app',
+  avisarFimDoLote: true,
+  avisarBuscasPausadas: true,
 };
+
+const TEMAS: readonly TemaPreferido[] = ['escuro', 'claro', 'sistema'];
+const ONDE_ABRIR: readonly OndeAbrirWebUi[] = ['app', 'navegador'];
+
+function booleano(valor: unknown, padrao: boolean): boolean {
+  return typeof valor === 'boolean' ? valor : padrao;
+}
+
+function umDe<T extends string>(valor: unknown, validos: readonly T[], padrao: T): T {
+  return validos.find((v) => v === valor) ?? padrao;
+}
 
 /** Aceita só os campos conhecidos, com o tipo certo; o resto cai no padrão (arquivo editado à mão ou antigo). */
 export function normalizarSettings(bruto: unknown): AppSettings {
   const o = typeof bruto === 'object' && bruto !== null ? (bruto as Record<string, unknown>) : {};
+  const p = SETTINGS_PADRAO;
   return {
-    minimizarParaBandeja:
-      typeof o.minimizarParaBandeja === 'boolean' ? o.minimizarParaBandeja : SETTINGS_PADRAO.minimizarParaBandeja,
-    avisoBandejaDispensado:
-      typeof o.avisoBandejaDispensado === 'boolean' ? o.avisoBandejaDispensado : SETTINGS_PADRAO.avisoBandejaDispensado,
-    pastaDoProjeto:
-      typeof o.pastaDoProjeto === 'string' && o.pastaDoProjeto ? o.pastaDoProjeto : SETTINGS_PADRAO.pastaDoProjeto,
+    minimizarParaBandeja: booleano(o.minimizarParaBandeja, p.minimizarParaBandeja),
+    avisoBandejaDispensado: booleano(o.avisoBandejaDispensado, p.avisoBandejaDispensado),
+    pastaDoProjeto: typeof o.pastaDoProjeto === 'string' && o.pastaDoProjeto ? o.pastaDoProjeto : p.pastaDoProjeto,
+    iniciarComWindows: booleano(o.iniciarComWindows, p.iniciarComWindows),
+    tema: umDe(o.tema, TEMAS, p.tema),
+    abrirWebUi: umDe(o.abrirWebUi, ONDE_ABRIR, p.abrirWebUi),
+    avisarFimDoLote: booleano(o.avisarFimDoLote, p.avisarFimDoLote),
+    avisarBuscasPausadas: booleano(o.avisarBuscasPausadas, p.avisarBuscasPausadas),
   };
 }
 

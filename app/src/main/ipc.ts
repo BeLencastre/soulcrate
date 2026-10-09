@@ -1,6 +1,7 @@
 // Handlers de IPC (main): um por canal de `IpcInvoke`. Todo canal confere quem chamou (só a janela principal,
 // só em páginas do app) e valida os argumentos: o renderer não é confiável (§6.1).
-import { mkdirSync } from 'node:fs';
+import { mkdirSync, readFileSync } from 'node:fs';
+import { writeFile } from 'node:fs/promises';
 import { isAbsolute, join } from 'node:path';
 import { clipboard, dialog, ipcMain, shell, type BrowserWindow, type IpcMainInvokeEvent } from 'electron';
 import type {
@@ -12,8 +13,12 @@ import type {
   IpcInvoke,
   Limites,
   MainEvent,
+  OndeAbrirServico,
 } from '@shared/ipc';
+import { CREDITOS } from '@shared/creditos';
 import { msg } from '@shared/mensagens';
+import type { ArquivoDeLicenca, ArquivoDeLicencaId, CreditosELicenca } from '@shared/sobre';
+import { ARQUIVO_MANIFESTO } from '@shared/stack-arquivos';
 import { ehServicoId, type ServicoId } from '@shared/servicos';
 import type { ConfigPublica } from '@shared/configuracao';
 import type { ConfigStatus, ProjetoStatus } from '@shared/stack';
@@ -56,7 +61,12 @@ import type { PastaService } from './services/pasta-service';
 import type { RelatoriosService } from './services/relatorios-service';
 import { ehPastaDoSoulcrate } from './services/project-service';
 import type { SetupService } from './services/setup-service';
+import type { AtualizadorService } from './services/atualizador-service';
+import type { MigracaoService } from './services/migracao-service';
 import type { SlskdService } from './services/slskd-service';
+import type { SobreService } from './services/sobre-service';
+import type { StackAtualizacaoService } from './services/stack-atualizacao-service';
+import { nomeSugeridoDoPacote, type SuporteService } from './services/suporte-service';
 import type { WebUiService } from './services/webui-service';
 
 export interface ContextoIpc {
@@ -76,6 +86,17 @@ export interface ContextoIpc {
   relatorios: RelatoriosService;
   biblioteca: BibliotecaService;
   slskd: SlskdService;
+  sobre: SobreService;
+  suporte: SuporteService;
+  atualizador: AtualizadorService;
+  stackAtualizacao: StackAtualizacaoService;
+  migracao: MigracaoService;
+  /** os arquivos da stack que acompanham o app (a licença do Soulcrate está entre eles); null se o app não os traz */
+  origemStack: string | null;
+  /** a pasta do executável: o instalador deixa nela as licenças do Electron e do Chromium */
+  pastaDoExecutavel: string;
+  /** onde salvar o pacote de suporte (a janela de "Salvar como"); null se a pessoa cancelou */
+  escolherDestinoDoPacote(nomeSugerido: string): Promise<string | null>;
   /** pasta proposta para uma instalação nova */
   pastaPadrao: string;
   projeto(): ProjetoStatus;
@@ -87,6 +108,10 @@ export interface ContextoIpc {
   versaoDoApp: string;
   emitir(evento: MainEvent): void;
   mostrarJanela(): void;
+  /** abre uma Web UI no app, no navegador ou onde a preferência do usuário mandar */
+  abrirServico(servico: ServicoId, onde: OndeAbrirServico): void;
+  /** leva ao sistema o que mudou nas preferências (tema, iniciar com o Windows) */
+  aplicarPreferencias(depois: AppSettings, antes: AppSettings): void;
   abrirPastaDeLogs(): Promise<void>;
   responderFechamento(naoMostrarDeNovo: boolean): void;
 }
@@ -162,10 +187,73 @@ export function registrarIpc(ctx: ContextoIpc): void {
     const antes = ctx.settings.get();
     const depois = ctx.settings.set(parcial);
     if (antes.pastaDoProjeto !== depois.pastaDoProjeto) void ctx.health.atualizar({ forcar: true });
+    ctx.aplicarPreferencias(depois, antes);
     return depois;
   });
   tratar('app:answerClosePrompt', (_e, resposta) => {
     ctx.responderFechamento(resposta?.naoMostrarDeNovo === true);
+  });
+
+  // ------------------------------------------------------------ Sobre, suporte, atualização (Fases 6 e 7)
+  const ARQUIVOS_DE_LICENCA: Record<ArquivoDeLicencaId, { nome: string; candidatos: string[] }> = {
+    electron: { nome: 'Licença do Electron', candidatos: ['LICENSE.electron.txt', 'LICENSE'] },
+    chromium: { nome: 'Licenças do Chromium e de bibliotecas embutidas', candidatos: ['LICENSES.chromium.html'] },
+  };
+  const arquivoDeLicenca = (id: ArquivoDeLicencaId): string | null => {
+    for (const c of ARQUIVOS_DE_LICENCA[id].candidatos) {
+      const p = join(ctx.pastaDoExecutavel, c);
+      if (ctx.existeArquivo(p)) return p;
+    }
+    return null;
+  };
+  let ultimoPacote: string | null = null;
+
+  tratar('app:getAbout', () => ctx.sobre.info());
+  tratar('app:getCredits', (): CreditosELicenca => {
+    let licenca: string | null = null;
+    try {
+      if (ctx.origemStack) licenca = readFileSync(join(ctx.origemStack, 'LICENSE'), 'utf8');
+    } catch {
+      /* sem o arquivo: a tela mostra só os créditos */
+    }
+    const arquivosDeLicencas: ArquivoDeLicenca[] = (Object.keys(ARQUIVOS_DE_LICENCA) as ArquivoDeLicencaId[])
+      .filter((id) => arquivoDeLicenca(id) !== null)
+      .map((id) => ({ id, nome: ARQUIVOS_DE_LICENCA[id].nome }));
+    return { licenca, creditos: [...CREDITOS], arquivosDeLicencas };
+  });
+  tratar('app:openLicenseFile', async (_e, id) => {
+    if (id !== 'electron' && id !== 'chromium') throw new Error('Licença desconhecida.');
+    const arquivo = arquivoDeLicenca(id);
+    return arquivo ? (await shell.openPath(arquivo)) === '' : false;
+  });
+  tratar('app:createSupportBundle', async () => {
+    const escolhido = await ctx.escolherDestinoDoPacote(nomeSugeridoDoPacote(new Date()));
+    if (!escolhido) return { ok: false, cancelado: true };
+    const destino = /\.zip$/i.test(escolhido) ? escolhido : `${escolhido}.zip`;
+    const r = await ctx.suporte.gerar(destino, (caminho, dados) => writeFile(caminho, dados));
+    if (r.ok) {
+      ultimoPacote = r.caminho;
+      shell.showItemInFolder(r.caminho);
+    }
+    return r;
+  });
+  tratar('app:revealSupportBundle', () => {
+    if (!ultimoPacote || !ctx.existeArquivo(ultimoPacote)) return false;
+    shell.showItemInFolder(ultimoPacote);
+    return true;
+  });
+  tratar('update:state', () => ctx.atualizador.estado);
+  tratar('update:check', () => ctx.atualizador.verificar());
+  tratar('update:restartAndInstall', () => ctx.atualizador.reiniciarEAtualizar());
+  tratar('stackFiles:status', () => ctx.stackAtualizacao.estado());
+  tratar('stackFiles:apply', async () => {
+    const r = await ctx.stackAtualizacao.aplicar();
+    ctx.emitir({ type: 'stackFiles.changed' });
+    void ctx.health.atualizar({ forcar: true });
+    return r;
+  });
+  tratar('stackFiles:dismissNotice', () => {
+    ctx.stackAtualizacao.dispensarAviso();
   });
 
   // ------------------------------------------------------------ env e stack
@@ -179,13 +267,9 @@ export function registrarIpc(ctx: ContextoIpc): void {
   tratar('stack:down', () => ctx.operacoes.desligar());
   tratar('stack:restartService', (_e, servico) => ctx.operacoes.reiniciar(exigirServico(servico)));
   tratar('stack:runChecks', () => ctx.checks.executar());
-  tratar('stack:openService', async (_e, servico, onde) => {
-    const id = exigirServico(servico);
-    if (onde === 'browser') ctx.webui.abrirNoNavegador(id);
-    else {
-      ctx.mostrarJanela();
-      ctx.emitir({ type: 'app.navigate', rota: `/servicos/web/${id}` });
-    }
+  tratar('stack:openService', (_e, servico, onde) => {
+    if (onde !== 'app' && onde !== 'browser' && onde !== 'preferencia') throw new Error('Destino desconhecido.');
+    ctx.abrirServico(exigirServico(servico), onde);
   });
 
   // ------------------------------------------------------------ projeto e configuração
@@ -250,6 +334,10 @@ export function registrarIpc(ctx: ContextoIpc): void {
     if (r.ok && r.dir) {
       ctx.settings.set({ pastaDoProjeto: r.dir });
       await ctx.health.atualizar({ forcar: true });
+      // uma pasta que já existia e que o app não instalou (clone do Git): avisa de alterações locais nos arquivos da stack
+      if (r.jaExistia && !ctx.existeArquivo(join(r.dir, ...ARQUIVO_MANIFESTO.split('/')))) {
+        return { ...r, migracao: await ctx.migracao.analisar(r.dir) };
+      }
     }
     return r;
   });

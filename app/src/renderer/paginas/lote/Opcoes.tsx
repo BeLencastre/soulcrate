@@ -40,7 +40,7 @@ function LinhaLigaDesliga({
   const mudou = opcoes[id] !== OPCOES_PADRAO[id];
   return (
     <label
-      className="flex cursor-pointer items-start gap-[14px] border-t border-[#22252a] px-[18px] py-[14px]"
+      className="flex cursor-pointer items-start gap-[14px] border-t border-linha px-[18px] py-[14px]"
       data-opcao={id}
     >
       <input
@@ -181,7 +181,7 @@ export function Opcoes() {
 
           <Collapsible.Root asChild defaultOpen={false}>
             <Cartao como="section" className="overflow-hidden" aria-label={t.avancadas}>
-              <Collapsible.Trigger className="group flex min-h-[52px] w-full cursor-pointer items-center gap-3 border-0 bg-transparent px-[18px] text-left hover:bg-[#181b1f]">
+              <Collapsible.Trigger className="group flex min-h-[52px] w-full cursor-pointer items-center gap-3 border-0 bg-transparent px-[18px] text-left hover:bg-elevado">
                 <IconeSeta tamanho={16} className="transition-transform group-data-[state=open]:rotate-90" />
                 <span className="text-base font-extrabold">{t.avancadas}</span>
                 <span className="text-[13px] text-texto-mudo">{t.avancadasDica}</span>
@@ -192,7 +192,7 @@ export function Opcoes() {
               <Collapsible.Content>
                 {GRUPOS_NUMERICOS.map((g) => (
                   <div key={g.id}>
-                    <div className="border-t border-[#22252a] px-[18px] pt-[14px] pb-1">
+                    <div className="border-t border-linha px-[18px] pt-[14px] pb-1">
                       <span className="lbl">{t.grupos[g.id].nome}</span>
                     </div>
                     {g.itens.map((id) => (
@@ -222,7 +222,7 @@ export function Opcoes() {
           <div className="flex flex-col gap-[6px]">
             <span className="text-xs text-texto-mudo">{t.equivale}</span>
             <code
-              className="block rounded-md border border-borda-fraca bg-fundo p-3 font-mono text-xs leading-relaxed break-words text-[#d9d6cf]"
+              className="block rounded-md border border-borda-fraca bg-fundo p-3 font-mono text-xs leading-relaxed break-words text-texto-codigo"
               data-testid="comando-equivalente"
             >
               {comandoEquivalente(lista?.nome ?? 'lista.txt', opcoes)}

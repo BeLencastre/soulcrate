@@ -2,40 +2,104 @@
 @import '@fontsource-variable/jetbrains-mono/index.css';
 @import 'tailwindcss';
 
-/* Identidade visual dos protótipos (soulcrate-prototipos): tema escuro, âmbar como cor de ação. */
-@theme {
+/*
+ * Identidade visual dos protótipos (soulcrate-prototipos): tema escuro, âmbar como cor de ação.
+ *
+ * Os valores abaixo são do tema ESCURO (o padrão). O tema claro redefine os mesmos tokens no bloco
+ * `@media (prefers-color-scheme: light)` mais abaixo: o main do Electron liga `nativeTheme.themeSource` à preferência
+ * do usuário (Escuro, Claro ou Igual ao Windows), então a media query já chega certa antes de qualquer script rodar,
+ * sem piscar. Nenhuma cor fica fixa em componente: tudo é token (`bg-elevado`, `text-texto-mudo`, `var(--color-…)`).
+ * `static` porque parte dos tokens só é lida por `var(--color-…)` em estilos inline, e o Tailwind os descartaria.
+ * O teste `tests/shared/contraste.test.ts` confere o contraste AA dos pares texto/fundo dos dois temas.
+ */
+@theme static {
   --font-sans: 'Archivo Variable', 'Segoe UI', system-ui, sans-serif;
   --font-mono: 'JetBrains Mono Variable', ui-monospace, monospace;
 
+  /* superfícies */
   --color-fundo: #0e0f11;
   --color-painel: #121417;
   --color-cartao: #15171a;
   --color-cartao-2: #1b1e22;
   --color-log: #111316;
+  --color-terminal: #0f1113;
   --color-campo: #1c1f23;
   --color-campo-hover: #262a2f;
+  --color-dialogo: #17191c;
+  --color-elevado: #181b1f;
+  --color-hover: #1a1d21;
+  --color-selecionado: #1f2226;
+  --color-nav-ativo: #23262b;
 
+  /* linhas e bordas */
   --color-borda: #2a2e34;
   --color-borda-fraca: #24272c;
   --color-borda-forte: #30343b;
+  --color-borda-hover: #4a4f57;
+  --color-linha: #22252a;
+  --color-linha-fraca: #1e2125;
 
+  /* texto */
   --color-texto: #ece9e3;
   --color-texto-forte: #f4f1ea;
   --color-texto-suave: #a3a7ae;
   --color-texto-claro: #b4b8bf;
+  --color-texto-medio: #c9c5bd;
+  --color-texto-codigo: #d9d6cf;
   --color-texto-mudo: #868b93;
-  --color-texto-apagado: #6e737c;
+  --color-texto-apagado: #858a92;
+  --color-texto-gutter: #7a7f88;
 
+  /* âmbar: cor de ação (preenchimento, borda e texto) */
   --color-ambar: #f2b53a;
   --color-ambar-claro: #ffc658;
   --color-sobre-ambar: #1a1204;
+  --color-ambar-vivo: #ffd27a;
+  --color-ambar-fundo: #241c0c;
+  --color-ambar-fundo-2: #1a160d;
+  --color-ambar-fundo-hover: #30250f;
+  --color-ambar-selecionado: #1f1a10;
+  --color-ambar-borda: #5c4517;
+  --color-ambar-borda-2: #4a3a16;
+  --color-ambar-borda-hover: #8a6a1e;
+  --color-ambar-texto-suave: #cfc3a8;
+  --color-dif-fundo: #2e2410;
+  /* o logo é da marca: igual nos dois temas */
+  --color-ambar-logo: #f2b53a;
+  --color-sobre-ambar-logo: #1a1204;
 
+  /* avisos, erros, azul e verde (painéis e textos de apoio) */
+  --color-aviso-fundo: #241a10;
+  --color-aviso-borda: #5a3a1c;
+  --color-aviso-borda-forte: #7a4a22;
+  --color-aviso-texto: #e2d3b4;
+  --color-aviso-titulo: #ffb98f;
+  --color-erro-fundo: #2a1414;
+  --color-erro-borda: #5a2626;
+  --color-erro-texto: #ff8a8a;
+  --color-erro-corpo: #f2c9c9;
+  --color-perigo-borda: #6b2a2a;
+  --color-perigo-borda-hover: #8a3434;
+  --color-perigo-fundo: #2a1515;
+  --color-perigo-hover: #ffb0b0;
+  --color-azul-fundo: #16202c;
+  --color-azul-borda: #22405f;
+  --color-verde-fundo: #13241b;
+  --color-verde-borda: #1f4a33;
+
+  /* LEDs, barras e quadradinhos de estado */
   --color-led-verde: #47c58a;
   --color-led-cinza: #3a3e45;
+  --color-led-cinza-2: #6a6f78;
   --color-led-azul: #62a8ff;
   --color-led-vermelho: #ff6161;
   --color-led-laranja: #ff8b4a;
+  --color-led-roxo: #b794ff;
+  --color-led-aguardando: #8a8f98;
+  --color-barra-azul: #4a86d0;
+  --color-barra-roxo: #8b6cd1;
 
+  /* chips de estado (texto + quadradinho da cor; a cor nunca é a única informação) */
   --color-chip-neutro: #b4b8bf;
   --color-chip-neutro-fundo: #24272c;
   --color-chip-azul: #7db6ff;
@@ -52,10 +116,106 @@
   --color-chip-verdec-fundo: #1e2814;
   --color-chip-cinza: #9da1a8;
   --color-chip-cinza-fundo: #1e2024;
+}
 
-  --color-erro-borda: #5a2626;
-  --color-aviso-borda: #5a3a1c;
-  --color-azul-borda: #22405f;
+/* Tema claro (Configurações → Aplicativo → Tema). Papel quente e âmbar escuro: o âmbar da marca (#f2b53a) não tem
+   contraste de texto sobre fundo claro, então aqui ele vira #855400 (texto branco sobre ele passa de 4,5:1). */
+@media (prefers-color-scheme: light) {
+  :root {
+    --color-fundo: #f6f4ef;
+    --color-painel: #efece5;
+    --color-cartao: #ffffff;
+    --color-cartao-2: #f8f6f1;
+    --color-log: #f3f0ea;
+    --color-terminal: #fbfaf7;
+    --color-campo: #ffffff;
+    --color-campo-hover: #ece8df;
+    --color-dialogo: #ffffff;
+    --color-elevado: #f1eee7;
+    --color-hover: #ebe7de;
+    --color-selecionado: #e3dfd4;
+    --color-nav-ativo: #e6e2d8;
+
+    --color-borda: #d6d1c5;
+    --color-borda-fraca: #e2ddd2;
+    --color-borda-forte: #c4bdae;
+    --color-borda-hover: #8f8878;
+    --color-linha: #e6e1d6;
+    --color-linha-fraca: #ebe6dc;
+
+    --color-texto: #1d1b17;
+    --color-texto-forte: #0d0c0a;
+    --color-texto-suave: #57544c;
+    --color-texto-claro: #48453f;
+    --color-texto-medio: #3f3c36;
+    --color-texto-codigo: #34312c;
+    --color-texto-mudo: #66625a;
+    --color-texto-apagado: #6f6b62;
+    --color-texto-gutter: #6c685f;
+
+    --color-ambar: #855400;
+    --color-ambar-claro: #6a4200;
+    --color-sobre-ambar: #ffffff;
+    --color-ambar-vivo: #6b4500;
+    --color-ambar-fundo: #fbf0d6;
+    --color-ambar-fundo-2: #fdf6e3;
+    --color-ambar-fundo-hover: #f7e6bb;
+    --color-ambar-selecionado: #fbf1d9;
+    --color-ambar-borda: #d9b25a;
+    --color-ambar-borda-2: #e0c27a;
+    --color-ambar-borda-hover: #b98a1f;
+    --color-ambar-texto-suave: #5e4a1e;
+    --color-dif-fundo: #fbeccb;
+
+    --color-aviso-fundo: #fdeedd;
+    --color-aviso-borda: #e6b98a;
+    --color-aviso-borda-forte: #cf8a4c;
+    --color-aviso-texto: #5a4420;
+    --color-aviso-titulo: #8a3d00;
+    --color-erro-fundo: #fdeaea;
+    --color-erro-borda: #e3a5a5;
+    --color-erro-texto: #a82121;
+    --color-erro-corpo: #6b1f1f;
+    --color-perigo-borda: #d79a9a;
+    --color-perigo-borda-hover: #c76a6a;
+    --color-perigo-fundo: #fbe0e0;
+    --color-perigo-hover: #8f1c1c;
+    --color-azul-fundo: #e6f0fd;
+    --color-azul-borda: #a9c8f0;
+    --color-verde-fundo: #e3f4ea;
+    --color-verde-borda: #9ed3b6;
+
+    --color-led-verde: #1c8f5a;
+    --color-led-cinza: #a8a398;
+    --color-led-cinza-2: #8f8a7f;
+    --color-led-azul: #2f6fd0;
+    --color-led-vermelho: #d13030;
+    --color-led-laranja: #d4570f;
+    --color-led-roxo: #7a56d6;
+    --color-led-aguardando: #8a8579;
+    --color-barra-azul: #2f6fd0;
+    --color-barra-roxo: #7a56d6;
+
+    --color-chip-neutro: #48453f;
+    --color-chip-neutro-fundo: #e9e5db;
+    --color-chip-azul: #1b5aa8;
+    --color-chip-azul-fundo: #e1edfb;
+    --color-chip-verde: #15683f;
+    --color-chip-verde-fundo: #dcf1e5;
+    --color-chip-laranja: #9a4a0a;
+    --color-chip-laranja-fundo: #fbe8d3;
+    --color-chip-vermelho: #a82626;
+    --color-chip-vermelho-fundo: #fbe0e0;
+    --color-chip-roxo: #5b3bb0;
+    --color-chip-roxo-fundo: #ece5fb;
+    --color-chip-verdec: #4a6b12;
+    --color-chip-verdec-fundo: #eaf2d6;
+    --color-chip-cinza: #5c5a53;
+    --color-chip-cinza-fundo: #ebe8df;
+  }
+  html {
+    color-scheme: light;
+  }
 }
 
 @layer base {
@@ -83,7 +243,7 @@
     color: var(--color-ambar);
   }
   a:hover {
-    color: #ffd27a;
+    color: var(--color-ambar-vivo);
   }
   button,
   input,
@@ -119,8 +279,8 @@
   }
   .btn:hover {
     background: var(--color-campo-hover);
-    color: #fff;
-    border-color: #3c4149;
+    color: var(--color-texto-forte);
+    border-color: var(--color-borda-hover);
   }
   .btn:disabled,
   .btn[aria-disabled='true'] {
@@ -149,13 +309,13 @@
   }
   .btn-d {
     background: transparent;
-    border-color: #6b2a2a;
-    color: #ff8a8a;
+    border-color: var(--color-perigo-borda);
+    color: var(--color-erro-texto);
   }
   .btn-d:hover {
-    background: #2a1515;
-    color: #ffb0b0;
-    border-color: #8a3434;
+    background: var(--color-perigo-fundo);
+    color: var(--color-perigo-hover);
+    border-color: var(--color-perigo-borda-hover);
   }
   .btn-x {
     background: #c23b3b;
@@ -248,12 +408,12 @@
     font-size: 14px;
   }
   .stp:hover {
-    background: #1a1d21;
+    background: var(--color-hover);
     color: var(--color-texto);
   }
   .stp[aria-current='page'] {
-    background: #1f2226;
-    color: #fff;
+    background: var(--color-selecionado);
+    color: var(--color-texto-forte);
   }
 
   /* filtro por chips (tabela de faixas) */
@@ -273,12 +433,12 @@
   }
   .chip-f:hover {
     color: var(--color-texto);
-    border-color: #4a4f57;
+    border-color: var(--color-borda-hover);
   }
   .chip-f[aria-pressed='true'] {
-    background: var(--color-borda);
-    color: #fff;
-    border-color: #4a4f57;
+    background: var(--color-selecionado);
+    color: var(--color-texto-forte);
+    border-color: var(--color-borda-hover);
   }
 
   /* receitas e botões − + da tela de Opções */
@@ -295,12 +455,12 @@
     cursor: pointer;
   }
   .rc:hover {
-    border-color: #4a4f57;
-    background: #181b1f;
+    border-color: var(--color-borda-hover);
+    background: var(--color-elevado);
   }
   .rc[aria-pressed='true'] {
     border-color: var(--color-ambar);
-    background: #1f1a10;
+    background: var(--color-ambar-selecionado);
   }
   .knob {
     display: inline-flex;
@@ -328,7 +488,7 @@
     height: 20px;
     padding: 0 7px;
     border-radius: 4px;
-    background: #2e2410;
+    background: var(--color-dif-fundo);
     color: var(--color-ambar);
     font-size: 11px;
     font-weight: 700;
@@ -350,8 +510,10 @@
     white-space: pre;
     overflow: hidden;
   }
-  .ed:focus {
-    outline: none;
+  /* o foco do editor aparece por dentro: a caixa tem overflow e cortaria o contorno de fora */
+  .ed:focus-visible {
+    outline: 2px solid var(--color-ambar);
+    outline-offset: -2px;
   }
 
   .tab {
@@ -394,7 +556,7 @@
   .seg[aria-current='page'],
   .seg[data-state='active'] {
     background: var(--color-borda);
-    color: #fff;
+    color: var(--color-texto-forte);
   }
 
   .ico-btn {
@@ -418,8 +580,8 @@
     cursor: not-allowed;
   }
   .ico-d:hover:not(:disabled) {
-    background: #2a1515;
-    color: #ff8a8a;
+    background: var(--color-perigo-fundo);
+    color: var(--color-erro-texto);
   }
 
   /* tela Biblioteca: indicadores que filtram a tabela e ações de manutenção */
@@ -435,11 +597,11 @@
     cursor: pointer;
   }
   .ind:hover {
-    border-color: #4a4f57;
+    border-color: var(--color-borda-hover);
   }
   .ind[aria-pressed='true'] {
     border-color: var(--color-ambar);
-    background: #1f1a10;
+    background: var(--color-ambar-selecionado);
   }
   .act {
     display: flex;
@@ -463,7 +625,7 @@
   }
 
   .row:hover {
-    background: #181b1e;
+    background: var(--color-elevado);
   }
 
   /* formulários (protótipos "Assistente de configuração" e "Configurações") */
@@ -481,10 +643,10 @@
     border-color: var(--color-ambar);
   }
   .inp[aria-invalid='true'] {
-    border-color: #8a3434;
+    border-color: var(--color-perigo-borda-hover);
   }
   .inp[data-aviso='true'] {
-    border-color: #7a4a22;
+    border-color: var(--color-aviso-borda-forte);
   }
   .inp::placeholder {
     color: var(--color-texto-apagado);
@@ -512,7 +674,7 @@
     cursor: pointer;
   }
   .opt:hover {
-    border-color: #4a4f57;
+    border-color: var(--color-borda-hover);
   }
   .opt:has(:checked) {
     border-color: var(--color-ambar);
@@ -529,7 +691,7 @@
     font-size: 14px;
   }
   .rad:hover {
-    border-color: #4a4f57;
+    border-color: var(--color-borda-hover);
   }
   .rad:has(:checked) {
     border-color: var(--color-ambar);
@@ -580,15 +742,15 @@
     color: var(--color-texto-suave);
   }
   .passo:hover:not(:disabled) {
-    background: #1a1d21;
+    background: var(--color-hover);
   }
   .passo:disabled {
     cursor: not-allowed;
     opacity: 0.6;
   }
   .passo[aria-current='step'] {
-    background: #1f2226;
-    color: #fff;
+    background: var(--color-selecionado);
+    color: var(--color-texto-forte);
   }
   .sub {
     display: flex;
@@ -606,12 +768,12 @@
     cursor: pointer;
   }
   .sub:hover {
-    background: #1a1d21;
+    background: var(--color-hover);
     color: var(--color-texto);
   }
   .sub[aria-current='page'] {
-    background: #1f2226;
-    color: #fff;
+    background: var(--color-selecionado);
+    color: var(--color-texto-forte);
   }
 }
 

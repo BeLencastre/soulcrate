@@ -8,8 +8,8 @@ import { dataDeHoje } from '../../lib/formulario';
 function Linha({ rotulo, children, ultima = false }: { rotulo: string; children: ReactNode; ultima?: boolean }) {
   return (
     <>
-      <dt className={`px-4 py-3 text-texto-suave ${ultima ? '' : 'border-b border-[#22252a]'}`}>{rotulo}</dt>
-      <dd className={`m-0 px-4 py-3 ${ultima ? '' : 'border-b border-[#22252a]'}`}>{children}</dd>
+      <dt className={`px-4 py-3 text-texto-suave ${ultima ? '' : 'border-b border-linha'}`}>{rotulo}</dt>
+      <dd className={`m-0 px-4 py-3 ${ultima ? '' : 'border-b border-linha'}`}>{children}</dd>
     </>
   );
 }

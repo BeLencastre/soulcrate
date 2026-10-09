@@ -80,7 +80,7 @@ export function WebUi() {
         <div
           role="tablist"
           aria-label={msg.webUi.interface}
-          className="inline-flex gap-[2px] rounded-lg border border-borda bg-[#1a1d21] p-[3px]"
+          className="inline-flex gap-[2px] rounded-lg border border-borda bg-hover p-[3px]"
         >
           {ORDEM_WEBUI.map((id) => {
             const s = servicoDe(status, id);

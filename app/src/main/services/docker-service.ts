@@ -124,6 +124,13 @@ export class DockerService {
     return parseComposePs(r.stdout);
   }
 
+  /** `docker compose ps -a` como texto (a tabela que a pessoa vê no terminal), para o pacote de suporte; null se falhou. */
+  async composePsTexto(dir: string): Promise<string | null> {
+    const r = await this.docker(['compose', 'ps', '-a'], { cwd: dir, timeoutMs: TIMEOUT_PS_MS });
+    if (r.erroSpawn || r.codigo !== 0) return null;
+    return r.stdout;
+  }
+
   /**
    * `docker compose up -d --build`, equivalente ao subir.bat. `rebuild` acrescenta `--force-recreate`: refaz a
    * imagem (com o cache das camadas) e recria os contêineres. Saída linha a linha em `aoLinha`.

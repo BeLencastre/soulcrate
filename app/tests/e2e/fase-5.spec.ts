@@ -17,11 +17,8 @@ import {
   type Ambiente,
   type AppAberto,
   type SlskdFalso,
+  capturar,
 } from './ajudantes';
-
-const CAPTURAS = join(import.meta.dirname, '..', '..', 'test-results', 'capturas');
-mkdirSync(CAPTURAS, { recursive: true });
-const capturar = (janela: Page, nome: string) => janela.screenshot({ path: join(CAPTURAS, `${nome}.png`) });
 
 let amb: Ambiente;
 let aberto: AppAberto | null = null;

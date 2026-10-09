@@ -33,8 +33,19 @@ export const PASTAS_DA_STACK: readonly string[] = ['slskd', 'navidrome', 'soulbe
 /** Onde o app guarda o hash dos arquivos que instalou (para a atualização da §3.3, Fase 7). */
 export const ARQUIVO_MANIFESTO = '.soulcrate/manifesto.json';
 
+/** O resultado da última atualização, enquanto o aviso não foi dispensado (mesma pasta `.soulcrate/`). */
+export const ARQUIVO_ULTIMA_ATUALIZACAO = '.soulcrate/ultima-atualizacao.json';
+
+/** Extensão do arquivo ao lado de um que o usuário editou: `config.yaml` → `config.yaml.novo`. */
+export const EXTENSAO_NOVO = '.novo';
+
 export interface Manifesto {
   versaoDaStack: string | null;
   /** caminho relativo (barras normais) → SHA-256 do que o app instalou */
   arquivos: Record<string, string>;
+  /**
+   * caminho relativo → SHA-256 da versão nova que o app já deixou ao lado como `<arquivo>.novo` porque o usuário
+   * editou o original. Evita regravar o `.novo` e avisar de novo a cada abertura do app.
+   */
+  novos?: Record<string, string>;
 }

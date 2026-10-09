@@ -59,7 +59,7 @@ export function DialogoReprocessar({
       <Dialog.Portal>
         <Dialog.Overlay className="fixed inset-0 z-50 bg-black/60" />
         <Dialog.Content
-          className="fixed top-1/2 left-1/2 z-50 flex max-h-[85vh] w-[min(520px,calc(100vw-32px))] -translate-x-1/2 -translate-y-1/2 flex-col gap-4 overflow-y-auto rounded-[10px] border border-borda-forte bg-[#17191c] p-6 shadow-[0_24px_60px_rgba(0,0,0,0.55)]"
+          className="fixed top-1/2 left-1/2 z-50 flex max-h-[85vh] w-[min(520px,calc(100vw-32px))] -translate-x-1/2 -translate-y-1/2 flex-col gap-4 overflow-y-auto rounded-[10px] border border-borda-forte bg-dialogo p-6 shadow-[0_24px_60px_rgba(0,0,0,0.55)]"
           data-testid="dialogo-reprocessar"
         >
           <Dialog.Title className="m-0 text-xl font-extrabold" style={{ fontStretch: '110%' }}>

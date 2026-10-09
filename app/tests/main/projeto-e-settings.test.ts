@@ -70,10 +70,42 @@ describe('AppSettingsService', () => {
     return join(d, 'dados', 'settings.json');
   };
 
-  it('sem arquivo: o padrão (minimizar para a bandeja, D7)', () => {
+  it('sem arquivo: o padrão (minimizar para a bandeja, D7; tema escuro; avisos ligados; nada ao iniciar o PC)', () => {
     const s = new AppSettingsService(novo());
     expect(s.get()).toEqual(SETTINGS_PADRAO);
-    expect(s.get().minimizarParaBandeja).toBe(true);
+    expect(s.get()).toMatchObject({
+      minimizarParaBandeja: true,
+      iniciarComWindows: false,
+      tema: 'escuro',
+      abrirWebUi: 'app',
+      avisarFimDoLote: true,
+      avisarBuscasPausadas: true,
+    });
+  });
+
+  it('as preferências novas (tema, onde abrir as Web UIs, avisos) são gravadas e voltam; valor inválido cai no padrão', () => {
+    const arq = novo();
+    const s = new AppSettingsService(arq);
+    s.set({ tema: 'claro', abrirWebUi: 'navegador', iniciarComWindows: true, avisarFimDoLote: false });
+    expect(new AppSettingsService(arq).get()).toMatchObject({
+      tema: 'claro',
+      abrirWebUi: 'navegador',
+      iniciarComWindows: true,
+      avisarFimDoLote: false,
+      avisarBuscasPausadas: true,
+    });
+    expect(normalizarSettings({ tema: 'roxo', abrirWebUi: 'janela', iniciarComWindows: 'sim' })).toEqual(
+      SETTINGS_PADRAO,
+    );
+    // um settings.json de antes da Fase 6 (só os três campos antigos) abre sem perder nada e com os padrões novos
+    expect(
+      normalizarSettings({ minimizarParaBandeja: false, avisoBandejaDispensado: true, pastaDoProjeto: 'D:\\S' }),
+    ).toEqual({
+      ...SETTINGS_PADRAO,
+      minimizarParaBandeja: false,
+      avisoBandejaDispensado: true,
+      pastaDoProjeto: 'D:\\S',
+    });
   });
 
   it('grava, cria a pasta e recarrega o que foi gravado', () => {
@@ -82,7 +114,7 @@ describe('AppSettingsService', () => {
     expect(s.set({ avisoBandejaDispensado: true, pastaDoProjeto: 'D:\\Soulcrate' }).avisoBandejaDispensado).toBe(true);
     const outra = new AppSettingsService(arq);
     expect(outra.get()).toEqual({
-      minimizarParaBandeja: true,
+      ...SETTINGS_PADRAO,
       avisoBandejaDispensado: true,
       pastaDoProjeto: 'D:\\Soulcrate',
     });

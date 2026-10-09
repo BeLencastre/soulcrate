@@ -29,13 +29,18 @@ function Cartoes({ d }: { d: ExecucaoDetalhe }) {
   const t = msg.historico.detalhe.cartoes;
   const contagem = (status: string) => d.faixas.filter((f) => f.status === status).length;
   const itens: { id: string; rotulo: string; valor: number; cor: string }[] = [
-    { id: 'bib', rotulo: t.naBiblioteca, valor: d.filtros.bib, cor: '#5BD49A' },
-    { id: 'nao-encontradas', rotulo: t.naoEncontradas, valor: contagem('nao encontrada'), cor: '#FF7A7A' },
-    { id: 'falharam', rotulo: t.falharam, valor: contagem('falhou'), cor: '#FF7A7A' },
-    { id: 'conferir', rotulo: t.paraConferir, valor: d.filtros.conf, cor: '#F2B53A' },
+    { id: 'bib', rotulo: t.naBiblioteca, valor: d.filtros.bib, cor: 'var(--color-chip-verde)' },
+    {
+      id: 'nao-encontradas',
+      rotulo: t.naoEncontradas,
+      valor: contagem('nao encontrada'),
+      cor: 'var(--color-chip-vermelho)',
+    },
+    { id: 'falharam', rotulo: t.falharam, valor: contagem('falhou'), cor: 'var(--color-chip-vermelho)' },
+    { id: 'conferir', rotulo: t.paraConferir, valor: d.filtros.conf, cor: 'var(--color-ambar)' },
   ];
   if (d.filtros.inc > 0)
-    itens.push({ id: 'incompletas', rotulo: t.naoTerminadas, valor: d.filtros.inc, cor: '#B4B8BF' });
+    itens.push({ id: 'incompletas', rotulo: t.naoTerminadas, valor: d.filtros.inc, cor: 'var(--color-texto-claro)' });
   return (
     <div className="grid grid-cols-[repeat(auto-fit,minmax(150px,1fr))] gap-[10px]">
       {itens.map((i) => (
@@ -245,7 +250,7 @@ function Corpo({ d }: { d: ExecucaoDetalhe }) {
         <Cartao
           borda="azul"
           role="status"
-          className="flex flex-wrap items-center gap-3 bg-[#16202c] px-4 py-3 text-sm"
+          className="flex flex-wrap items-center gap-3 bg-azul-fundo px-4 py-3 text-sm"
           data-testid="aviso-rodando"
         >
           <span className="min-w-0 flex-1">{msg.historico.avisoEmAndamento}</span>
@@ -314,7 +319,7 @@ function Corpo({ d }: { d: ExecucaoDetalhe }) {
                 {t.opcoesNaoRegistradas}
               </span>
             ) : opcoesComoTexto(d.opcoes) ? (
-              <code className="font-mono text-xs leading-[1.6] text-[#d9d6cf]" data-testid="opcoes-usadas">
+              <code className="font-mono text-xs leading-[1.6] text-texto-codigo" data-testid="opcoes-usadas">
                 {opcoesComoTexto(d.opcoes)}
               </code>
             ) : (

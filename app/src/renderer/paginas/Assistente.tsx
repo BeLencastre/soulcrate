@@ -14,6 +14,7 @@ import {
 import type { AppError } from '@shared/erros';
 import { erroInesperado } from '@shared/erros';
 import { msg } from '@shared/mensagens';
+import { arquivosParaAvisar, type MigracaoInfo } from '@shared/stack-atualizacao';
 import { CartaoErro } from '../components/CartaoErro';
 import { Logo } from '../components/icones';
 import {
@@ -83,6 +84,8 @@ export function Assistente() {
   const [erroPasta, setErroPasta] = useState<string | null>(null);
   const [falhaPasta, setFalhaPasta] = useState<AppError | null>(null);
   const [avisoPasta, setAvisoPasta] = useState<string | null>(null);
+  /** pasta de um clone do Git com alterações locais nos arquivos da stack (Fase 7): avisa antes de seguir */
+  const [migracao, setMigracao] = useState<MigracaoInfo | null>(null);
   const [pronta, setPronta] = useState<PastaPronta | null>(null);
 
   const [entrada, setEntrada] = useState<ConfigEntrada | null>(null);
@@ -101,6 +104,7 @@ export function Assistente() {
     setErroPasta(null);
     setFalhaPasta(null);
     setAvisoPasta(null);
+    setMigracao(null);
     try {
       const r = await api.setup.prepareFolder({ modo, caminho });
       if (!r.ok || !r.dir || !r.config) {
@@ -112,6 +116,11 @@ export function Assistente() {
       if (!pronta || pronta.dir !== r.dir) setEntrada(entradaDaConfig(r.config));
       setPronta({ dir: r.dir, config: r.config, modo, caminho: caminho.trim() });
       setAvisoPasta(textoDoPasso1(r));
+      // um clone com alterações locais: mostra o aviso e fica no passo 1 (o "Avançar" seguinte continua, sem preparar de novo)
+      if (r.migracao && arquivosParaAvisar(r.migracao).length > 0) {
+        setMigracao(r.migracao);
+        return false;
+      }
       return true;
     } catch (e) {
       setFalhaPasta(erroInesperado(e));
@@ -239,8 +248,16 @@ export function Assistente() {
                   aria-hidden="true"
                   className="inline-flex size-[26px] items-center justify-center rounded-[5px] font-mono text-xs font-bold"
                   style={{
-                    background: aqui ? '#F2B53A' : feito ? '#13291F' : '#24272C',
-                    color: aqui ? '#1A1204' : feito ? '#5BD49A' : '#A3A7AE',
+                    background: aqui
+                      ? 'var(--color-ambar)'
+                      : feito
+                        ? 'var(--color-chip-verde-fundo)'
+                        : 'var(--color-borda-fraca)',
+                    color: aqui
+                      ? 'var(--color-sobre-ambar)'
+                      : feito
+                        ? 'var(--color-chip-verde)'
+                        : 'var(--color-texto-suave)',
                   }}
                 >
                   {feito ? '✓' : n}
@@ -251,7 +268,7 @@ export function Assistente() {
           })}
         </nav>
 
-        <main className="flex min-w-0 flex-1 flex-col">
+        <div className="flex min-w-0 flex-1 flex-col">
           {fim ? (
             <div className="flex-1 overflow-y-auto px-12 py-10">
               <div className="max-w-[880px]">
@@ -285,6 +302,7 @@ export function Assistente() {
                       erro={erroPasta}
                       falha={falhaPasta}
                       aviso={avisoPasta}
+                      migracao={migracao}
                     />
                   ) : null}
                   {passo === 2 && secao ? <SecaoPastas {...secao} comDicaDeDisco /> : null}
@@ -311,7 +329,14 @@ export function Assistente() {
                     <span
                       key={i}
                       className="h-[6px] rounded-[2px]"
-                      style={{ background: i + 1 < passo ? '#47C58A' : i + 1 === passo ? '#F2B53A' : '#2A2E34' }}
+                      style={{
+                        background:
+                          i + 1 < passo
+                            ? 'var(--color-led-verde)'
+                            : i + 1 === passo
+                              ? 'var(--color-ambar)'
+                              : 'var(--color-borda)',
+                      }}
                     />
                   ))}
                 </div>
@@ -335,7 +360,7 @@ export function Assistente() {
               </footer>
             </form>
           )}
-        </main>
+        </div>
       </div>
     </div>
   );

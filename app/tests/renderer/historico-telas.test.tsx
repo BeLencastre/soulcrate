@@ -690,7 +690,7 @@ describe('tela Diagnóstico das faixas que não vieram', () => {
     api.reports.getRun.mockResolvedValue(d);
     montar(`/historico/${ID}/faltas`);
     fireEvent.click(await screen.findByRole('button', { name: 'Abrir o Soulbeet' }));
-    expect(api.stack.openService).toHaveBeenCalledWith('soulbeet', 'app');
+    expect(api.stack.openService).toHaveBeenCalledWith('soulbeet', 'preferencia');
   });
 
   describe('clicar numa sugestão corrige a linha', () => {

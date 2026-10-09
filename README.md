@@ -155,7 +155,7 @@ Se você parar no meio, ao rodar de novo ele continua de onde parou e pula o que
 - Quem já usa (ou quer usar) o Soulseek e está cansado de conferir arquivo por arquivo.
 - Quem tem um computador com Windows 10/11 e aceita instalar o [Docker Desktop](https://www.docker.com/products/docker-desktop/). Linux e macOS também funcionam, via linha de comando.
 
-Não é um aplicativo com instalador: você configura um arquivo `.env`, e a primeira instalação leva de 5 a 10 minutos. O passo a passo está em [Instalação](#instalação).
+No Windows há um **app com instalador** que faz a configuração por um assistente (sem editar arquivo nenhum). Também dá para instalar à mão, configurando o `.env` você mesmo. Nos dois casos a primeira subida da stack leva de 5 a 10 minutos. O passo a passo está em [Instalação](#instalação).
 
 > [!NOTE]
 > O Soulseek é uma rede P2P. Leia o [Aviso](#aviso) antes de usar.
@@ -175,6 +175,17 @@ Não é um aplicativo com instalador: você configura um arquivo `.env`, e a pri
 
 
 ## Instalação
+
+### Instalação pelo app (Windows)
+
+O jeito mais simples: baixe o `Soulcrate-Setup-<versão>.exe` na página de [Releases](https://github.com/BeLencastre/soulcrate/releases) e dê dois cliques. O app instala por usuário (sem senha de administrador), liga e desliga a stack, configura tudo por um assistente (o `.env` e o `slskd.yml` são gerados por ele, com as chaves iguais nos dois), roda o download em lote com progresso ao vivo, mostra o que não veio e por quê, e se atualiza sozinho. Os `.bat` continuam funcionando na mesma pasta.
+
+> [!NOTE]
+> **O instalador ainda não é assinado**, então o Windows mostra o aviso do SmartScreen ("O Windows protegeu seu computador"). Clique em **Mais informações → Executar assim mesmo**, só se o arquivo veio da página de Releases deste repositório (confira o SHA-256 em `SHA256SUMS.txt`). Detalhes em [`docs/distribuicao.md`](docs/distribuicao.md).
+
+O app precisa do [Docker Desktop](https://www.docker.com/products/docker-desktop/) (ele não o instala por você). Desinstalar **nunca apaga** a pasta do Soulcrate (`.env`, listas, relatórios e biblioteca); a atualização do app e da stack também não toca no que é seu. Quem já usa por um clone do Git escolhe "usar uma pasta que já existe" no assistente.
+
+A **instalação manual**, pelo Git e pelos `.bat`, continua valendo:
 
 **Em resumo**, são quatro passos, detalhados logo abaixo:
 
@@ -562,7 +573,7 @@ soulcrate/                      # repositório (código)
 │   └── beets-plugins/keepmix.py
 ├── docs/                       # especificação do app, protocolo do lote, regras da configuração
 ├── tests/                      # testes (Pester) e o slskd falso usado por eles
-└── app/                        # app desktop (Electron), em construção: Fases 0 a 5 prontas (veja app/README.md)
+└── app/                        # app desktop (Electron): Fases 0 a 7 prontas (veja app/README.md e docs/distribuicao.md)
 
 %USERPROFILE%\Soulcrate/        # instalação (configuração, segredos e bancos)
 ├── .env                        # inclui DOWNLOADS_DIR, INCOMPLETE_DIR e MUSIC_DIR
