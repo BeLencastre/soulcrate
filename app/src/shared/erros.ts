@@ -32,6 +32,10 @@ export type ErroCodigo =
   | 'biblioteca.filtro-invalido'
   | 'biblioteca.mudou'
   | 'biblioteca.falhou'
+  | 'suporte.nao-gerou'
+  | 'atualizacao.falhou'
+  | 'atualizacao.lote-rodando'
+  | 'stack.atualizacao-falhou'
   | 'inesperado';
 
 /** Ações que um erro pode oferecer; o renderer liga cada uma a um comportamento. */
@@ -287,6 +291,41 @@ export function criarErro(codigo: ErroCodigo, ctx: ContextoErro = {}): AppError 
         codigo,
         titulo: e.bibliotecaFalhou.titulo(ctx.tarefa ?? 'falar com o beets'),
         mensagem: e.bibliotecaFalhou.mensagem,
+        acoes: [
+          acao('tentarDeNovo', A.tentarDeNovo, true),
+          acao('copiarDetalhes', A.copiarDetalhes),
+          acao('abrirLog', A.abrirLog),
+        ],
+        detalhes,
+      };
+    case 'suporte.nao-gerou':
+      return {
+        codigo,
+        ...e.suporteNaoGerou,
+        acoes: [
+          acao('tentarDeNovo', A.tentarDeNovo, true),
+          acao('copiarDetalhes', A.copiarDetalhes),
+          acao('abrirLog', A.abrirLog),
+        ],
+        detalhes,
+      };
+    case 'atualizacao.falhou':
+      return {
+        codigo,
+        ...e.atualizacaoFalhou,
+        acoes: [
+          acao('tentarDeNovo', A.tentarDeNovo, true),
+          acao('copiarDetalhes', A.copiarDetalhes),
+          acao('abrirLog', A.abrirLog),
+        ],
+        detalhes,
+      };
+    case 'atualizacao.lote-rodando':
+      return { codigo, ...e.atualizacaoLoteRodando, acoes: [acao('verExecucao', A.verExecucao, true)], detalhes };
+    case 'stack.atualizacao-falhou':
+      return {
+        codigo,
+        ...e.stackAtualizacaoFalhou,
         acoes: [
           acao('tentarDeNovo', A.tentarDeNovo, true),
           acao('copiarDetalhes', A.copiarDetalhes),

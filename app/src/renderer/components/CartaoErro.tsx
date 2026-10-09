@@ -23,7 +23,7 @@ export function CartaoErro({
       className="flex flex-col gap-3 p-[22px]"
       data-codigo-erro={erro.codigo}
     >
-      <Rotulo className={inesperado ? '' : '!text-[#ff8a8a]'}>{msg.erro.categoria[erro.codigo]}</Rotulo>
+      <Rotulo className={inesperado ? '' : '!text-erro-texto'}>{msg.erro.categoria[erro.codigo]}</Rotulo>
       <h2 className="m-0 text-lg font-extrabold">{erro.titulo}</h2>
       <p className="m-0 text-sm leading-normal text-texto-claro">{erro.mensagem}</p>
       {erro.detalhes && (erro.codigo === 'config.invalida' || erro.codigo === 'biblioteca.falhou') ? (

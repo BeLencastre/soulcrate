@@ -6,6 +6,7 @@ import { Link } from 'react-router';
 import type { AlvoLog, CheckEstado, CheckItem, HealthCheckResult, LinhaLog } from '@shared/ipc';
 import { msg } from '@shared/mensagens';
 import { SERVICOS, type ServicoId } from '@shared/servicos';
+import { ErroDeLeitura } from '../components/historico/estados';
 import { IconeRecarregar } from '../components/icones';
 import { Botao, CabecalhoPagina, Cartao, Chip, classeBotao, Led, type CorChip, type CorLed } from '../components/ui';
 import { seguro } from '../lib/acoes';
@@ -22,7 +23,11 @@ const COR_ITEM: Record<CheckItem['estado'], CorLed> = {
   erro: 'vermelho',
   neutro: 'cinza',
 };
-const COR_LINHA = { info: '#B4B8BF', aviso: '#FF9A5C', erro: '#FF7A7A' } as const;
+const COR_LINHA = {
+  info: 'var(--color-texto-claro)',
+  aviso: 'var(--color-chip-laranja)',
+  erro: 'var(--color-chip-vermelho)',
+} as const;
 
 function CartaoCheck({ check }: { check: HealthCheckResult }) {
   const info = msg.servicos.check[check.id];
@@ -41,7 +46,7 @@ function CartaoCheck({ check }: { check: HealthCheckResult }) {
           </li>
         ))}
       </ul>
-      {check.nota ? <p className="m-0 text-[13px] leading-normal text-[#ffb98f]">{check.nota}</p> : null}
+      {check.nota ? <p className="m-0 text-[13px] leading-normal text-aviso-titulo">{check.nota}</p> : null}
     </Cartao>
   );
 }
@@ -177,7 +182,10 @@ export function Servicos() {
           {lista.map((c) => (
             <CartaoCheck key={c.id} check={c} />
           ))}
-          {rodando && !resultado?.executado ? (
+          {rodando && checks.isError ? (
+            <ErroDeLeitura causa={checks.error} aoTentarDeNovo={() => void checks.refetch()} />
+          ) : null}
+          {rodando && !resultado?.executado && !checks.isError ? (
             <Cartao role="status" className="flex flex-col gap-3 p-5" aria-label={msg.servicos.titulo.verificando}>
               <span className="esqueleto h-3 w-[30%]" />
               <span className="esqueleto h-3 w-[55%]" />

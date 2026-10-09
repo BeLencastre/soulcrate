@@ -55,7 +55,7 @@ function CartaoDoLote() {
     <NavLink
       to="/lista/execucao"
       data-testid="cartao-lote"
-      className="flex flex-col gap-2 rounded-md border border-borda bg-[#181b1f] p-3 text-texto no-underline hover:border-[#4a4f57]"
+      className="flex flex-col gap-2 rounded-md border border-borda bg-elevado p-3 text-texto no-underline hover:border-borda-hover"
     >
       <span className="lbl !text-[10.5px] !text-chip-azul">{msg.lote.sidebar.rodando}</span>
       <span className="truncate font-mono text-[13px] font-bold">{estado.inicio?.list ?? resumo?.lista ?? '…'}</span>
@@ -91,7 +91,7 @@ export function BarraLateral() {
             end={fim ?? false}
             className={({ isActive }) =>
               `flex min-h-[42px] items-center gap-3 rounded-md px-3 text-sm font-semibold no-underline ${
-                isActive ? 'bg-[#23262b] text-texto-forte' : 'text-texto-suave hover:bg-campo hover:text-texto'
+                isActive ? 'bg-nav-ativo text-texto-forte' : 'text-texto-suave hover:bg-campo hover:text-texto'
               }`
             }
           >
@@ -102,7 +102,7 @@ export function BarraLateral() {
                 <span
                   aria-hidden="true"
                   className="ml-auto size-[6px] rounded-[2px]"
-                  style={{ background: isActive ? '#F2B53A' : 'transparent' }}
+                  style={{ background: isActive ? 'var(--color-ambar)' : 'transparent' }}
                 />
               </>
             )}
@@ -113,7 +113,7 @@ export function BarraLateral() {
       <div className="mt-auto flex flex-col gap-[14px]">
         <CartaoDoLote />
         <div
-          className="flex flex-col gap-[10px] border-t border-[#24272c] p-3"
+          className="flex flex-col gap-[10px] border-t border-borda-fraca p-3"
           role="status"
           aria-label={`${msg.barraLateral.titulo}: ${msg.barraLateral.resumo(resumo)}`}
         >

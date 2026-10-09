@@ -12,6 +12,10 @@ export interface OpcoesJanela {
   indexHtml: string;
   /** pode abrir as ferramentas de desenvolvedor */
   devTools: boolean;
+  /** cor da janela antes de a página pintar (escura ou clara, conforme o tema) */
+  corDeFundo: string;
+  /** false quando o Windows abriu o app com o PC: a janela só aparece quando o usuário a chamar pela bandeja */
+  mostrarAoPronto: boolean;
 }
 
 /** Bloqueia o que não é do app: navegação, `window.open` e `<webview>`; links externos seguros vão para o navegador. */
@@ -44,7 +48,7 @@ export function criarJanelaPrincipal(o: OpcoesJanela): BrowserWindow {
     minHeight: 620,
     show: false,
     title: 'Soulcrate',
-    backgroundColor: '#0E0F11',
+    backgroundColor: o.corDeFundo,
     icon: o.icone,
     autoHideMenuBar: true,
     webPreferences: {
@@ -60,7 +64,7 @@ export function criarJanelaPrincipal(o: OpcoesJanela): BrowserWindow {
   });
 
   protegerNavegacao(win.webContents, o.urlDev);
-  win.once('ready-to-show', () => win.show());
+  if (o.mostrarAoPronto) win.once('ready-to-show', () => win.show());
 
   if (o.urlDev) void win.loadURL(o.urlDev);
   else void win.loadFile(o.indexHtml);

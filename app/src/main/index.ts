@@ -2,10 +2,13 @@
 import { randomUUID } from 'node:crypto';
 import { existsSync, readFileSync, statSync } from 'node:fs';
 import { rm } from 'node:fs/promises';
-import { homedir, tmpdir } from 'node:os';
-import { join, resolve } from 'node:path';
-import { app, Menu, Notification, powerMonitor, shell, type BrowserWindow } from 'electron';
-import { CANAL_EVENTOS, type MainEvent } from '@shared/ipc';
+import { createRequire } from 'node:module';
+import { arch, homedir, release, tmpdir, type as tipoDoSistema } from 'node:os';
+import { dirname, join, resolve } from 'node:path';
+import { app, dialog, Menu, nativeTheme, Notification, powerMonitor, shell, type BrowserWindow } from 'electron';
+import type { EstadoAtualizacao, MotivoIndisponivel } from '@shared/atualizacao';
+import { CANAL_EVENTOS, type MainEvent, type OndeAbrirServico } from '@shared/ipc';
+import { msg } from '@shared/mensagens';
 import { listaDoArgv } from './argv';
 import { Bandeja } from './bandeja';
 import { ExecutorComDockerFalso, VAR_DOCKER_DUBLE, VAR_HTTP_DUBLE } from './duble-docker';
@@ -13,8 +16,17 @@ import { registrarIpc } from './ipc';
 import { criarJanelaPrincipal } from './janela';
 import { iniciarLog, pastaDeLogs } from './log';
 import { criarMenu } from './menu';
+import {
+  aplicarPreferencias,
+  ARGUMENTO_ESCONDIDO,
+  fundoDaJanela,
+  iniciarEscondido,
+  type DepsPreferencias,
+} from './preferencias';
 import { ExecutorReal, LancadorReal } from './processos';
 import { AppSettingsService } from './services/app-settings';
+import { criarUpdaterDuble } from './duble-atualizador';
+import { AtualizadorService, type AutoUpdaterLike, type DependenciasAtualizador } from './services/atualizador-service';
 import { BibliotecaService } from './services/biblioteca-service';
 import { ChecksService } from './services/checks-service';
 import { ConfigService } from './services/config-service';
@@ -24,6 +36,7 @@ import { escanearDownloads } from './services/downloads-parados';
 import { HealthService, INTERVALO_OCULTO_MS, INTERVALO_VISIVEL_MS } from './services/health-service';
 import { ListasService } from './services/listas-service';
 import { LogsService } from './services/logs-service';
+import { MigracaoService } from './services/migracao-service';
 import { LoteService, processoVivoReal, type NotificacaoLote } from './services/lote-service';
 import { OperacoesService } from './services/operacoes-service';
 import { PastaService } from './services/pasta-service';
@@ -31,9 +44,12 @@ import { RelatoriosService } from './services/relatorios-service';
 import { lerVersaoDaStack, resolverProjeto } from './services/project-service';
 import { portaAceitaConexao, SetupService } from './services/setup-service';
 import { SlskdService } from './services/slskd-service';
+import { SobreService } from './services/sobre-service';
+import { StackAtualizacaoService } from './services/stack-atualizacao-service';
+import { SuporteService } from './services/suporte-service';
 import { WebUiService } from './services/webui-service';
 import { servicoDe, servicoSaudavel } from '@shared/stack';
-import { urlDoServico } from '@shared/servicos';
+import { urlDoServico, type ServicoId } from '@shared/servicos';
 
 /** `--smoke-test`: abre a janela, confere o preload e o IPC e sai (usado pelo CI para testar o instalador). */
 const SMOKE = process.argv.includes('--smoke-test');
@@ -110,6 +126,27 @@ async function principal(): Promise<void> {
 
   // ---------------------------------------------------------------- serviços
   const settings = new AppSettingsService(join(app.getPath('userData'), 'settings.json'));
+  // tema e "iniciar com o Windows" (Fase 6). O tema vale antes de a janela existir: a janela nasce da cor certa.
+  // Nos testes ponta a ponta, o registro do Windows vira uma variável que o teste lê (nada é registrado de verdade).
+  const inicioDuble = !app.isPackaged && process.env.SOULCRATE_DUBLE_INICIO_WINDOWS === '1';
+  const depsPreferencias: DepsPreferencias = {
+    definirTema: (fonte) => {
+      nativeTheme.themeSource = fonte;
+    },
+    definirInicioComWindows: (ligado) => {
+      if (SMOKE) return;
+      if (inicioDuble) {
+        (globalThis as unknown as { __inicioComWindows?: boolean }).__inicioComWindows = ligado;
+        return;
+      }
+      // fora do app instalado, registraria o electron.exe solto da pasta do projeto no Windows de quem desenvolve
+      if (!app.isPackaged) return;
+      app.setLoginItemSettings({ openAtLogin: ligado, args: [ARGUMENTO_ESCONDIDO] });
+    },
+  };
+  aplicarPreferencias(settings.get(), null, depsPreferencias);
+  const abertoComOWindows =
+    !SMOKE && iniciarEscondido(process.argv, app.isPackaged && app.getLoginItemSettings().wasOpenedAtLogin);
   const executorReal = new ExecutorReal();
   const dublePath = !app.isPackaged ? process.env[VAR_DOCKER_DUBLE] : undefined;
   const executor = dublePath ? new ExecutorComDockerFalso(executorReal, dublePath) : executorReal;
@@ -142,9 +179,12 @@ async function principal(): Promise<void> {
   let saindo = false;
   let avisoPendente = false;
 
+  let aoFimDeLote: (() => void) | null = null;
   const emitir = (evento: MainEvent): void => {
     if (janela && !janela.isDestroyed() && !janela.webContents.isDestroyed())
       janela.webContents.send(CANAL_EVENTOS, evento);
+    // o lote terminou: a atualização dos arquivos da stack que esperava por ele pode entrar agora
+    if (evento.type === 'batch.events' && evento.eventos.some((ev) => ev.type === 'run.end')) aoFimDeLote?.();
   };
   const aoErro = (e: unknown) => log.error('Erro inesperado:', e);
 
@@ -194,6 +234,16 @@ async function principal(): Promise<void> {
     janela.show();
     janela.focus();
   };
+  /** "Abrir" uma Web UI: no app, no navegador, ou onde a preferência do usuário mandar (Configurações → Aplicativo) */
+  const abrirServico = (id: ServicoId, onde: OndeAbrirServico): void => {
+    const noNavegador = onde === 'browser' || (onde === 'preferencia' && settings.get().abrirWebUi === 'navegador');
+    if (noNavegador) {
+      webui.abrirNoNavegador(id);
+      return;
+    }
+    mostrarJanela();
+    emitir({ type: 'app.navigate', rota: `/servicos/web/${id}` });
+  };
   const abrirPastaDeLogs = async (): Promise<void> => {
     const erro = await shell.openPath(pastaDeLogs());
     if (erro) log.warn('Não consegui abrir a pasta de logs:', erro);
@@ -212,6 +262,8 @@ async function principal(): Promise<void> {
   // nos testes ponta a ponta, as notificações viram uma lista que o teste confere (nada aparece na tela de quem testa)
   const notificacoesDuble = !app.isPackaged && process.env.SOULCRATE_DUBLE_NOTIFICACOES === '1';
   const notificar = (n: NotificacaoLote): void => {
+    const quer = n.tipo === 'pausa' ? settings.get().avisarBuscasPausadas : settings.get().avisarFimDoLote;
+    if (!quer) return;
     if (notificacoesDuble) {
       const g = globalThis as unknown as { __notificacoes?: NotificacaoLote[] };
       (g.__notificacoes ??= []).push(n);
@@ -286,6 +338,135 @@ async function principal(): Promise<void> {
     urlBase: () =>
       !app.isPackaged ? (process.env.SOULCRATE_SLSKD_URL ?? urlDoServico('slskd')) : urlDoServico('slskd'),
   });
+
+  // ---------------------------------------------------------------- Sobre, suporte e atualizações (Fases 6 e 7)
+  const sobre = new SobreService({
+    docker,
+    health,
+    projeto,
+    slskdVersao: () => slskd.versao(),
+    versaoDaStack: () => lerVersaoDaStack(projeto().dir, lerArquivo),
+    versaoDaStackDoApp: () => lerVersaoDaStack(origemStack, lerArquivo),
+    app: {
+      versao: app.getVersion(),
+      electron: process.versions.electron,
+      chromium: process.versions.chrome,
+      node: process.versions.node,
+      plataforma: process.platform,
+      arquitetura: process.arch,
+      empacotado: app.isPackaged,
+    },
+    aoErro,
+  });
+  const suporte = new SuporteService({
+    agora: () => new Date(),
+    pastaDeLogs,
+    projeto,
+    status: () => health.atual,
+    config: validarConfig,
+    settings: () => settings.get(),
+    lerArquivo,
+    composePsTexto: (dir) => docker.composePsTexto(dir),
+    sobre: () => sobre.info(),
+    sistema: { release: release(), arquitetura: arch(), tipo: tipoDoSistema() },
+    aoErro,
+  });
+  const migracao = new MigracaoService({ executor, origemStack });
+  const stackAtualizacao = new StackAtualizacaoService({
+    origemStack: existeArquivo(join(origemStack, 'docker-compose.yml')) ? origemStack : null,
+    projeto,
+    loteRodando: () => Promise.resolve(lote.rodandoAgora),
+    operacaoEmCurso: () => health.atual.operacao !== null,
+    agora: Date.now,
+    aoErro,
+  });
+  /** Atualiza os arquivos da stack da pasta (§3.3). Espera, sem mexer em nada, um lote ou uma operação terminar. */
+  let novaTentativaDaStack: NodeJS.Timeout | null = null;
+  const atualizarArquivosDaStack = async (): Promise<void> => {
+    const r = await stackAtualizacao.aplicar();
+    if (!r.ok) {
+      log.error('Não consegui atualizar os arquivos da stack:', r.erro.detalhes);
+      return;
+    }
+    // esperando um lote ou uma operação (ligar, desligar…): o fim do lote chama de novo, mas uma operação não avisa
+    // ninguém; confere outra vez em um minuto, até não haver mais o que esperar
+    if (r.esperando && !novaTentativaDaStack) {
+      novaTentativaDaStack = setTimeout(() => {
+        novaTentativaDaStack = null;
+        void atualizarArquivosDaStack().catch(aoErro);
+      }, 60_000);
+      novaTentativaDaStack.unref();
+    }
+    if (r.resultado) {
+      log.info(
+        `Arquivos da stack atualizados (${r.resultado.versaoAnterior ?? '?'} → ${r.resultado.versaoNova ?? '?'}): ` +
+          `${r.resultado.atualizados.length} trocados, ${r.resultado.copiados.length} copiados, ${r.resultado.mantidos.length} mantidos.`,
+      );
+      emitir({ type: 'stackFiles.changed' });
+    }
+  };
+  /**
+   * O `electron-updater` de verdade só existe no app instalado (o electron-builder grava o `app-update.yml` ao lado do
+   * app). Em desenvolvimento não há o que atualizar; nos testes ponta a ponta entra um dublê (duble-atualizador.ts).
+   */
+  const criarDepsDoAtualizador = (): DependenciasAtualizador => {
+    let updater: AutoUpdaterLike | null = null;
+    let motivo: MotivoIndisponivel | null = 'desenvolvimento';
+    if (!app.isPackaged && process.env.SOULCRATE_DUBLE_ATUALIZADOR === '1') {
+      updater = criarUpdaterDuble();
+      motivo = null;
+    } else if (app.isPackaged && !SMOKE) {
+      if (existsSync(join(process.resourcesPath, 'app-update.yml'))) {
+        try {
+          // CommonJS dentro de um main em ESM: `require` explícito, que dá a mesma instância em todo lugar
+          const requerer = createRequire(import.meta.url);
+          const real = (requerer('electron-updater') as { autoUpdater: AutoUpdaterLike & { logger: unknown } })
+            .autoUpdater;
+          real.logger = log;
+          updater = real;
+          motivo = null;
+        } catch (e) {
+          // a atualização é opcional: se o módulo não carrega, o app abre do mesmo jeito e a tela diz que não há atualização
+          log.error('Não consegui carregar o electron-updater:', e);
+          motivo = 'sem-instalador';
+        }
+      } else {
+        motivo = 'sem-instalador';
+      }
+    }
+    return {
+      updater,
+      motivoIndisponivel: motivo,
+      loteRodando: () => lote.rodandoAgora,
+      aoMudar: (estado: EstadoAtualizacao) => {
+        if (estado.estado === 'pronta') log.info(`Atualização ${estado.versao} baixada: vale ao reiniciar o app.`);
+        emitir({ type: 'update.state', estado });
+      },
+      agora: Date.now,
+      aoErro: (e) => log.warn('Atualização do app:', e),
+    };
+  };
+  const atualizador = new AtualizadorService(criarDepsDoAtualizador());
+  aoFimDeLote = () => {
+    // dá tempo de o serviço do lote marcar a execução como terminada antes de conferir
+    setTimeout(() => void atualizarArquivosDaStack().catch(aoErro), 3_000).unref();
+  };
+  /** O pacote de suporte: onde salvar (nos testes, um caminho combinado por variável de ambiente) */
+  const escolherDestinoDoPacote = async (nomeSugerido: string): Promise<string | null> => {
+    const duble = !app.isPackaged ? process.env.SOULCRATE_DUBLE_DESTINO_SUPORTE : undefined;
+    if (duble) return duble;
+    const opcoes = {
+      title: msg.suporte.salvarTitulo,
+      defaultPath: join(app.getPath('desktop'), nomeSugerido),
+      filters: [{ name: msg.suporte.filtroZip, extensions: ['zip'] }],
+    };
+    const r =
+      janela && !janela.isDestroyed()
+        ? await dialog.showSaveDialog(janela, opcoes)
+        : await dialog.showSaveDialog(opcoes);
+    return r.canceled || !r.filePath ? null : r.filePath;
+  };
+
   /** "Abrir com" e a linha de comando: um .txt/.csv vira uma lista na pasta do Soulcrate e abre no editor (§6.2) */
   const abrirListaDoArgv = (argv: readonly string[]): void => {
     const dir = projeto().dir;
@@ -315,6 +496,14 @@ async function principal(): Promise<void> {
     relatorios,
     biblioteca,
     slskd,
+    sobre,
+    suporte,
+    atualizador,
+    stackAtualizacao,
+    migracao,
+    origemStack,
+    pastaDoExecutavel: dirname(process.execPath),
+    escolherDestinoDoPacote,
     pastaPadrao,
     projeto,
     validarConfig,
@@ -324,6 +513,8 @@ async function principal(): Promise<void> {
     versaoDoApp: app.getVersion(),
     emitir,
     mostrarJanela,
+    abrirServico,
+    aplicarPreferencias: (depois, antes) => aplicarPreferencias(depois, antes, depsPreferencias),
     abrirPastaDeLogs,
     responderFechamento: (naoMostrarDeNovo) => {
       avisoPendente = false;
@@ -338,8 +529,12 @@ async function principal(): Promise<void> {
     urlDev,
     indexHtml: join(import.meta.dirname, '../renderer/index.html'),
     devTools: !app.isPackaged,
+    corDeFundo: fundoDaJanela(nativeTheme.shouldUseDarkColors),
+    mostrarAoPronto: !abertoComOWindows,
   });
   const win = janela;
+  // aberto com o PC: fica só na bandeja até o usuário chamar (a sondagem já corre no ritmo da janela escondida)
+  if (abertoComOWindows) health.definirIntervalo(INTERVALO_OCULTO_MS);
   const idDoContents = win.webContents.id;
   log.info(`Pasta do Soulcrate: ${projeto().dir ?? '(não definida)'}`);
 
@@ -381,7 +576,16 @@ async function principal(): Promise<void> {
     void health.atualizar({ forcar: true });
   });
 
-  const menu = criarMenu({ abrirPastaDeLogs: () => void abrirPastaDeLogs(), sair, devTools: !app.isPackaged });
+  const irParaSobre = (): void => {
+    mostrarJanela();
+    emitir({ type: 'app.navigate', rota: '/configuracoes?secao=sobre' });
+  };
+  const menu = criarMenu({
+    abrirPastaDeLogs: () => void abrirPastaDeLogs(),
+    abrirSobre: irParaSobre,
+    sair,
+    devTools: !app.isPackaged,
+  });
   Menu.setApplicationMenu(menu);
 
   bandeja = new Bandeja(
@@ -390,23 +594,30 @@ async function principal(): Promise<void> {
       abrir: mostrarJanela,
       ligar: () => void operacoes.ligar(),
       desligar: () => void operacoes.desligar(),
-      abrirServico: (id) => {
-        mostrarJanela();
-        emitir({ type: 'app.navigate', rota: `/servicos/web/${id}` });
-      },
+      abrirServico: (id) => abrirServico(id, 'preferencia'),
       sair,
     },
     health.atual,
   );
 
   health.iniciar();
-  // um lote iniciado antes de o app fechar continua rodando: volta a acompanhá-lo (e a notificar quando terminar)
-  if (!SMOKE) void lote.reconectar().catch(aoErro);
+  if (!SMOKE) {
+    // um lote iniciado antes de o app fechar continua rodando: volta a acompanhá-lo (e a notificar quando terminar). Só
+    // depois disso vale atualizar os arquivos da stack da pasta (§3.3): com um lote rodando a atualização espera
+    void lote
+      .reconectar()
+      .then(() => atualizarArquivosDaStack())
+      .catch(aoErro);
+    // atualização do app (§5, Fase 7): alguns segundos depois de abrir e a cada 24 h. Com o dublê do atualizador, o
+    // teste decide quando "a internet" é consultada (a agenda em si é testada à parte)
+    if (process.env.SOULCRATE_DUBLE_ATUALIZADOR !== '1' || app.isPackaged) atualizador.iniciar();
+  }
   // a janela ainda está carregando: espera o renderer assinar os eventos antes de pedir para abrir a lista
   if (!SMOKE) win.webContents.once('did-finish-load', () => setTimeout(() => abrirListaDoArgv(process.argv), 500));
 
   app.on('before-quit', () => {
     saindo = true;
+    atualizador.aoSair();
   });
   app.on('will-quit', () => {
     health.parar();
@@ -416,6 +627,7 @@ async function principal(): Promise<void> {
     webui.encerrar();
     lote.encerrar();
     executorReal.encerrarTodos();
+    atualizador.parar();
     bandeja?.destruir();
     log.info('Soulcrate encerrado');
   });

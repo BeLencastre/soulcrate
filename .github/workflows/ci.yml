@@ -136,4 +136,27 @@ jobs:
           Get-Process Soulcrate -ErrorAction SilentlyContinue | Stop-Process -Force
           $un = Get-ChildItem (Join-Path $env:LOCALAPPDATA 'Programs') -Recurse -Filter 'Uninstall*.exe' -ErrorAction SilentlyContinue |
             Select-Object -First 1 -ExpandProperty FullName
-          if (Test-Path $un) { Start-Process $un -ArgumentList '/S' -Wait }
+          if ($un -and (Test-Path $un)) {
+            Start-Process $un -ArgumentList '/S' -Wait
+            # o desinstalador termina por uma cópia na pasta temporária: espera o programa sumir
+            for ($i = 0; $i -lt 60 -and (Get-ChildItem (Join-Path $env:LOCALAPPDATA 'Programs') -Recurse -Filter 'Soulcrate.exe' -ErrorAction SilentlyContinue); $i++) { Start-Sleep -Seconds 1 }
+          }
+
+      # Critério de aceite da Fase 7: instalar, atualizar de uma versão para a seguinte e desinstalar sem perder o .env,
+      # as listas, o lotes/ nem a biblioteca (scripts/testar-instalador.ps1). Os dois instaladores de teste não abrem o app
+      # sozinhos no fim (runAfterFinish=false); o de "versão anterior" só difere no número da versão.
+      - name: Gerar os instaladores de teste (versão anterior e versão atual)
+        run: |
+          npx electron-builder --win nsis --publish never '-c.extraMetadata.version=0.0.1' '-c.directories.output=dist-anterior' '-c.nsis.runAfterFinish=false'
+          npx electron-builder --win nsis --publish never '-c.directories.output=dist-teste' '-c.nsis.runAfterFinish=false'
+        env:
+          CSC_IDENTITY_AUTO_DISCOVERY: 'false'
+
+      - name: Instalar, atualizar e desinstalar sem perder nada do usuário
+        shell: pwsh
+        run: |
+          $versao = (Get-Content package.json -Raw | ConvertFrom-Json).version
+          ./scripts/testar-instalador.ps1 `
+            -Anterior dist-anterior/Soulcrate-Setup-0.0.1.exe `
+            -Atual "dist-teste/Soulcrate-Setup-$versao.exe" `
+            -VersaoAnterior 0.0.1 -VersaoAtual $versao -TestarApagarDados

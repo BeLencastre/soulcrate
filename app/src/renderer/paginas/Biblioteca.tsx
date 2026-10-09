@@ -38,7 +38,7 @@ const FALTA = 'font-bold text-chip-laranja';
 
 // ---------------------------------------------------------------- Indicadores
 
-const COR_DO_NUMERO = { zero: '#ece9e3', pendente: '#ff9a5c' } as const;
+const COR_DO_NUMERO = { zero: 'var(--color-texto)', pendente: 'var(--color-chip-laranja)' } as const;
 
 function Indicadores({
   leitura,
@@ -135,13 +135,13 @@ function TabelaDeFaixas({
   return (
     <section className="min-w-0 flex-[999_1_560px] overflow-hidden rounded-lg border border-borda bg-cartao">
       <div className="flex flex-wrap items-center gap-3 border-b border-borda-fraca px-4 py-3">
-        <label className="flex h-10 min-w-[280px] flex-[1_1_280px] items-center gap-[10px] rounded-md border border-borda-forte bg-fundo px-3">
+        <label className="flex h-10 min-w-[280px] flex-[1_1_280px] items-center gap-[10px] rounded-md border border-borda-forte bg-fundo px-3 focus-within:border-ambar focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-ambar">
           <svg
             width="16"
             height="16"
             viewBox="0 0 24 24"
             fill="none"
-            stroke="#868b93"
+            stroke="var(--color-texto-mudo)"
             strokeWidth="2"
             strokeLinecap="round"
             aria-hidden="true"
@@ -379,7 +379,7 @@ function CartaoRekordbox({ pasta }: { pasta: string }) {
   return (
     <Cartao como="section" className="flex flex-col gap-[10px] p-4" data-testid="cartao-rekordbox">
       <Rotulo>{t.titulo}</Rotulo>
-      <span className="text-[13.5px] leading-normal text-[#c9c5bd]">{t.instrucao}</span>
+      <span className="text-[13.5px] leading-normal text-texto-medio">{t.instrucao}</span>
       <div className="flex items-center gap-2 rounded-md border border-borda-fraca bg-fundo py-2 pr-2 pl-3">
         <span
           className="min-w-0 flex-1 truncate font-mono text-[12.5px]"

@@ -11,13 +11,13 @@ export function AchadosDoCampo({ id, achados }: { id: string; achados: readonly 
   return (
     <ul id={id} className="m-0 flex list-none flex-col gap-1 p-0">
       {achados.map((a, i) => (
+        // o `alert` fica no texto, não no <li>: um item de lista com outro papel deixa de ser item e quebra a lista
         <li
           key={`${a.id}-${i}`}
-          role={a.nivel === 'erro' ? 'alert' : undefined}
           data-achado={a.id}
           className={`text-[13px] leading-normal font-normal ${a.nivel === 'erro' ? 'text-chip-vermelho' : 'text-chip-laranja'}`}
         >
-          {a.mensagem}
+          <span role={a.nivel === 'erro' ? 'alert' : undefined}>{a.mensagem}</span>
         </li>
       ))}
     </ul>
@@ -192,11 +192,11 @@ export function Interruptor({
 export function CaixaAviso({ titulo, children, acao }: { titulo?: string; children: ReactNode; acao?: ReactNode }) {
   return (
     <div
-      className="flex flex-col gap-[6px] rounded-md border border-[#5a3a1c] bg-[#241a10] px-[14px] py-3"
+      className="flex flex-col gap-[6px] rounded-md border border-aviso-borda bg-aviso-fundo px-[14px] py-3"
       data-caixa-aviso
     >
-      {titulo ? <span className="text-sm font-bold text-[#ffb98f]">{titulo}</span> : null}
-      <span className="text-[13px] leading-normal text-[#e8cdb8]">{children}</span>
+      {titulo ? <span className="text-sm font-bold text-aviso-titulo">{titulo}</span> : null}
+      <span className="text-[13px] leading-normal text-aviso-texto">{children}</span>
       {acao}
     </div>
   );

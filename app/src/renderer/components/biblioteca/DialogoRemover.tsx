@@ -28,7 +28,7 @@ function Aviso({ erro }: { erro: AppError }) {
       data-codigo-erro={erro.codigo}
     >
       <span className="text-sm font-bold">{erro.titulo}</span>
-      <span className="text-[13.5px] leading-normal text-[#f2c9c9]">{erro.mensagem}</span>
+      <span className="text-[13.5px] leading-normal text-erro-corpo">{erro.mensagem}</span>
     </div>
   );
 }
@@ -158,7 +158,7 @@ function Conteudo({
   return (
     <div className="flex flex-col gap-5">
       <div className="flex flex-col gap-[6px]">
-        <Rotulo className="!text-[#ff8a8a]">{t.rotulo}</Rotulo>
+        <Rotulo className="!text-erro-texto">{t.rotulo}</Rotulo>
         <Dialog.Title className="m-0 text-2xl font-extrabold" style={{ fontStretch: '110%' }}>
           {t.titulo}
         </Dialog.Title>
@@ -185,7 +185,7 @@ function Conteudo({
         <div className="flex items-center gap-[10px] border-b border-borda-fraca bg-painel px-[14px] py-[10px]">
           <Rotulo>{t.sera}</Rotulo>
           {pronta && n > 0 ? (
-            <span className="ml-auto font-mono text-xs text-[#ff8a8a]" data-testid="previa-resumo">
+            <span className="ml-auto font-mono text-xs text-erro-texto" data-testid="previa-resumo">
               {t.resumo(n)}
             </span>
           ) : null}
@@ -233,13 +233,13 @@ function Conteudo({
         )}
       </div>
 
-      <div className="flex gap-3 rounded-lg border border-erro-borda bg-[#2a1414] px-[14px] py-3">
+      <div className="flex gap-3 rounded-lg border border-erro-borda bg-erro-fundo px-[14px] py-3">
         <svg
           width="18"
           height="18"
           viewBox="0 0 24 24"
           fill="none"
-          stroke="#ff8a8a"
+          stroke="var(--color-erro-texto)"
           strokeWidth="2"
           strokeLinecap="round"
           strokeLinejoin="round"
@@ -250,7 +250,7 @@ function Conteudo({
           <path d="M12 10v4" />
           <path d="M12 17h.01" />
         </svg>
-        <span className="text-[13.5px] leading-normal text-[#f2c9c9]">{t.aviso}</span>
+        <span className="text-[13.5px] leading-normal text-erro-corpo">{t.aviso}</span>
       </div>
 
       {exigeDigitar ? (
@@ -315,7 +315,7 @@ export function DialogoRemover({
       <Dialog.Portal>
         <Dialog.Overlay className="fixed inset-0 z-50 bg-[rgba(6,7,8,0.72)]" />
         <Dialog.Content
-          className="fixed top-[min(96px,8vh)] left-1/2 z-50 flex max-h-[calc(100vh-48px)] w-[min(640px,calc(100vw-32px))] -translate-x-1/2 flex-col gap-5 overflow-y-auto rounded-xl border border-[#3a3e45] bg-[#17191c] p-7 shadow-[0_30px_80px_rgba(0,0,0,0.6)]"
+          className="fixed top-[min(96px,8vh)] left-1/2 z-50 flex max-h-[calc(100vh-48px)] w-[min(640px,calc(100vw-32px))] -translate-x-1/2 flex-col gap-5 overflow-y-auto rounded-xl border border-led-cinza bg-dialogo p-7 shadow-[0_30px_80px_rgba(0,0,0,0.6)]"
           data-testid="dialogo-remover"
           aria-describedby={undefined}
         >

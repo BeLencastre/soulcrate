@@ -36,33 +36,33 @@ import {
 import { useExecucao } from '../../lib/lote-store';
 
 const COR_SEGMENTO: Record<CorSegmento, string> = {
-  verde: '#47C58A',
-  vermelho: '#FF6161',
-  cinza: '#6A6F78',
-  azul: '#4A86D0',
-  roxo: '#8B6CD1',
-  vazio: '#24272C',
+  verde: 'var(--color-led-verde)',
+  vermelho: 'var(--color-led-vermelho)',
+  cinza: 'var(--color-led-cinza-2)',
+  azul: 'var(--color-barra-azul)',
+  roxo: 'var(--color-barra-roxo)',
+  vazio: 'var(--color-borda-fraca)',
 };
 
 const TOM_DA_FAIXA: Record<TomFaixa, { fundo: string; borda: string; cor: string }> = {
-  azul: { fundo: '#16202C', borda: '#22405F', cor: '#62A8FF' },
-  laranja: { fundo: '#2A1B0E', borda: '#5A3A1C', cor: '#FF8B4A' },
-  ambar: { fundo: '#241C0C', borda: '#5C4517', cor: '#F2B53A' },
-  verde: { fundo: '#13241B', borda: '#1F4A33', cor: '#47C58A' },
+  azul: { fundo: 'var(--color-azul-fundo)', borda: 'var(--color-azul-borda)', cor: 'var(--color-led-azul)' },
+  laranja: { fundo: 'var(--color-aviso-fundo)', borda: 'var(--color-aviso-borda)', cor: 'var(--color-led-laranja)' },
+  ambar: { fundo: 'var(--color-ambar-fundo)', borda: 'var(--color-ambar-borda)', cor: 'var(--color-ambar)' },
+  verde: { fundo: 'var(--color-verde-fundo)', borda: 'var(--color-verde-borda)', cor: 'var(--color-led-verde)' },
 };
 
 const COLUNAS_FAIXAS = '44px minmax(220px,2.2fr) minmax(196px,1.2fr) 80px minmax(110px,0.9fr) 56px minmax(200px,1.6fr)';
 
 const COR_DOS_CONTADORES = {
-  buscando: '#62A8FF',
-  baixando: '#62A8FF',
-  naFila: '#62A8FF',
-  beets: '#B794FF',
-  aguardando: '#8A8F98',
-  baixadas: '#47C58A',
-  naoAchadas: '#FF6161',
-  falhas: '#FF6161',
-  puladas: '#6A6F78',
+  buscando: 'var(--color-led-azul)',
+  baixando: 'var(--color-led-azul)',
+  naFila: 'var(--color-led-azul)',
+  beets: 'var(--color-led-roxo)',
+  aguardando: 'var(--color-led-aguardando)',
+  baixadas: 'var(--color-led-verde)',
+  naoAchadas: 'var(--color-led-vermelho)',
+  falhas: 'var(--color-led-vermelho)',
+  puladas: 'var(--color-led-cinza-2)',
 } as const;
 
 // ---------------------------------------------------------------- Peças
@@ -94,21 +94,21 @@ function FaixaDeAviso({
         style={{ background: c.cor }}
       />
       <span className="text-sm font-bold">{titulo}</span>
-      <span className="text-[13px] text-[#c9c5bd]">{texto}</span>
+      <span className="text-[13px] text-texto-medio">{texto}</span>
     </div>
   );
 }
 
 function LinhaDoLog({ texto }: { texto: string }) {
-  let cor = '#B4B8BF';
-  if (/^\s*OK\b/.test(texto)) cor = '#5BD49A';
-  else if (/^\s*x\s|NAO ENCONTRADA|FALHOU|^ERRO/.test(texto)) cor = '#FF7A7A';
-  else if (/^\s*->/.test(texto)) cor = '#7DB6FF';
-  else if (/^\s*~/.test(texto)) cor = '#F2B53A';
-  else if (/^\s*\[beets\]/.test(texto)) cor = '#C3A6FF';
-  else if (/^\[\d{2}:\d{2}\]/.test(texto)) cor = '#ECE9E3';
-  else if (/^\s*\?/.test(texto)) cor = '#B4B8BF';
-  else if (/^\s{5,}/.test(texto)) cor = '#868B93';
+  let cor = 'var(--color-texto-claro)';
+  if (/^\s*OK\b/.test(texto)) cor = 'var(--color-chip-verde)';
+  else if (/^\s*x\s|NAO ENCONTRADA|FALHOU|^ERRO/.test(texto)) cor = 'var(--color-chip-vermelho)';
+  else if (/^\s*->/.test(texto)) cor = 'var(--color-chip-azul)';
+  else if (/^\s*~/.test(texto)) cor = 'var(--color-ambar)';
+  else if (/^\s*\[beets\]/.test(texto)) cor = 'var(--color-chip-roxo)';
+  else if (/^\[\d{2}:\d{2}\]/.test(texto)) cor = 'var(--color-texto)';
+  else if (/^\s*\?/.test(texto)) cor = 'var(--color-texto-claro)';
+  else if (/^\s{5,}/.test(texto)) cor = 'var(--color-texto-mudo)';
   return <div style={{ color: cor }}>{texto || ' '}</div>;
 }
 
@@ -127,7 +127,7 @@ function LogBruto({ linhas }: { linhas: readonly string[] }) {
       tabIndex={0}
       aria-label={msg.lote.execucao.log}
       data-testid="log-bruto"
-      className="max-h-[520px] min-h-[320px] overflow-auto bg-[#0f1113] px-5 py-4 font-mono text-[12.5px] leading-[1.8] whitespace-pre-wrap"
+      className="max-h-[520px] min-h-[320px] overflow-auto bg-terminal px-5 py-4 font-mono text-[12.5px] leading-[1.8] whitespace-pre-wrap"
       onScroll={(e) => {
         const el = e.currentTarget;
         colado.current = el.scrollHeight - el.scrollTop - el.clientHeight < 40;
@@ -380,7 +380,7 @@ export function Execucao() {
           {(Object.keys(COR_DOS_CONTADORES) as (keyof typeof COR_DOS_CONTADORES)[]).map((k) => (
             <div
               key={k}
-              className="flex flex-col gap-[6px] rounded-md border border-[#22252a] bg-log px-[14px] py-3"
+              className="flex flex-col gap-[6px] rounded-md border border-linha bg-log px-[14px] py-3"
               data-contador={k}
             >
               <span className="lbl flex items-center gap-[6px]">

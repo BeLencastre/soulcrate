@@ -2,15 +2,14 @@
 // stack (docker-compose.yml, scripts, modelos…) e guarda o hash do que instalou em `.soulcrate/manifesto.json`;
 // numa pasta que já existe (clone do Git, por exemplo), só confere e passa a gerenciá-la, sem copiar nada.
 // Arquivos do usuário nunca são sobrescritos: um arquivo que já existe e é diferente fica como está.
-import { createHash } from 'node:crypto';
 import { existsSync, mkdirSync, readFileSync, statSync, writeFileSync } from 'node:fs';
 import { dirname, isAbsolute, join, parse, resolve } from 'node:path';
 import type { EntradaPasta, ResultadoPasta } from '@shared/configuracao';
 import { criarErro } from '@shared/erros';
 import { msg } from '@shared/mensagens';
 import { ARQUIVO_MANIFESTO, ARQUIVOS_DA_STACK, PASTAS_DA_STACK, type Manifesto } from '@shared/stack-arquivos';
-import { semBom } from '@shared/texto';
 import type { ConfigService } from './config-service';
+import { lerManifesto, sha256 } from './manifesto';
 import { ARQUIVO_COMPOSE } from './project-service';
 
 export interface FsPasta {
@@ -31,8 +30,6 @@ export const fsPastaReal: FsPasta = {
   },
   criarPasta: (p) => void mkdirSync(p, { recursive: true }),
 };
-
-const sha256 = (b: Buffer) => createHash('sha256').update(b).digest('hex');
 
 export interface ResultadoInstalacao {
   /** arquivos que não existiam e foram copiados */
@@ -59,15 +56,13 @@ export function instalarStack(opcoes: {
 
   fs.criarPasta(destino);
   const manifestoPath = join(destino, ...ARQUIVO_MANIFESTO.split('/'));
-  let manifesto: Manifesto = { versaoDaStack: null, arquivos: {} };
-  if (fs.existe(manifestoPath)) {
-    try {
-      const lido = JSON.parse(semBom(fs.ler(manifestoPath).toString('utf8'))) as Partial<Manifesto>;
-      manifesto = { versaoDaStack: lido.versaoDaStack ?? null, arquivos: { ...lido.arquivos } };
-    } catch {
-      /* manifesto corrompido: recomeça; só se perde o histórico de hashes */
-    }
-  }
+  // manifesto corrompido: recomeça; só se perde o histórico de hashes
+  const manifesto: Manifesto = (fs.existe(manifestoPath)
+    ? lerManifesto(fs.ler(manifestoPath).toString('utf8'))
+    : null) ?? {
+    versaoDaStack: null,
+    arquivos: {},
+  };
 
   for (const rel of opcoes.arquivos ?? ARQUIVOS_DA_STACK) {
     const de = join(origem, ...rel.split('/'));

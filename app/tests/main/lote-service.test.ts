@@ -254,7 +254,7 @@ describe('acompanhamento', () => {
     appendFileSync(eventosDe(id), `${runStart(id)}\n${runEnd()}\n`);
     await ate(() => svc.anexar(id)?.resumo.terminou === true);
     expect(notificacoes).toEqual([
-      { titulo: 'Lote concluído', corpo: 'set.txt: 2 baixadas · 0 não encontradas · 0 falhas' },
+      { tipo: 'fim', titulo: 'Lote concluído', corpo: 'set.txt: 2 baixadas · 0 não encontradas · 0 falhas' },
     ]);
     // leituras seguintes não repetem nem notificam de novo
     await new Promise((res) => setTimeout(res, 120));
@@ -290,6 +290,7 @@ describe('acompanhamento', () => {
       `${runStart(id)}\n${ev('search.paused', { until: '2026-10-07T22:47:00-03:00', minutes: 15, reason: 'x' })}\n`,
     );
     await ate(() => notificacoes.length === 1);
+    expect(notificacoes[0]?.tipo).toBe('pausa');
     expect(notificacoes[0]?.titulo).toBe('Buscas pausadas');
     expect(notificacoes[0]?.corpo).toMatch(
       /^set\.txt: o servidor do Soulseek bloqueou as buscas até \d{2}:\d{2}\. Os downloads continuam\.$/,
@@ -458,14 +459,17 @@ describe('notificação do fim', () => {
   it('concluído e parado mostram a contagem; os outros, o motivo', () => {
     const resumo = { baixada: 10, importada: 5, 'nao encontrada': 2, falhou: 1, 'baixada (beets falhou)': 1 };
     expect(notificacaoDoFim(fim('completed', 0, '', resumo), 'set.txt')).toEqual({
+      tipo: 'fim',
       titulo: 'Lote concluído',
       corpo: 'set.txt: 15 baixadas · 2 não encontradas · 2 falhas',
     });
     expect(notificacaoDoFim(fim('user', 2, '', { baixada: 1, 'nao encontrada': 1 }), null)).toEqual({
+      tipo: 'fim',
       titulo: 'Lote parado',
       corpo: '1 baixada · 1 não encontrada · 0 falhas',
     });
     expect(notificacaoDoFim(fim('slskd_down', 3, 'slskd fora'), 'x.txt')).toEqual({
+      tipo: 'fim',
       titulo: 'O slskd não respondeu',
       corpo: 'x.txt: slskd fora',
     });

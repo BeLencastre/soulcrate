@@ -25,7 +25,13 @@ import {
 import { corDoEstado, formatarDuracao } from '../../lib/lote-painel';
 import { useExecucao } from '../../lib/lote-store';
 
-const COR_SEGMENTO = { ok: '#47C58A', atencao: '#FF8B4A', naoVieram: '#FF6161', puladas: '#6A6F78', resto: '#24272C' };
+const COR_SEGMENTO = {
+  ok: 'var(--color-led-verde)',
+  atencao: 'var(--color-led-laranja)',
+  naoVieram: 'var(--color-led-vermelho)',
+  puladas: 'var(--color-led-cinza-2)',
+  resto: 'var(--color-borda-fraca)',
+};
 
 function BarraDeResultado({ r }: { r: ExecucaoResumo }) {
   const s = segmentosDaLinha(r);
@@ -47,7 +53,7 @@ function LinhaDaExecucao({ r, agora, acompanhada }: { r: ExecucaoResumo; agora: 
   const t = msg.historico;
   const destino = destinoDaExecucao(r, acompanhada);
   return (
-    <tr className="row border-t border-[#22252a]" data-testid="linha-execucao" data-run={r.id} data-fim={r.fim}>
+    <tr className="row border-t border-linha" data-testid="linha-execucao" data-run={r.id} data-fim={r.fim}>
       <td className="py-[14px] pr-2 pl-[18px] whitespace-nowrap">
         <span className="flex flex-col gap-[3px]">
           <span className="font-semibold">{rotuloDoDia(r.inicio, agora)}</span>

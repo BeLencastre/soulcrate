@@ -4,6 +4,8 @@ import { msg } from '@shared/mensagens';
 
 export interface AcoesMenu {
   abrirPastaDeLogs(): void;
+  /** leva à tela Configurações → Sobre, onde ficam o pacote de suporte e a atualização */
+  abrirSobre(): void;
   sair(): void;
   /** só em desenvolvimento */
   devTools: boolean;
@@ -34,8 +36,9 @@ export function criarMenu(acoes: AcoesMenu): Menu {
       label: msg.menu.ajuda,
       submenu: [
         { label: msg.menu.abrirPastaLogs, click: () => acoes.abrirPastaDeLogs() },
+        { label: msg.menu.gerarPacoteSuporte, click: () => acoes.abrirSobre() },
         { type: 'separator' },
-        { label: `${msg.menu.sobre} ${app.getVersion()}`, enabled: false },
+        { label: `${msg.menu.sobre} ${app.getVersion()}`, click: () => acoes.abrirSobre() },
       ],
     },
   ]);

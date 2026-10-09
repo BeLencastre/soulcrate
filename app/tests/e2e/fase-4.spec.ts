@@ -5,7 +5,7 @@
 //     tests/motivos.test.ts; aqui, o motivo real de um lote real);
 //   - corrigir um título pela sugestão e tentar de novo baixa a faixa sem editar arquivo à mão.
 import { spawn } from 'node:child_process';
-import { existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from 'node:fs';
+import { existsSync, readFileSync, readdirSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { expect, test, type Page } from '@playwright/test';
 import {
@@ -21,11 +21,8 @@ import {
   type Ambiente,
   type AppAberto,
   type SlskdFalso,
+  capturar,
 } from './ajudantes';
-
-const CAPTURAS = join(import.meta.dirname, '..', '..', 'test-results', 'capturas');
-mkdirSync(CAPTURAS, { recursive: true });
-const capturar = (janela: Page, nome: string) => janela.screenshot({ path: join(CAPTURAS, `${nome}.png`) });
 
 let amb: Ambiente;
 let aberto: AppAberto | null = null;

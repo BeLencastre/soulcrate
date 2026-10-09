@@ -16,6 +16,21 @@ const api: SoulcrateApi = {
     getSettings: () => chamar('app:getSettings'),
     setSettings: (parcial) => chamar('app:setSettings', parcial),
     answerClosePrompt: (resposta) => chamar('app:answerClosePrompt', resposta),
+    getAbout: () => chamar('app:getAbout'),
+    getCredits: () => chamar('app:getCredits'),
+    openLicenseFile: (id) => chamar('app:openLicenseFile', id),
+    createSupportBundle: () => chamar('app:createSupportBundle'),
+    revealSupportBundle: () => chamar('app:revealSupportBundle'),
+  },
+  update: {
+    state: () => chamar('update:state'),
+    check: () => chamar('update:check'),
+    restartAndInstall: () => chamar('update:restartAndInstall'),
+  },
+  stackFiles: {
+    status: () => chamar('stackFiles:status'),
+    apply: () => chamar('stackFiles:apply'),
+    dismissNotice: () => chamar('stackFiles:dismissNotice'),
   },
   env: {
     check: () => chamar('env:check'),

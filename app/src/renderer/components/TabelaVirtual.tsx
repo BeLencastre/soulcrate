@@ -95,7 +95,18 @@ export function TabelaVirtual<T>({
           ))}
         </div>
         {total === 0 ? (
-          <div className="px-4 py-8 text-center text-sm text-texto-suave">{vazio}</div>
+          // a mensagem de "vazio" também é uma linha da tabela (um `table` só pode conter linhas, e a mensagem pode ter links)
+          <div role="rowgroup">
+            <div role="row">
+              <div
+                role="cell"
+                aria-colspan={cabecalho.length}
+                className="px-4 py-8 text-center text-sm text-texto-suave"
+              >
+                {vazio}
+              </div>
+            </div>
+          </div>
         ) : (
           <div role="rowgroup" style={{ height: total * alturaLinha, position: 'relative' }}>
             {linhas.slice(de, ate).map((item, k) => {
@@ -105,7 +116,7 @@ export function TabelaVirtual<T>({
                   key={chave(item, i)}
                   role="row"
                   aria-rowindex={i + 2}
-                  className="row absolute right-0 left-0 grid items-center border-t border-[#22252a]"
+                  className="row absolute right-0 left-0 grid items-center border-t border-linha"
                   style={{ ...grade, top: i * alturaLinha, height: alturaLinha }}
                 >
                   {celulas(item, i).map((c, j) => (

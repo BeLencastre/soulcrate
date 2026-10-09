@@ -1,6 +1,11 @@
-# Instalador do Windows (NSIS). Fase 0: instalação por usuário, sem assinatura.
-# Fase 2: os arquivos da stack (resources/stack, montado por `npm run stack:preparar`) vão no instalador para o
-# assistente copiá-los para a pasta do Soulcrate. A atualização desses arquivos, o updater e a assinatura são da Fase 7.
+# Instalador do Windows (NSIS) e publicação das atualizações (§5, Fases 0, 2 e 7). Guia completo: docs/distribuicao.md.
+#   - instalação por usuário (sem administrador), atalho no menu Iniciar, sem atalho na área de trabalho;
+#   - os arquivos da stack (resources/stack, montado por `npm run stack:preparar`) vão dentro do instalador, e o assistente
+#     os copia para a pasta do Soulcrate; a atualização desses arquivos é do app (src/main/services/stack-atualizacao-service.ts);
+#   - o desinstalador NÃO apaga a pasta do Soulcrate e pergunta (padrão: manter) se remove os dados do próprio app
+#     (resources/installer.nsh);
+#   - as atualizações do app saem dos GitHub Releases (electron-updater lê o latest.yml que o electron-builder publica);
+#   - sem certificado de código o instalador sai sem assinatura e o SmartScreen avisa (D3, §10 da especificação).
 appId: br.com.soulcrate.app
 productName: Soulcrate
 copyright: Soulcrate
@@ -24,12 +29,25 @@ win:
     - target: nsis
       arch: [x64]
   icon: resources/icon.ico
-  # sem certificado: o instalador sai sem assinatura (o SmartScreen avisa; veja a §10 da especificação)
+  # sem certificado: o instalador sai sem assinatura (o SmartScreen avisa; veja a §10 da especificação).
+  # Com um certificado (variáveis CSC_LINK e CSC_KEY_PASSWORD no ambiente de release) o electron-builder assina sozinho:
+  # é só tirar esta linha e acrescentar `publisherName` (o electron-updater passa a conferir a assinatura da atualização).
   signExecutable: false
 nsis:
   oneClick: true
   perMachine: false
   createStartMenuShortcut: true
   createDesktopShortcut: false
+  shortcutName: Soulcrate
+  uninstallDisplayName: Soulcrate
+  # a pasta de dados do app só sai se a pessoa disser que sim (resources/installer.nsh); aqui, o padrão do builder é manter
   deleteAppDataOnUninstall: false
   artifactName: Soulcrate-Setup-${version}.${ext}
+# Atualização automática (electron-updater): os GitHub Releases do repositório. `--publish never` (npm run dist) só gera
+# os arquivos; a publicação é do workflow .github/workflows/release.yml. A release nasce como rascunho: só vale (e só chega
+# aos usuários) depois de alguém revisar e publicar.
+publish:
+  provider: github
+  owner: BeLencastre
+  repo: soulcrate
+  releaseType: draft

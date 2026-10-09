@@ -43,12 +43,12 @@ export function Chip({ cor, children }: { cor: CorChip; children: ReactNode }) {
 export type CorLed = 'verde' | 'cinza' | 'azul' | 'vermelho' | 'laranja' | 'ambar';
 
 const COR_LED: Record<CorLed, string> = {
-  verde: '#47C58A',
-  cinza: '#3A3E45',
-  azul: '#62A8FF',
-  vermelho: '#FF6161',
-  laranja: '#FF8B4A',
-  ambar: '#F2B53A',
+  verde: 'var(--color-led-verde)',
+  cinza: 'var(--color-led-cinza)',
+  azul: 'var(--color-led-azul)',
+  vermelho: 'var(--color-led-vermelho)',
+  laranja: 'var(--color-led-laranja)',
+  ambar: 'var(--color-ambar)',
 };
 
 const BRILHO_LED: Partial<Record<CorLed, string>> = {

@@ -2,8 +2,9 @@
 import type { ModoPasta } from '@shared/configuracao';
 import { msg } from '@shared/mensagens';
 import type { AppError } from '@shared/erros';
+import { arquivosParaAvisar, type MigracaoInfo } from '@shared/stack-atualizacao';
 import { CartaoErro } from '../../components/CartaoErro';
-import { Campo } from '../../components/campos';
+import { CaixaAviso, Campo } from '../../components/campos';
 import { Botao } from '../../components/ui';
 import { seguro } from '../../lib/acoes';
 import { api } from '../../lib/api';
@@ -16,6 +17,7 @@ export function PassoPasta({
   erro,
   falha,
   aviso,
+  migracao,
 }: {
   modo: ModoPasta;
   aoMudarModo(modo: ModoPasta): void;
@@ -25,6 +27,8 @@ export function PassoPasta({
   falha: AppError | null;
   /** o que aconteceu da última vez que a pasta foi preparada (copiados, já existia) */
   aviso: string | null;
+  /** a pasta já existia (clone do Git) e os arquivos da stack têm alterações locais: o assistente avisa e espera */
+  migracao: MigracaoInfo | null;
 }) {
   const m = msg.assistente.pasta;
 
@@ -78,6 +82,24 @@ export function PassoPasta({
         <p role="status" className="hint m-0" data-testid="aviso-pasta">
           {aviso}
         </p>
+      ) : null}
+      {migracao && arquivosParaAvisar(migracao).length > 0 ? (
+        <div data-testid="aviso-migracao">
+          <CaixaAviso titulo={msg.arquivosDaStack.migracao.titulo}>
+            {migracao.gitIndisponivel
+              ? msg.arquivosDaStack.migracao.corpoSemGit
+              : msg.arquivosDaStack.migracao.corpoGit}
+            <ul className="mt-2 mb-2 flex list-none flex-col p-0 font-mono text-xs">
+              {arquivosParaAvisar(migracao).map((a) => (
+                <li key={a}>{a}</li>
+              ))}
+            </ul>
+            {migracao.gitIndisponivel ? (
+              <span className="block">{msg.arquivosDaStack.migracao.gitIndisponivel} </span>
+            ) : null}
+            <span className="block font-semibold">{msg.arquivosDaStack.migracao.continuar}</span>
+          </CaixaAviso>
+        </div>
       ) : null}
       {falha ? <CartaoErro erro={falha} /> : null}
     </div>

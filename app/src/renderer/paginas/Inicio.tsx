@@ -13,6 +13,7 @@ import {
   type StackStatus,
 } from '@shared/stack';
 import { ledDoServico } from '../components/BarraLateral';
+import { AvisoDeAtualizacaoDoApp, AvisoDosArquivosDaStack } from '../components/AvisosDoApp';
 import { CartaoErro } from '../components/CartaoErro';
 import { IconeLigar, IconeLinkExterno, IconeReconstruir, IconeSeta } from '../components/icones';
 import { Botao, CabecalhoPagina, Cartao, Chip, Led, Rotulo, type CorChip } from '../components/ui';
@@ -20,6 +21,7 @@ import { seguro, useAcoes } from '../lib/acoes';
 import { api } from '../lib/api';
 import { resumirFim } from '@shared/lote-estado';
 import { useAgora, useStackStatus, useUi } from '../lib/estado';
+import { useAbrirServico } from '../lib/preferencias';
 import { execucaoRodando, useExecucao } from '../lib/lote-store';
 
 const COR_DO_ESTADO: Record<EtapaEstado, CorChip> = {
@@ -110,17 +112,21 @@ function PainelLog({ status }: { status: StackStatus }) {
   const linhas = operacao
     ? operacao.linhas.map((l) => ({
         texto: l.texto,
-        cor: l.marcador ? '#5BD49A' : /^\[(erro)\]/i.test(l.texto) ? '#FF7A7A' : '#B4B8BF',
+        cor: l.marcador
+          ? 'var(--color-chip-verde)'
+          : /^\[(erro)\]/i.test(l.texto)
+            ? 'var(--color-chip-vermelho)'
+            : 'var(--color-texto-claro)',
       }))
     : status.servicos.some((s) => s.container !== 'ausente')
       ? [
-          { texto: 'NAME        STATUS', cor: '#868B93' },
+          { texto: 'NAME        STATUS', cor: 'var(--color-texto-mudo)' },
           ...status.servicos.map((s) => ({
             texto: `${s.id.padEnd(11)} ${s.statusTexto ?? 'não existe'}`,
-            cor: '#B4B8BF',
+            cor: 'var(--color-texto-claro)',
           })),
         ]
-      : [{ texto: msg.inicio.logVazio, cor: '#868B93' }];
+      : [{ texto: msg.inicio.logVazio, cor: 'var(--color-texto-mudo)' }];
 
   return (
     <Collapsible.Root open={aberto} onOpenChange={definirAberto} asChild>
@@ -213,8 +219,11 @@ export function Inicio() {
   const status = useStackStatus();
   const operacao = useUi((s) => s.operacao);
   const dispensarOperacao = useUi((s) => s.dispensarOperacao);
-  const navegar = useNavigate();
   const agora = useAgora(status.docker.abrindo !== null);
+  const servicoWeb = useAbrirServico();
+  // o botão principal segue a preferência (Configurações → Aplicativo); o de ícone oferece o outro destino
+  const destinoPrincipal = servicoWeb.preferencia === 'app' ? msg.acoes.abrirNoApp : msg.acoes.abrirNoNavegador;
+  const outroDestino = servicoWeb.preferencia === 'app' ? msg.acoes.abrirNoNavegador : msg.acoes.abrirNoApp;
 
   const resumo = resumirStack(status);
   const { titulo, subtitulo } = msg.inicio.cabecalho(resumo, { abrindo: status.docker.abrindo !== null });
@@ -247,6 +256,9 @@ export function Inicio() {
 
       {erro ? <CartaoErro erro={erro} aoFechar={dispensarOperacao} /> : null}
 
+      <AvisoDeAtualizacaoDoApp />
+      <AvisoDosArquivosDaStack />
+
       <section
         aria-label={msg.inicio.etapas}
         className="grid grid-cols-[repeat(auto-fit,minmax(min(176px,100%),1fr))] gap-3"
@@ -265,7 +277,7 @@ export function Inicio() {
             const info = servicoPorId(id);
             const s = status.servicos.find((x) => x.id === id);
             return (
-              <div key={id} className="flex flex-wrap items-center gap-3 border-t border-[#22252a] py-[10px]">
+              <div key={id} className="flex flex-wrap items-center gap-3 border-t border-linha py-[10px]">
                 <Led cor={s ? ledDoServico(s) : 'cinza'} />
                 <div className="flex min-w-0 flex-[1_1_200px] flex-col gap-[2px]">
                   <span className="text-sm font-bold">
@@ -273,15 +285,15 @@ export function Inicio() {
                   </span>
                   <span className="text-[13px] text-texto-suave">{msg.inicio.descricaoWebUi[id]}</span>
                 </div>
-                <Botao pequeno onClick={() => navegar(`/servicos/web/${id}`)}>
-                  {msg.acoes.abrirNoApp}
+                <Botao pequeno aria-label={`${destinoPrincipal}: ${info.nome}`} onClick={() => servicoWeb.abrir(id)}>
+                  {destinoPrincipal}
                 </Botao>
                 <Botao
                   variante="fantasma"
                   pequeno
-                  aria-label={`${msg.acoes.abrirNoNavegador}: ${info.nome}`}
-                  title={msg.acoes.abrirNoNavegador}
-                  onClick={() => seguro(api.stack.openService(id, 'browser'))}
+                  aria-label={`${outroDestino}: ${info.nome}`}
+                  title={outroDestino}
+                  onClick={() => servicoWeb.abrirNoOutro(id)}
                 >
                   <IconeLinkExterno tamanho={15} />
                 </Botao>

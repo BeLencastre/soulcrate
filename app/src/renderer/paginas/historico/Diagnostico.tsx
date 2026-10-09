@@ -47,7 +47,7 @@ function ListaDeFaixas({
             aria-label={t.selecionar(d.linha)}
             data-faixa={d.key}
             onClick={() => aoEscolher(d.key)}
-            className="flex w-full cursor-pointer flex-col gap-[6px] rounded-lg border border-transparent bg-transparent px-4 py-[14px] text-left hover:bg-[#181b1f] aria-[current=true]:border-[#3a3e45] aria-[current=true]:bg-campo"
+            className="flex w-full cursor-pointer flex-col gap-[6px] rounded-lg border border-transparent bg-transparent px-4 py-[14px] text-left hover:bg-elevado aria-[current=true]:border-led-cinza aria-[current=true]:bg-campo"
           >
             <span className="flex w-full items-center justify-between gap-2">
               <Chip cor={d.corStatus}>{d.rotuloStatus}</Chip>
@@ -68,7 +68,7 @@ function LinhaDeMotivo({ m, aoReceita }: { m: MotivoTraduzido; aoReceita(): void
   const t = msg.historico.diagnostico;
   return (
     <div
-      className="grid grid-cols-[minmax(0,1fr)_minmax(0,1.3fr)] gap-[18px] border-t border-[#22252a] px-[22px] py-[14px]"
+      className="grid grid-cols-[minmax(0,1fr)_minmax(0,1.3fr)] gap-[18px] border-t border-linha px-[22px] py-[14px]"
       data-motivo={m.tipo}
     >
       <div className="flex items-center gap-[10px]">
@@ -80,9 +80,9 @@ function LinhaDeMotivo({ m, aoReceita }: { m: MotivoTraduzido; aoReceita(): void
         <span className="font-bold">{m.rotulo}</span>
       </div>
       <div className="flex flex-col items-start gap-2">
-        <span className="text-sm leading-normal text-[#c9c5bd]">{m.acao}</span>
+        <span className="text-sm leading-normal text-texto-medio">{m.acao}</span>
         {m.botao === 'soulbeet' ? (
-          <Botao pequeno onClick={() => seguro(api.stack.openService('soulbeet', 'app'))}>
+          <Botao pequeno onClick={() => seguro(api.stack.openService('soulbeet', 'preferencia'))}>
             {t.abrirSoulbeet}
           </Botao>
         ) : null}
@@ -113,14 +113,14 @@ function CartaoDoCatalogo({
     <Cartao className="flex flex-col py-2" data-testid="catalogo">
       <Rotulo className="px-[18px] pt-3 pb-[6px]">{t.catalogo(d.artista)}</Rotulo>
       {d.catalogo.length === 0 ? (
-        <p className="m-0 border-t border-[#22252a] px-[18px] py-[10px] text-[13px] text-texto-suave">
+        <p className="m-0 border-t border-linha px-[18px] py-[10px] text-[13px] text-texto-suave">
           {d.artistaBuscado ? t.catalogoVazio : t.catalogoNaoBuscado}
         </p>
       ) : (
         linhas.map((c) => (
           <div
             key={c.titulo}
-            className="flex items-center gap-3 border-t border-[#22252a] px-[18px] py-[9px] text-[13.5px]"
+            className="flex items-center gap-3 border-t border-linha px-[18px] py-[9px] text-[13.5px]"
           >
             {d.status === 'nao encontrada' ? (
               <button
@@ -144,7 +144,7 @@ function CartaoDoCatalogo({
         ))
       )}
       {d.catalogo.length > CATALOGO_VISIVEL ? (
-        <div className="border-t border-[#22252a] px-[18px] py-2">
+        <div className="border-t border-linha px-[18px] py-2">
           <Botao variante="fantasma" pequeno onClick={() => setTodos((v) => !v)}>
             {todos ? t.mostrarMenos : t.mostrarTodos(d.catalogoTotal || d.catalogo.length)}
           </Botao>
@@ -204,21 +204,21 @@ function PainelDaFaixa({
 
       {d.sugestoes.length > 0 || d.correcao ? (
         <div
-          className="flex flex-col gap-3 rounded-[10px] border border-[#4a3a16] bg-[#1a160d] px-[22px] py-5"
+          className="flex flex-col gap-3 rounded-[10px] border border-ambar-borda-2 bg-ambar-fundo-2 px-[22px] py-5"
           data-testid="talvez-seja"
         >
           {d.sugestoes.length > 0 ? (
             <>
               <div className="flex flex-wrap items-baseline gap-[10px]">
-                <span className="text-base font-extrabold text-[#ffd27a]">{t.talvezSeja}</span>
-                <span className="text-[13px] text-[#cfc3a8]">{t.cliquePara}</span>
+                <span className="text-base font-extrabold text-ambar-vivo">{t.talvezSeja}</span>
+                <span className="text-[13px] text-ambar-texto-suave">{t.cliquePara}</span>
               </div>
               <div className="flex flex-wrap gap-2">
                 {d.sugestoes.map((s) => (
                   <button
                     key={s}
                     type="button"
-                    className="inline-flex min-h-[38px] cursor-pointer items-center gap-2 rounded-md border border-[#5c4517] bg-[#241c0c] px-[14px] text-sm font-bold text-[#ffd27a] hover:border-[#8a6a1e] hover:bg-[#30250f] disabled:cursor-not-allowed disabled:opacity-60"
+                    className="inline-flex min-h-[38px] cursor-pointer items-center gap-2 rounded-md border border-ambar-borda bg-ambar-fundo px-[14px] text-sm font-bold text-ambar-vivo hover:border-ambar-borda-hover hover:bg-ambar-fundo-hover disabled:cursor-not-allowed disabled:opacity-60"
                     disabled={ocupado}
                     onClick={() => aoEscolherTitulo(s)}
                     data-sugestao={s}
@@ -230,7 +230,7 @@ function PainelDaFaixa({
             </>
           ) : null}
           {ocupado ? (
-            <span role="status" className="text-[13px] text-[#cfc3a8]">
+            <span role="status" className="text-[13px] text-ambar-texto-suave">
               {t.corrigindo}
             </span>
           ) : null}
@@ -242,7 +242,7 @@ function PainelDaFaixa({
           {d.correcao ? (
             <div
               role="status"
-              className="flex flex-col gap-2 rounded-md border border-[#1f4a33] bg-[#13241b] px-3 py-[10px] text-[13.5px]"
+              className="flex flex-col gap-2 rounded-md border border-verde-borda bg-verde-fundo px-3 py-[10px] text-[13.5px]"
               data-testid="corrigida"
             >
               <span className="flex flex-wrap items-center gap-[10px]">
@@ -270,9 +270,9 @@ function PainelDaFaixa({
         {comMotivos ? (
           d.motivos.map((m) => <LinhaDeMotivo key={m.bruto} m={m} aoReceita={aoReceita} />)
         ) : (
-          <div className="border-t border-[#22252a] px-[22px] py-[14px]">
+          <div className="border-t border-linha px-[22px] py-[14px]">
             <div className="font-bold">{t.semMotivos.rotulo}</div>
-            <p className="m-0 mt-1 text-sm text-[#c9c5bd]">{d.nota || t.semMotivos.acao}</p>
+            <p className="m-0 mt-1 text-sm text-texto-medio">{d.nota || t.semMotivos.acao}</p>
           </div>
         )}
       </Cartao>
@@ -284,24 +284,24 @@ function PainelDaFaixa({
           </Rotulo>
           {d.status === 'falhou' ? (
             d.tentativas.length === 0 ? (
-              <p className="m-0 border-t border-[#22252a] px-[18px] py-[10px] text-[13px] text-texto-suave">
+              <p className="m-0 border-t border-linha px-[18px] py-[10px] text-[13px] text-texto-suave">
                 {t.semTentativas}
               </p>
             ) : (
               d.tentativas.map((r, i) => (
-                <div key={i} className="border-t border-[#22252a] px-[18px] py-[10px]">
-                  <span className="font-mono text-xs break-all text-[#ff9a5c]">{r}</span>
+                <div key={i} className="border-t border-linha px-[18px] py-[10px]">
+                  <span className="font-mono text-xs break-all text-chip-laranja">{r}</span>
                 </div>
               ))
             )
           ) : d.arquivos.length === 0 ? (
-            <p className="m-0 border-t border-[#22252a] px-[18px] py-[10px] text-[13px] text-texto-suave">
+            <p className="m-0 border-t border-linha px-[18px] py-[10px] text-[13px] text-texto-suave">
               {t.semArquivos}
             </p>
           ) : (
             d.arquivos.map((a, i) => (
-              <div key={i} className="flex flex-col gap-1 border-t border-[#22252a] px-[18px] py-[10px]">
-                <span className="text-[12.5px] font-bold text-[#ff9a5c]">{a.motivo}</span>
+              <div key={i} className="flex flex-col gap-1 border-t border-linha px-[18px] py-[10px]">
+                <span className="text-[12.5px] font-bold text-chip-laranja">{a.motivo}</span>
                 <span className="font-mono text-xs break-all text-texto-claro">{a.arquivo}</span>
               </div>
             ))
@@ -466,7 +466,7 @@ function Corpo({ d }: { d: ExecucaoDetalhe }) {
             <span className="text-[13.5px] leading-normal text-texto-suave">
               {t.rodape.antes} <span className="font-mono text-texto">{re.arquivo}</span> {t.rodape.depois}
             </span>
-            <code className="font-mono text-[12.5px] text-[#ffd27a]" data-testid="opcoes-sugeridas">
+            <code className="font-mono text-[12.5px] text-ambar-vivo" data-testid="opcoes-sugeridas">
               {flags || t.rodape.opcoesPadrao}
             </code>
             {re.retentar ? <span className="text-xs text-texto-mudo">{t.rodape.retentarAviso}</span> : null}

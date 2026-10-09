@@ -1,0 +1,90 @@
+name: Release do app
+
+# Publica o instalador do app como RASCUNHO de release nos GitHub Releases (docs/distribuicao.md). O electron-updater dos
+# apps instalados só enxerga releases PUBLICADAS: o rascunho espera alguém conferir o instalador e as notas e publicar.
+#
+# Como lançar: ajuste "version" em app/package.json, faça o commit e crie a tag com o mesmo número:
+#   git tag v0.2.0 && git push origin v0.2.0
+
+on:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: write
+
+jobs:
+  instalador:
+    name: Instalador (testa, gera e publica o rascunho)
+    runs-on: windows-latest
+    defaults:
+      run:
+        working-directory: app
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: app/.nvmrc
+          cache: npm
+          cache-dependency-path: app/package-lock.json
+
+      - run: npm ci
+
+      # a tag e o package.json têm que dizer o mesmo número: o electron-updater compara com a versão do app instalado
+      - name: A tag é a versão do app
+        shell: pwsh
+        run: |
+          $tag = '${{ github.ref_name }}'.TrimStart('v')
+          $versao = (Get-Content package.json -Raw | ConvertFrom-Json).version
+          if ($tag -ne $versao) { throw "A tag diz $tag e o app/package.json diz $versao." }
+          Write-Host "Versão $versao"
+
+      - run: npm run check
+
+      - name: Testes ponta a ponta (Playwright)
+        run: npm run test:e2e
+
+      # com os segredos CSC_LINK e CSC_KEY_PASSWORD no repositório o electron-builder assina o instalador sozinho (D3);
+      # sem eles sai sem assinatura e o SmartScreen avisa (docs/distribuicao.md)
+      - name: Gerar o instalador e criar o rascunho da release
+        run: npm run dist:publicar
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          CSC_LINK: ${{ secrets.CSC_LINK }}
+          CSC_KEY_PASSWORD: ${{ secrets.CSC_KEY_PASSWORD }}
+          CSC_IDENTITY_AUTO_DISCOVERY: ${{ secrets.CSC_LINK != '' && 'true' || 'false' }}
+
+      # checksums SHA-256 junto da release (§8.1): quem baixa confere o arquivo antes de rodar. A release ainda é um
+      # RASCUNHO, e a API de "release por tag" (usada pelo `gh release upload`) não enxerga rascunhos: acha pelo id.
+      - name: Checksums SHA-256
+        shell: pwsh
+        run: |
+          $linhas = Get-ChildItem dist -Filter 'Soulcrate-Setup-*.exe' | ForEach-Object {
+            "{0}  {1}" -f (Get-FileHash $_.FullName -Algorithm SHA256).Hash.ToLower(), $_.Name
+          }
+          if (-not $linhas) { throw 'Nenhum instalador em app/dist.' }
+          $linhas | Set-Content -Path dist/SHA256SUMS.txt -Encoding ascii
+          Get-Content dist/SHA256SUMS.txt
+
+          $repo = '${{ github.repository }}'
+          $tag = '${{ github.ref_name }}'
+          $cabecalho = @{ Authorization = "Bearer $env:GH_TOKEN"; Accept = 'application/vnd.github+json' }
+          $release = Invoke-RestMethod -Headers $cabecalho -Uri "https://api.github.com/repos/$repo/releases?per_page=30" |
+            Where-Object { $_.tag_name -eq $tag } | Select-Object -First 1
+          if (-not $release) { throw "Não achei a release $tag (o electron-builder a criou?)." }
+          Invoke-RestMethod -Method Post -Headers ($cabecalho + @{ 'Content-Type' = 'text/plain' }) `
+            -Uri "https://uploads.github.com/repos/$repo/releases/$($release.id)/assets?name=SHA256SUMS.txt" `
+            -InFile dist/SHA256SUMS.txt | Out-Null
+          Write-Host "SHA256SUMS.txt anexado à release $tag (rascunho)."
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: instalador-release
+          path: |
+            app/dist/Soulcrate-Setup-*.exe
+            app/dist/latest.yml
+            app/dist/SHA256SUMS.txt
+          retention-days: 30

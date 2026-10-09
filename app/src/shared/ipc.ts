@@ -22,6 +22,7 @@ import type {
   ResultadoValidacao,
   SetupEstado,
 } from './configuracao.js';
+import type { EstadoAtualizacao, ResultadoReiniciar } from './atualizacao.js';
 import type { AppError } from './erros.js';
 import type { EventoLote } from './eventos-lote.js';
 import type {
@@ -47,8 +48,17 @@ import type {
   ResumoExecucao,
 } from './lote.js';
 import type { OpcoesLote } from './opcoes-lote.js';
+import type { ArquivoDeLicencaId, CreditosELicenca, InfoSobre, ResultadoPacoteSuporte } from './sobre.js';
 import type { ServicoId } from './servicos.js';
 import type { ConfigStatus, DockerStatus, ProjetoStatus, StackStatus } from './stack.js';
+import type { EstadoDaStack, ResultadoAtualizacaoStack } from './stack-atualizacao.js';
+
+/** Onde abrir uma Web UI: no app, no navegador do sistema, ou onde a preferência do usuário mandar. */
+export type OndeAbrirServico = 'app' | 'browser' | 'preferencia';
+
+/** O que "Atualizar agora" (arquivos da stack) devolve: o que foi feito, ou que está esperando um lote terminar. */
+export type ResultadoAplicarStack =
+  { ok: true; resultado: ResultadoAtualizacaoStack | null; esperando: boolean } | { ok: false; erro: AppError };
 
 export type OperationId = string;
 export type SubscriptionId = string;
@@ -62,6 +72,12 @@ export interface AppInfo {
   platform: string;
 }
 
+/** Tema da interface: escuro é o padrão (público de DJ, uso em ambiente escuro); `sistema` segue o Windows. */
+export type TemaPreferido = 'escuro' | 'claro' | 'sistema';
+
+/** Onde abrir o Soulbeet, o slskd e o Navidrome quando o usuário pede "abrir". */
+export type OndeAbrirWebUi = 'app' | 'navegador';
+
 /** Preferências do app (não da stack), guardadas em userData. */
 export interface AppSettings {
   /** fechar a janela esconde o app na bandeja em vez de sair (D7) */
@@ -70,6 +86,15 @@ export interface AppSettings {
   avisoBandejaDispensado: boolean;
   /** pasta do Soulcrate escolhida pelo usuário */
   pastaDoProjeto: string | null;
+  /** abre o app minimizado na bandeja ao ligar o PC (Fase 6) */
+  iniciarComWindows: boolean;
+  tema: TemaPreferido;
+  /** o botão "abrir" dos serviços (Início, bandeja): dentro do app ou no navegador do sistema */
+  abrirWebUi: OndeAbrirWebUi;
+  /** notificação do Windows quando um lote termina */
+  avisarFimDoLote: boolean;
+  /** notificação do Windows quando o servidor do Soulseek bloqueia as buscas por alguns minutos */
+  avisarBuscasPausadas: boolean;
 }
 
 export interface EnvironmentStatus {
@@ -166,6 +191,31 @@ export interface SoulcrateApi {
     setSettings(parcial: Partial<AppSettings>): Promise<AppSettings>;
     /** resposta do aviso da primeira vez que a janela é fechada: `naoMostrarDeNovo` e `esconder` */
     answerClosePrompt(resposta: { naoMostrarDeNovo: boolean }): Promise<void>;
+    /** tela Sobre: versões do app, da stack e dos componentes (lidas dos contêineres) */
+    getAbout(): Promise<InfoSobre>;
+    /** "Créditos e licença": o texto da licença, os créditos e as licenças de terceiros que o instalador traz */
+    getCredits(): Promise<CreditosELicenca>;
+    /** abre as licenças do Electron ou do Chromium que acompanham o instalador */
+    openLicenseFile(id: ArquivoDeLicencaId): Promise<boolean>;
+    /** pergunta onde salvar e grava o pacote de suporte (sem segredos) */
+    createSupportBundle(): Promise<ResultadoPacoteSuporte>;
+    /** mostra o último pacote de suporte gerado no Explorer */
+    revealSupportBundle(): Promise<boolean>;
+  };
+  update: {
+    state(): Promise<EstadoAtualizacao>;
+    /** procura atualização agora */
+    check(): Promise<EstadoAtualizacao>;
+    /** aplica a atualização já baixada reiniciando o app; recusa com um lote rodando */
+    restartAndInstall(): Promise<ResultadoReiniciar>;
+  };
+  stackFiles: {
+    /** os arquivos da stack da pasta do Soulcrate: gerenciados pelo app? há o que atualizar? o aviso da última vez */
+    status(): Promise<EstadoDaStack>;
+    /** atualiza agora (espera, sem mexer em nada, se um lote está rodando) */
+    apply(): Promise<ResultadoAplicarStack>;
+    /** dispensa o aviso "arquivos da stack atualizados" */
+    dismissNotice(): Promise<void>;
   };
   env: {
     check(): Promise<EnvironmentStatus>;
@@ -177,7 +227,7 @@ export interface SoulcrateApi {
     down(): Promise<OperacaoIniciada>;
     restartService(servico: ServicoId): Promise<OperacaoIniciada>;
     runChecks(): Promise<ChecksResultado>;
-    openService(servico: ServicoId, onde: 'app' | 'browser'): Promise<void>;
+    openService(servico: ServicoId, onde: OndeAbrirServico): Promise<void>;
   };
   project: {
     get(): Promise<ProjetoStatus>;
@@ -323,6 +373,10 @@ export type MainEvent =
   | { type: 'library.start'; id: string; tarefa: TarefaManutencao }
   | { type: 'library.log'; id: string; linha: string }
   | { type: 'library.end'; id: string; tarefa: TarefaManutencao; ok: boolean; error?: AppError }
+  /** a atualização do app mudou de estado (procurando, baixando, pronta…) */
+  | { type: 'update.state'; estado: EstadoAtualizacao }
+  /** os arquivos da stack da pasta foram atualizados (ou o aviso mudou): a tela relê o estado */
+  | { type: 'stackFiles.changed' }
   | { type: 'app.closePrompt' }
   | { type: 'app.navigate'; rota: string }
   /** o app foi aberto com um .txt/.csv ("Abrir com"): vira uma lista na pasta do Soulcrate */
@@ -339,6 +393,17 @@ export interface IpcInvoke {
   'app:getSettings': { args: []; result: AppSettings };
   'app:setSettings': { args: [parcial: Partial<AppSettings>]; result: AppSettings };
   'app:answerClosePrompt': { args: [resposta: { naoMostrarDeNovo: boolean }]; result: void };
+  'app:getAbout': { args: []; result: InfoSobre };
+  'app:getCredits': { args: []; result: CreditosELicenca };
+  'app:openLicenseFile': { args: [id: ArquivoDeLicencaId]; result: boolean };
+  'app:createSupportBundle': { args: []; result: ResultadoPacoteSuporte };
+  'app:revealSupportBundle': { args: []; result: boolean };
+  'update:state': { args: []; result: EstadoAtualizacao };
+  'update:check': { args: []; result: EstadoAtualizacao };
+  'update:restartAndInstall': { args: []; result: ResultadoReiniciar };
+  'stackFiles:status': { args: []; result: EstadoDaStack };
+  'stackFiles:apply': { args: []; result: ResultadoAplicarStack };
+  'stackFiles:dismissNotice': { args: []; result: void };
   'env:check': { args: []; result: EnvironmentStatus };
   'env:startDockerDesktop': { args: []; result: OperacaoIniciada };
   'stack:status': { args: []; result: StackStatus };
@@ -346,7 +411,7 @@ export interface IpcInvoke {
   'stack:down': { args: []; result: OperacaoIniciada };
   'stack:restartService': { args: [servico: ServicoId]; result: OperacaoIniciada };
   'stack:runChecks': { args: []; result: ChecksResultado };
-  'stack:openService': { args: [servico: ServicoId, onde: 'app' | 'browser']; result: void };
+  'stack:openService': { args: [servico: ServicoId, onde: OndeAbrirServico]; result: void };
   'project:get': { args: []; result: ProjetoStatus };
   'project:pickFolder': { args: []; result: { projeto: ProjetoStatus; erro: string | null } | null };
   'project:openFolder': { args: []; result: void };

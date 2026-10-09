@@ -13,6 +13,7 @@ import {
 } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import AxeBuilder from '@axe-core/playwright';
 import { _electron as electron, expect, type ElectronApplication, type Page } from '@playwright/test';
 
 const APP_DIR = join(import.meta.dirname, '..', '..');
@@ -147,7 +148,11 @@ export interface AppAberto {
   janela: Page;
 }
 
-export async function abrirApp(amb: Ambiente, extras: Record<string, string> = {}): Promise<AppAberto> {
+export async function abrirApp(
+  amb: Ambiente,
+  extras: Record<string, string> = {},
+  argumentos: string[] = [],
+): Promise<AppAberto> {
   const env: Record<string, string> = {};
   for (const [k, v] of Object.entries(process.env)) if (v !== undefined) env[k] = v;
   Object.assign(env, {
@@ -163,7 +168,7 @@ export async function abrirApp(amb: Ambiente, extras: Record<string, string> = {
   });
   delete env.ELECTRON_RENDERER_URL;
   delete env.ELECTRON_RUN_AS_NODE;
-  const app = await electron.launch({ args: [APP_DIR], env, cwd: APP_DIR });
+  const app = await electron.launch({ args: [APP_DIR, ...argumentos], env, cwd: APP_DIR });
   // os testes nunca abrem o navegador de verdade: shell.openExternal só registra o endereço
   await app.evaluate(({ shell }) => {
     const g = globalThis as unknown as { __abertosFora: string[] };
@@ -174,6 +179,8 @@ export async function abrirApp(amb: Ambiente, extras: Record<string, string> = {
     };
   });
   const janela = await app.firstWindow();
+  // o Playwright força `prefers-color-scheme: light` nas páginas; sem isto o tema do app (nativeTheme) nunca valeria nos testes
+  await janela.emulateMedia({ colorScheme: null });
   await janela.waitForLoadState('domcontentloaded');
   return { app, janela };
 }
@@ -275,6 +282,7 @@ export function ambienteDoLote(amb: Ambiente, slskd: SlskdFalso): Record<string,
 }
 
 export interface NotificacaoVista {
+  tipo: 'fim' | 'pausa';
   titulo: string;
   corpo: string;
 }
@@ -355,3 +363,33 @@ export const opcoesDeTeste = async (janela: Page) => {
   await janela.locator('[data-receita="soBaixar"]').click();
   await janela.getByRole('switch', { name: /Não conferir os títulos no MusicBrainz/ }).click();
 };
+
+// ---------------------------------------------------------------- Fase 6: acessibilidade em todo estado capturado
+
+const PASTA_DE_CAPTURAS = join(APP_DIR, 'test-results', 'capturas');
+
+/** WCAG 2.1 A e AA: o que o axe-core confere nas telas (contraste de cor incluído). */
+const TAGS_AXE = ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'];
+
+/** Roda o axe na página e devolve cada violação (regra, impacto e os elementos), ou uma lista vazia. */
+export async function violacoesDeAcessibilidade(janela: Page): Promise<string[]> {
+  // modo legado: o axe não abre uma página nova (o Electron não sabe criar uma: `Target.createTarget`)
+  const r = await new AxeBuilder({ page: janela }).setLegacyMode(true).withTags(TAGS_AXE).analyze();
+  return r.violations.map((v) => {
+    const elementos = v.nodes
+      .slice(0, 4)
+      .map((n) => `    ${n.target.join(' ')}  ${(n.failureSummary ?? '').split('\n').slice(1, 3).join(' | ')}`);
+    return [`[${v.impact ?? '?'}] ${v.id}: ${v.help}`, ...elementos].join('\n');
+  });
+}
+
+/**
+ * Captura de tela de um estado do app (fica em test-results/capturas) E conferência de acessibilidade desse mesmo estado:
+ * todo estado que os testes ponta a ponta mostram, de qualquer fase, passa pelo axe-core.
+ */
+export async function capturar(janela: Page, nome: string): Promise<void> {
+  mkdirSync(PASTA_DE_CAPTURAS, { recursive: true });
+  await janela.screenshot({ path: join(PASTA_DE_CAPTURAS, `${nome}.png`) });
+  const violacoes = await violacoesDeAcessibilidade(janela);
+  expect(violacoes.join('\n'), `acessibilidade (axe) no estado "${nome}"`).toBe('');
+}

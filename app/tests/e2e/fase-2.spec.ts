@@ -3,7 +3,7 @@
 // Critérios de aceite (§5, Fase 2): da instalação à stack no ar sem abrir arquivo; um .env com valores de exemplo mostra
 // exatamente o que falta; os arquivos gerados passam na conferência do subir.bat (essa parte está em
 // tests/main/config-powershell.test.ts).
-import { existsSync, mkdirSync, readFileSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { expect, test, type Page } from '@playwright/test';
 import {
@@ -12,11 +12,7 @@ import {
   type NavidromeFalso,
   type SoulbeetFalso,
 } from '../dubles/servicos-falsos';
-import { abrirApp, criarAmbiente, TODOS_NO_AR, type Ambiente, type AppAberto } from './ajudantes';
-
-const CAPTURAS = join(import.meta.dirname, '..', '..', 'test-results', 'capturas');
-mkdirSync(CAPTURAS, { recursive: true });
-const capturar = (janela: Page, nome: string) => janela.screenshot({ path: join(CAPTURAS, `${nome}.png`) });
+import { abrirApp, criarAmbiente, TODOS_NO_AR, type Ambiente, type AppAberto, capturar } from './ajudantes';
 
 let amb: Ambiente;
 let aberto: AppAberto | null = null;

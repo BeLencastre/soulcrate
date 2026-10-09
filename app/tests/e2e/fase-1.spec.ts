@@ -1,14 +1,16 @@
 // Fase 0 e 1, ponta a ponta: o app de verdade (Electron) contra o dublê do docker.
 // Cobre os critérios de aceite: Docker fechado → abrir com um clique; ligar, desligar e reconstruir refletindo o estado
 // real; contêiner derrubado por fora aparecendo como erro; e a segurança de base do renderer (§6.1).
-import { mkdirSync } from 'node:fs';
-import { join } from 'node:path';
 import { expect, test, type Page } from '@playwright/test';
-import { abertosFora, abrirApp, criarAmbiente, TODOS_NO_AR, type Ambiente, type AppAberto } from './ajudantes';
-
-const CAPTURAS = join(import.meta.dirname, '..', '..', 'test-results', 'capturas');
-mkdirSync(CAPTURAS, { recursive: true });
-const capturar = (janela: Page, nome: string) => janela.screenshot({ path: join(CAPTURAS, `${nome}.png`) });
+import {
+  abertosFora,
+  abrirApp,
+  criarAmbiente,
+  TODOS_NO_AR,
+  type Ambiente,
+  type AppAberto,
+  capturar,
+} from './ajudantes';
 
 let amb: Ambiente;
 let aberto: AppAberto | null = null;
@@ -27,7 +29,8 @@ test('abre com a navegação lateral e o Início', async () => {
   aberto = await abrirApp(amb);
   const { janela } = aberto;
 
-  await expect(janela).toHaveTitle('Soulcrate');
+  // o título da janela acompanha a tela (Fase 6, acessibilidade)
+  await expect(janela).toHaveTitle('Início · Soulcrate');
   const nav = janela.getByRole('navigation', { name: 'Principal' });
   await expect(nav.getByRole('link')).toHaveText([
     'Início',
@@ -49,6 +52,7 @@ test('abre com a navegação lateral e o Início', async () => {
   // a Biblioteca (Fase 5) lê o beets, que mora no contêiner: com a stack desligada ela explica e oferece ligar
   await nav.getByRole('link', { name: 'Biblioteca' }).click();
   await expect(janela.getByRole('heading', { name: 'A biblioteca só abre com a stack no ar' })).toBeVisible();
+  await expect(janela).toHaveTitle('Biblioteca · Soulcrate');
   await capturar(janela, '02-biblioteca-stack-desligada');
 });
 
@@ -279,6 +283,8 @@ test.describe('segurança do renderer (§6.1)', () => {
       'reports',
       'setup',
       'stack',
+      'stackFiles',
+      'update',
       'webui',
     ]);
     expect(mundo.csp).toContain("default-src 'self'");

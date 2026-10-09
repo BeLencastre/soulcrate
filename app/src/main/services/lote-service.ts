@@ -63,6 +63,8 @@ export function processoVivoReal(pid: number): boolean {
 }
 
 export interface NotificacaoLote {
+  /** `pausa`: o servidor do Soulseek bloqueou as buscas por alguns minutos; `fim`: o lote terminou (ou parou, ou falhou) */
+  tipo: 'fim' | 'pausa';
   titulo: string;
   corpo: string;
 }
@@ -199,6 +201,11 @@ export class LoteService {
     }
     // uma primeira leitura já traz o `run.start` (nome da lista, horário) para o resumo
     await Promise.all(novas.map((a) => this.sondar(a)));
+  }
+
+  /** Há um lote do app rodando agora? (síncrono: serve ao que não pode esperar uma promessa, como o `before-quit`.) */
+  get rodandoAgora(): boolean {
+    return [...this.acomp.values()].some((a) => !a.resumo.terminou);
   }
 
   async ativas(): Promise<ResumoExecucao[]> {
@@ -351,6 +358,7 @@ export class LoteService {
         break;
       case 'search.paused':
         this.d.notificar({
+          tipo: 'pausa',
           titulo: msg.lote.notificacao.buscasPausadasTitulo,
           corpo: msg.lote.notificacao.buscasPausadasCorpo(horaLocal(ev.until), a.resumo.lista ?? a.listaPedida),
         });
@@ -420,5 +428,5 @@ export function notificacaoDoFim(fim: RunEnd, lista: string | null): Notificacao
   const r = resumirFim(fim.summary);
   const titulo = n.titulo[fim.reason];
   const contagem = fim.reason === 'completed' || fim.reason === 'user' ? n.contagem(r) : fim.message;
-  return { titulo, corpo: lista ? `${lista}: ${contagem}` : contagem };
+  return { tipo: 'fim', titulo, corpo: lista ? `${lista}: ${contagem}` : contagem };
 }

@@ -47,8 +47,9 @@ export const PREFIXO_BEET: readonly string[] = [
 /** Onde o baixar-lista.ps1 roda o beets dentro do contêiner. */
 export const PASTA_DE_TRABALHO = '/data';
 
-/** Os únicos subcomandos do beets que o app pede. */
+/** Os únicos subcomandos do beets que o app pede (`version` só lê, para a tela Sobre). */
 export const COMANDOS_PERMITIDOS: readonly string[] = [
+  'version',
   'ls',
   'remove',
   'update',

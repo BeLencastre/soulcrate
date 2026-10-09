@@ -176,7 +176,7 @@ describe('comandoDoBeet: a lista fechada', () => {
     ]);
   });
 
-  it('só ls, remove, update, move, keyfinder, autobpm e import', () => {
+  it('só ls, remove, update, move, keyfinder, autobpm, import e version (que só lê)', () => {
     expect([...COMANDOS_PERMITIDOS].sort()).toEqual([
       'autobpm',
       'import',
@@ -185,6 +185,7 @@ describe('comandoDoBeet: a lista fechada', () => {
       'move',
       'remove',
       'update',
+      'version',
     ]);
     for (const ruim of ['modify', 'config', 'shell', 'fields', '-c', '', 'LS', 'ls ; rm']) {
       expect(() => comandoDoBeet([ruim, 'x'])).toThrow(/não permitido/);

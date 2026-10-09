@@ -18,6 +18,7 @@
     "stack:preparar": "node scripts/preparar-stack.mjs",
     "pack:dir": "npm run stack:preparar && npm run build && electron-builder --dir",
     "dist": "npm run stack:preparar && npm run build && electron-builder --win nsis --publish never",
+    "dist:publicar": "npm run stack:preparar && npm run build && electron-builder --win nsis --publish always",
     "lint": "eslint .",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
@@ -28,6 +29,7 @@
     "check": "npm run lint && npm run format:check && npm run typecheck && npm test"
   },
   "devDependencies": {
+    "@axe-core/playwright": "^4.13.0",
     "@eslint/js": "^10.0.1",
     "@fontsource-variable/archivo": "^5.3.0",
     "@fontsource-variable/jetbrains-mono": "^5.3.0",
@@ -62,6 +64,7 @@
   },
   "dependencies": {
     "electron-log": "^5.4.4",
+    "electron-updater": "^6.8.9",
     "yaml": "^2.9.1"
   },
   "main": "./out/main/index.js"

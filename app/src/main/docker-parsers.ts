@@ -17,6 +17,8 @@ export interface ContainerPs {
   estado: string;
   saude: string;
   status: string;
+  /** a imagem do contêiner (`slskd/slskd:0.26.0`), quando o Compose a informa */
+  imagem?: string;
 }
 
 /**
@@ -50,7 +52,15 @@ export function parseComposePs(texto: string): ContainerPs[] {
     if (typeof i !== 'object' || i === null) continue;
     const o = i as Record<string, unknown>;
     const s = (k: string) => (typeof o[k] === 'string' ? (o[k] as string) : '');
-    saida.push({ servico: s('Service'), nome: s('Name'), estado: s('State'), saude: s('Health'), status: s('Status') });
+    const imagem = s('Image');
+    saida.push({
+      servico: s('Service'),
+      nome: s('Name'),
+      estado: s('State'),
+      saude: s('Health'),
+      status: s('Status'),
+      ...(imagem ? { imagem } : {}),
+    });
   }
   return saida;
 }

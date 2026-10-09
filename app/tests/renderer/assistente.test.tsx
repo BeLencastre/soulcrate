@@ -288,6 +288,67 @@ describe('Assistente: passo 1 (pasta)', () => {
     expect(titulo()).toBe('Onde fica o Soulcrate?');
   });
 
+  it('pasta de um clone do Git com alterações locais na stack: avisa e espera; o Avançar seguinte continua', async () => {
+    api.setup.prepareFolder.mockResolvedValue({
+      ok: true,
+      erro: null,
+      falha: null,
+      dir: 'D:\\clone',
+      copiados: 0,
+      jaExistia: true,
+      config: configBoa(),
+      migracao: { clone: true, alteracoesLocais: ['docker-compose.yml'], diferentesDoApp: [], gitIndisponivel: false },
+    });
+    renderizar(<Assistente />, statusComPasta('D:\\clone'));
+    avancar();
+    const aviso = await screen.findByTestId('aviso-migracao');
+    expect(aviso.textContent).toContain('alterações locais nos arquivos da stack');
+    expect(aviso.textContent).toContain('docker-compose.yml');
+    expect(aviso.textContent).toContain('O app não altera esta pasta');
+    expect(titulo()).toBe('Onde fica o Soulcrate?');
+
+    avancar();
+    await waitFor(() => expect(titulo()).toBe('Pastas das músicas'));
+    // o aviso não prepara a pasta de novo
+    expect(api.setup.prepareFolder).toHaveBeenCalledTimes(1);
+  });
+
+  it('um clone sem alterações locais (ou uma pasta que não é clone) segue direto, sem aviso', async () => {
+    api.setup.prepareFolder.mockResolvedValue({
+      ok: true,
+      erro: null,
+      falha: null,
+      dir: 'D:\\clone',
+      copiados: 0,
+      jaExistia: true,
+      config: configBoa(),
+      migracao: { clone: true, alteracoesLocais: [], diferentesDoApp: ['baixar-lista.ps1'], gitIndisponivel: false },
+    });
+    renderizar(<Assistente />, statusComPasta('D:\\clone'));
+    avancar();
+    await waitFor(() => expect(titulo()).toBe('Pastas das músicas'));
+    expect(screen.queryByTestId('aviso-migracao')).toBeNull();
+  });
+
+  it('sem o git instalado, o aviso usa a comparação com os arquivos do app e diz que é aproximada', async () => {
+    api.setup.prepareFolder.mockResolvedValue({
+      ok: true,
+      erro: null,
+      falha: null,
+      dir: 'D:\\clone',
+      copiados: 0,
+      jaExistia: true,
+      config: configBoa(),
+      migracao: { clone: true, alteracoesLocais: [], diferentesDoApp: ['subir.bat'], gitIndisponivel: true },
+    });
+    renderizar(<Assistente />, statusComPasta('D:\\clone'));
+    avancar();
+    const aviso = await screen.findByTestId('aviso-migracao');
+    expect(aviso.textContent).toContain('subir.bat');
+    expect(aviso.textContent).toContain('pode ser só uma versão diferente');
+    expect(aviso.textContent).toContain('Não consegui consultar o git');
+  });
+
   it('o passo 2 só abre depois do 1 (a navegação lateral não pula)', () => {
     renderizar(<Assistente />);
     const passos = within(screen.getByRole('navigation', { name: 'Passos' })).getAllByRole('button');

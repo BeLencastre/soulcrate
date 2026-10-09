@@ -327,6 +327,7 @@ export const msg = {
       avancado: 'Avançado',
       conferencia: 'Conferência',
       app: 'Aplicativo',
+      sobre: 'Sobre',
     },
     sempastaTitulo: 'Ainda não há uma pasta do Soulcrate',
     sempastaCorpo: 'O assistente cria a pasta, gera o .env e o slskd.yml e liga a stack sem você abrir nenhum arquivo.',
@@ -1430,6 +1431,150 @@ export const msg = {
     irParaInicio: 'Ir para o Início',
   },
 
+  /** Configurações → Aplicativo (Fase 6): o protótipo "Configurações" */
+  aplicativo: {
+    iniciarComWindows: { titulo: 'Iniciar com o Windows', dica: 'Abre minimizado na bandeja ao ligar o PC.' },
+    bandeja: {
+      titulo: 'Fechar a janela minimiza para a bandeja',
+      dica: 'O lote continua de qualquer forma; isto só decide se o app sai junto.',
+    },
+    avisarLote: {
+      titulo: 'Avisar quando um lote terminar',
+      dica: 'Notificação do Windows com a contagem de faixas.',
+    },
+    avisarPausa: {
+      titulo: 'Avisar quando as buscas forem pausadas',
+      dica: 'Quando o servidor do Soulseek bloqueia as buscas por alguns minutos.',
+    },
+    abrirWebUi: { grupo: 'Abrir Soulbeet, slskd e Navidrome', app: 'Dentro do app', navegador: 'No navegador' },
+    tema: {
+      grupo: 'Tema',
+      dica: 'Vale para o app inteiro: as interfaces web do Soulbeet, do slskd e do Navidrome, os menus e as janelas do sistema também seguem.',
+      escuro: 'Escuro',
+      claro: 'Claro',
+      sistema: 'Igual ao Windows',
+    },
+    carregando: 'Lendo as preferências…',
+  },
+
+  /** Configurações → Sobre (Fase 6) */
+  sobre: {
+    versoes: 'Versões',
+    app: 'App',
+    stack: 'Stack',
+    desenvolvimento: 'desenvolvimento',
+    stackDoApp: (versao: string) => `o app traz a ${versao}`,
+    lidaDoConteiner: 'lida do contêiner',
+    daImagem: 'rótulo da imagem do contêiner',
+    semVersao: {
+      'sem-pasta': 'Sem pasta do Soulcrate',
+      'docker-fora': 'Docker fechado',
+      'stack-desligada': 'Ligue a stack para ler',
+      'nao-lida': 'Não consegui ler',
+    },
+    nao: 'não encontrada',
+    lendo: 'Lendo as versões dos contêineres…',
+    creditos: 'Créditos e licença',
+    creditosTitulo: 'Créditos e licença',
+    creditosDescricao:
+      'O Soulcrate junta ferramentas abertas. Cada uma segue a própria licença; os links levam ao projeto de origem.',
+    licencaDoSoulcrate: 'Licença do Soulcrate',
+    licencasDeTerceiros: 'Licenças que o instalador traz',
+    codigoFonte: 'Código-fonte no GitHub',
+    fechar: 'Fechar',
+    erroLer: 'Não consegui ler as informações do app.',
+  },
+
+  /** A atualização do app (Fase 7): a linha em Sobre e o aviso no Início */
+  atualizacao: {
+    procurar: 'Procurar atualização',
+    procurando: 'Procurando…',
+    reiniciar: 'Reiniciar e atualizar',
+    indisponivel: {
+      desenvolvimento: 'A atualização automática só existe no app instalado.',
+      'sem-instalador':
+        'Este app não foi aberto pelo instalador, então não se atualiza sozinho. Instale a versão nova pelo instalador.',
+    },
+    ocioso: 'O app procura atualização ao abrir e a cada 24 horas.',
+    verificando: 'Procurando atualização…',
+    atualizado: (quando: string) => `Você está na versão mais nova. Última checagem: ${quando}.`,
+    baixando: (versao: string, percentual: number) => `Baixando a versão ${versao}… ${percentual}%`,
+    pronta: (versao: string) => `A versão ${versao} está pronta. Ela entra quando o app reiniciar.`,
+    aviso: {
+      titulo: (versao: string) => `A versão ${versao} está pronta`,
+      corpo: 'Reinicie o app para instalar. A atualização nunca interrompe um lote: se houver um rodando, ela espera.',
+      corpoLote: 'Há um lote rodando. A atualização espera ele terminar para reiniciar o app.',
+      baixando: (versao: string, percentual: number) => `Baixando a versão ${versao}… ${percentual}%`,
+      depois: 'Mais tarde',
+    },
+  },
+
+  /** Os arquivos da stack que o app instalou na pasta do Soulcrate (Fase 7, §3.3) */
+  arquivosDaStack: {
+    aviso: {
+      titulo: 'Os arquivos da stack foram atualizados',
+      corpo: (de: string | null, para: string | null) =>
+        de && para && de !== para
+          ? `A pasta do Soulcrate passou da stack ${de} para a ${para}. O que você não tinha editado foi trocado; seus arquivos de configuração e a biblioteca não foram tocados.`
+          : 'Os arquivos da stack da pasta do Soulcrate foram atualizados. Seus arquivos de configuração e a biblioteca não foram tocados.',
+      reconstruir: 'A imagem do Soulbeet ou o compose mudou: reconstrua a stack para a mudança valer.',
+      mantidos: (n: number) =>
+        `${n} ${plural(n, 'arquivo que você editou foi mantido', 'arquivos que você editou foram mantidos')}: a versão nova está ao lado, com a extensão .novo. Compare e junte as mudanças quando quiser.`,
+      reconstruirAgora: 'Reconstruir a stack',
+      verPasta: 'Abrir a pasta',
+    },
+    esperando: 'Há arquivos da stack para atualizar. Eles entram quando o lote em andamento terminar.',
+    atualizarAgora: 'Atualizar agora',
+    migracao: {
+      titulo: 'Esta pasta tem alterações locais nos arquivos da stack',
+      corpoGit:
+        'O app não altera esta pasta (quem a atualiza é o git). Um git pull pode esbarrar nestas alterações, e elas valem só para este clone:',
+      corpoSemGit:
+        'O app não altera esta pasta. Estes arquivos da stack são diferentes dos que o app traz (pode ser só uma versão diferente):',
+      gitIndisponivel: 'Não consegui consultar o git; a comparação é com os arquivos que o app traz.',
+      continuar: 'Quando estiver ciente, clique em Avançar para continuar.',
+    },
+    gerenciada: (versao: string | null) =>
+      `O app cuida dos arquivos da stack desta pasta${versao ? ` (stack ${versao})` : ''}.`,
+    naoGerenciada: 'Esta pasta já existia quando o app a adotou: quem a atualiza é quem a criou (por exemplo, o git).',
+  },
+
+  /** Rede de segurança do renderer (Fase 6): uma tela que quebrou não derruba a janela inteira */
+  telaQuebrou: {
+    titulo: 'Esta tela travou',
+    mensagem:
+      'Algo inesperado aconteceu e eu não consegui desenhar esta tela. O resto do app continua funcionando e nada foi perdido.',
+    voltarAoInicio: 'Ir para o Início',
+    recarregar: 'Tentar de novo',
+  },
+
+  /** Navegação por teclado e leitores de tela (Fase 6) */
+  acessibilidade: {
+    pularParaConteudo: 'Pular para o conteúdo',
+    conteudo: 'Conteúdo',
+  },
+
+  /** o pacote de suporte (Fase 6): o botão em Configurações → Sobre e o LEIA-ME que vai dentro do zip */
+  suporte: {
+    titulo: 'Suporte',
+    descricao:
+      'O pacote reúne os logs do app, os últimos execucao-*.log, o docker compose ps e as versões. Senhas e chaves são removidas antes de gerar o arquivo.',
+    gerar: 'Gerar pacote de suporte',
+    gerando: 'Gerando…',
+    salvarTitulo: 'Salvar o pacote de suporte',
+    filtroZip: 'Arquivo zip',
+    pronto: 'Pacote gerado',
+    prontoCorpo: (arquivos: number, tamanho: string) =>
+      `${arquivos} ${plural(arquivos, 'arquivo', 'arquivos')} · ${tamanho}. Senhas e chaves foram removidas.`,
+    mostrarNaPasta: 'Mostrar na pasta',
+    leiaMeTitulo: 'Pacote de suporte do Soulcrate',
+    leiaMeCorpo: [
+      'Este arquivo foi gerado no seu PC e não foi enviado a lugar nenhum: quem decide para quem mandá-lo é você.',
+      'Senhas e chaves foram removidas dos logs e do .env (aparecem como ***). Mesmo assim, dê uma olhada antes de enviar: os logs podem trazer nomes de listas, de faixas e de pastas do seu PC.',
+      'O .env e o slskd.yml em si não fazem parte do pacote.',
+    ],
+  },
+
   bandeja: {
     abrir: 'Abrir Soulcrate',
     ligar: 'Ligar stack',
@@ -1449,6 +1594,7 @@ export const msg = {
     exibir: 'Exibir',
     ajuda: 'Ajuda',
     abrirPastaLogs: 'Abrir pasta de logs',
+    gerarPacoteSuporte: 'Gerar pacote de suporte…',
     sobre: 'Sobre o Soulcrate',
     recarregar: 'Recarregar',
     ferramentasDev: 'Ferramentas de desenvolvedor',
@@ -1488,6 +1634,10 @@ export const msg = {
       'biblioteca.filtro-invalido': 'Erro · filtro',
       'biblioteca.mudou': 'Erro · biblioteca',
       'biblioteca.falhou': 'Erro · biblioteca',
+      'suporte.nao-gerou': 'Erro · suporte',
+      'atualizacao.falhou': 'Erro · atualização',
+      'atualizacao.lote-rodando': 'Atualização · espera',
+      'stack.atualizacao-falhou': 'Erro · stack',
       inesperado: 'Erro inesperado',
     } satisfies Record<ErroCodigo, string>,
     inesperado: { titulo: 'Algo deu errado', mensagem: 'O app não conseguiu terminar o que você pediu.' },
@@ -1619,6 +1769,26 @@ export const msg = {
     bibliotecaFalhou: {
       titulo: (tarefa: string) => `Não consegui ${tarefa}`,
       mensagem: 'O beets devolveu um erro. As últimas linhas da saída estão nos detalhes.',
+    },
+    suporteNaoGerou: {
+      titulo: 'Não consegui gerar o pacote de suporte',
+      mensagem:
+        'Nada foi gravado nem enviado a lugar nenhum. Veja se a pasta escolhida permite gravação (tente a Área de Trabalho) e tente de novo.',
+    },
+    atualizacaoFalhou: {
+      titulo: 'Não consegui procurar atualização',
+      mensagem:
+        'O app só fala com o GitHub para isso. Confira a conexão com a internet e tente de novo: enquanto isso o Soulcrate segue funcionando na versão atual.',
+    },
+    atualizacaoLoteRodando: {
+      titulo: 'Há um lote rodando',
+      mensagem:
+        'O app só reinicia para atualizar quando nenhum lote está rodando. A atualização já foi baixada e espera: termine ou pare o lote e tente de novo.',
+    },
+    stackAtualizacaoFalhou: {
+      titulo: 'Não consegui atualizar os arquivos da stack',
+      mensagem:
+        'Nenhum arquivo seu foi alterado. Veja se a pasta do Soulcrate permite gravação e se nenhum outro programa está com um deles aberto, e tente de novo.',
     },
     operacaoFalhou: {
       titulo: (op: OperacaoStack | 'reiniciando') =>

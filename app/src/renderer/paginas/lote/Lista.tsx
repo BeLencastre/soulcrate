@@ -41,7 +41,7 @@ function EditorDaLista({
     <div className="flex max-h-[560px] flex-1 overflow-auto" data-testid="editor-rolagem">
       <div
         aria-hidden="true"
-        className="w-[52px] shrink-0 self-stretch border-r border-[#1e2125] py-[14px] text-right font-mono text-xs leading-6 text-[#5f646c]"
+        className="w-[52px] shrink-0 self-stretch border-r border-linha-fraca py-[14px] text-right font-mono text-xs leading-6 text-texto-gutter"
         data-testid="editor-gutter"
       >
         {Array.from({ length: linhas }, (_, i) => {
@@ -130,7 +130,7 @@ function ListaDeRecentes({ aoEscolher }: { aoEscolher(nome: string): void }) {
   return (
     <ul className="m-0 flex list-none flex-col p-0" data-testid="lista-recentes">
       {recentes.map((r) => (
-        <li key={r.nome} className="border-t border-[#22252a] first:border-t-0">
+        <li key={r.nome} className="border-t border-linha first:border-t-0">
           <button
             type="button"
             className="row flex min-h-[44px] w-full cursor-pointer items-center gap-3 border-0 bg-transparent px-2 py-2 text-left"
@@ -160,7 +160,7 @@ function DialogoRecentes({
       <Dialog.Portal>
         <Dialog.Overlay className="fixed inset-0 z-50 bg-black/60" />
         <Dialog.Content
-          className="fixed top-1/2 left-1/2 z-50 flex max-h-[80vh] w-[min(520px,calc(100vw-32px))] -translate-x-1/2 -translate-y-1/2 flex-col gap-4 overflow-hidden rounded-[10px] border border-borda-forte bg-[#17191c] p-6 shadow-[0_24px_60px_rgba(0,0,0,0.55)]"
+          className="fixed top-1/2 left-1/2 z-50 flex max-h-[80vh] w-[min(520px,calc(100vw-32px))] -translate-x-1/2 -translate-y-1/2 flex-col gap-4 overflow-hidden rounded-[10px] border border-borda-forte bg-dialogo p-6 shadow-[0_24px_60px_rgba(0,0,0,0.55)]"
           data-testid="dialogo-recentes"
         >
           <Dialog.Title className="m-0 text-xl font-extrabold" style={{ fontStretch: '110%' }}>
@@ -393,7 +393,7 @@ export function Lista() {
           {rodandoEstaLista ? (
             <div
               role="status"
-              className="flex flex-wrap items-center gap-3 rounded-lg border border-azul-borda bg-[#16202c] px-4 py-3 text-sm"
+              className="flex flex-wrap items-center gap-3 rounded-lg border border-azul-borda bg-azul-fundo px-4 py-3 text-sm"
             >
               <span className="flex-1">{t.rodandoAgora}</span>
               <Link className={classeBotao('padrao', true)} to="/lista/execucao">
