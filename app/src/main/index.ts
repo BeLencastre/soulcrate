@@ -12,6 +12,7 @@ import { msg } from '@shared/mensagens';
 import { listaDoArgv } from './argv';
 import { Bandeja } from './bandeja';
 import { ExecutorComDockerFalso, VAR_DOCKER_DUBLE, VAR_HTTP_DUBLE } from './duble-docker';
+import { buscadorDuble, VAR_PLAYLISTS_DUBLE } from './duble-playlists';
 import { registrarIpc } from './ipc';
 import { criarJanelaPrincipal } from './janela';
 import { iniciarLog, pastaDeLogs } from './log';
@@ -40,6 +41,7 @@ import { MigracaoService } from './services/migracao-service';
 import { LoteService, processoVivoReal, type NotificacaoLote } from './services/lote-service';
 import { OperacoesService } from './services/operacoes-service';
 import { PastaService } from './services/pasta-service';
+import { PlaylistsService } from './services/playlists-service';
 import { RelatoriosService } from './services/relatorios-service';
 import { lerVersaoDaStack, resolverProjeto } from './services/project-service';
 import { portaAceitaConexao, SetupService } from './services/setup-service';
@@ -259,6 +261,13 @@ async function principal(): Promise<void> {
 
   // download em lote (Fase 3)
   const listas = new ListasService({ executor, agora: Date.now });
+  // importação de playlist (só playlists públicas, pelo link): a única conexão do app com os streamings
+  // (nos testes ponta a ponta, as respostas vêm de um arquivo: nada sai para a internet)
+  const playlistsDuble = !app.isPackaged ? process.env[VAR_PLAYLISTS_DUBLE] : undefined;
+  const playlists = new PlaylistsService({
+    buscar: playlistsDuble ? buscadorDuble(playlistsDuble) : (url, init) => fetch(url, init),
+    aoFalhar: (servico, detalhe) => log.warn(`Importar playlist (${servico ?? 'link'}): ${detalhe}`),
+  });
   // nos testes ponta a ponta, as notificações viram uma lista que o teste confere (nada aparece na tela de quem testa)
   const notificacoesDuble = !app.isPackaged && process.env.SOULCRATE_DUBLE_NOTIFICACOES === '1';
   const notificar = (n: NotificacaoLote): void => {
@@ -492,6 +501,7 @@ async function principal(): Promise<void> {
     pasta,
     setup,
     listas,
+    playlists,
     lote,
     relatorios,
     biblioteca,

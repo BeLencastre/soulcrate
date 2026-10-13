@@ -13,6 +13,7 @@ import {
   type OpcoesAnalise,
 } from '@shared/lote';
 import { validarOpcoes, type OpcoesLote } from '@shared/opcoes-lote';
+import { LIMITE_LINK } from '@shared/playlists';
 
 /** Nenhum campo do formulário tem motivo para passar disto (uma senha de 255 caracteres já é enorme). */
 const LIMITE_TEXTO = 1024;
@@ -98,6 +99,20 @@ export function exigirModelo(valor: unknown): ModeloLista {
 
 export function exigirTextoDaLista(valor: unknown): string {
   if (typeof valor !== 'string' || valor.length > LIMITE_LISTA_BYTES) throw new Error('Texto da lista inválido.');
+  return valor;
+}
+
+/** O link colado no diálogo de playlist: só texto curto (quem decide para onde o app se conecta é o main). */
+export function exigirLinkDePlaylist(valor: unknown): string {
+  if (typeof valor !== 'string' || valor.length > LIMITE_LINK) throw new Error('Link inválido.');
+  return valor;
+}
+
+/** O nome que a pessoa deu à lista importada: o main ainda limpa e evita sobrescrever. */
+export function exigirNomeSugerido(valor: unknown): string {
+  if (typeof valor !== 'string' || valor.trim().length === 0 || valor.length > 200) {
+    throw new Error('Nome de lista inválido.');
+  }
   return valor;
 }
 

@@ -172,3 +172,26 @@ export const IconeLixeira = (p: Props) => (
     <path d="M9 7V4h6v3" />
   </Base>
 );
+/** Lista com uma nota musical: "Importar playlist". */
+export const IconePlaylist = (p: Props) => (
+  <Base {...p}>
+    <path d="M3 6h11" />
+    <path d="M3 12h11" />
+    <path d="M3 18h6" />
+    <circle cx="16" cy="18" r="3" />
+    <path d="M19 18V6l3 1.5" />
+  </Base>
+);
+export const IconeFechar = (p: Props) => (
+  <Base tamanho={18} {...p}>
+    <path d="M6 6l12 12" />
+    <path d="M18 6 6 18" />
+  </Base>
+);
+export const IconeAlerta = (p: Props) => (
+  <Base {...p}>
+    <circle cx="12" cy="12" r="9" />
+    <path d="M12 8v5" />
+    <path d="M12 16h.01" />
+  </Base>
+);

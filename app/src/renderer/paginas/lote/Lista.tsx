@@ -1,14 +1,17 @@
 // Etapa 1 do lote (protótipo "Baixar lista · Lista"): editor da lista com a pré-visualização ao lado (gerada pelo
-// próprio baixar-lista.ps1, com debounce), importação, listas recentes, retomada e o botão de iniciar.
+// próprio baixar-lista.ps1, com debounce), importação (arquivo ou playlist de streaming), listas recentes, retomada e
+// o botão de iniciar.
 import { useEffect, useState } from 'react';
 import * as Dialog from '@radix-ui/react-dialog';
 import { Link } from 'react-router';
 import { msg } from '@shared/mensagens';
 import { alterouAlgo, opcoesAlteradas } from '@shared/opcoes-lote';
+import { origemDoTexto, STREAMINGS, streamingPorId, type StreamingId } from '@shared/playlists';
 import { resumirStack } from '@shared/stack';
 import type { LinhaAnalise } from '@shared/analise-lista';
-import { IconeEnviar, IconePlay } from '../../components/icones';
+import { IconeEnviar, IconePlay, IconePlaylist, IconeReconstruir } from '../../components/icones';
 import { CartaoErro } from '../../components/CartaoErro';
+import { DialogoPlaylist, SiglaStreaming } from '../../components/lote/DialogoPlaylist';
 import { EtapasDoLote } from '../../components/lote/Etapas';
 import { useIniciarLote } from '../../components/lote/IniciarLote';
 import { TabelaVirtual } from '../../components/TabelaVirtual';
@@ -137,6 +140,7 @@ function ListaDeRecentes({ aoEscolher }: { aoEscolher(nome: string): void }) {
             onClick={() => aoEscolher(r.nome)}
           >
             <span className="min-w-0 flex-1 truncate font-mono text-sm font-bold">{r.nome}</span>
+            {r.origem ? <Chip cor="cinza">{streamingPorId(r.origem.servico).nome}</Chip> : null}
             <span className="text-xs text-texto-mudo">{haQuanto(agora - r.modificadaEm)}</span>
           </button>
         </li>
@@ -184,33 +188,61 @@ function DialogoRecentes({
   );
 }
 
-function ListaVazia() {
+/** "Ou importe uma playlist": um botão por streaming, que abre o diálogo já nele. */
+function GradeDeStreamings({ aoEscolher }: { aoEscolher(s: StreamingId): void }) {
+  const t = msg.lote.lista.playlist;
+  return (
+    <div className="flex flex-col gap-3 border-t border-borda-fraca pt-5" data-testid="grade-streamings">
+      <div className="flex flex-wrap items-baseline gap-[10px]">
+        <h3 className="m-0 text-[15px] font-extrabold">{t.ouImporte}</h3>
+        <span className="text-[13px] text-texto-suave">{t.ouImporteDica}</span>
+      </div>
+      <div className="grid grid-cols-[repeat(auto-fit,minmax(150px,1fr))] gap-2">
+        {STREAMINGS.map((s) => (
+          <button
+            key={s.id}
+            type="button"
+            className="flex min-h-16 cursor-pointer items-center gap-3 rounded-lg border border-borda bg-cartao p-3 text-left text-texto hover:border-borda-hover hover:bg-hover"
+            onClick={() => aoEscolher(s.id)}
+          >
+            <SiglaStreaming servico={s.id} />
+            <span className="flex min-w-0 flex-col gap-[2px]">
+              <span className="text-sm font-bold">{s.nome}</span>
+              <span className="text-xs text-texto-mudo">{t.peloLink}</span>
+            </span>
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function ListaVazia({ aoImportarPlaylist }: { aoImportarPlaylist(s: StreamingId): void }) {
   const abrir = useRascunho((s) => s.abrir);
   const criar = useRascunho((s) => s.criar);
   const importar = useRascunho((s) => s.importarArquivo);
   const t = msg.lote.lista;
   return (
     <div className="flex flex-col gap-6">
-      <Cartao
-        borda="vazio"
-        className="flex max-w-[640px] flex-col items-start gap-3 p-[22px]"
-        data-testid="lista-vazia"
-      >
-        <Rotulo>{msg.lote.rotulo}</Rotulo>
-        <h2 className="m-0 text-lg font-extrabold">{t.vazio.titulo}</h2>
-        <p className="m-0 text-sm leading-normal text-texto-claro">{t.vazio.corpo}</p>
-        <div className="mt-1 flex flex-wrap gap-2">
-          <Botao variante="primario" onClick={() => void criar('exemplo')}>
-            {t.novaDoExemplo}
-          </Botao>
-          <Botao onClick={() => void criar('vazia')}>{t.novaEmBranco}</Botao>
-          <Botao onClick={() => void importar()}>
-            <IconeEnviar />
-            {t.importar}
-          </Botao>
+      <Cartao borda="vazio" className="flex max-w-[880px] flex-col gap-5 p-6" data-testid="lista-vazia">
+        <div className="flex flex-col items-start gap-[10px]">
+          <Rotulo>{msg.lote.rotulo}</Rotulo>
+          <h2 className="m-0 text-lg font-extrabold">{t.vazio.titulo}</h2>
+          <p className="m-0 max-w-[640px] text-sm leading-normal text-texto-claro">{t.vazio.corpo}</p>
+          <div className="mt-1 flex flex-wrap gap-2">
+            <Botao variante="primario" onClick={() => void criar('exemplo')}>
+              {t.novaDoExemplo}
+            </Botao>
+            <Botao onClick={() => void criar('vazia')}>{t.novaEmBranco}</Botao>
+            <Botao onClick={() => void importar()}>
+              <IconeEnviar />
+              {t.importar}
+            </Botao>
+          </div>
         </div>
+        <GradeDeStreamings aoEscolher={aoImportarPlaylist} />
       </Cartao>
-      <Cartao className="flex max-w-[640px] flex-col gap-3 p-5">
+      <Cartao className="flex max-w-[880px] flex-col gap-3 p-5">
         <Rotulo>{t.recentes.titulo}</Rotulo>
         <ListaDeRecentes aoEscolher={(nome) => void abrir(nome)} />
       </Cartao>
@@ -256,6 +288,9 @@ export function Lista() {
   const definirOpcoes = useRascunho((s) => s.definirOpcoes);
   const status = useStackStatus();
   const [recentesAbertas, setRecentesAbertas] = useState(false);
+  const [playlistAberta, setPlaylistAberta] = useState<StreamingId | null>(null);
+  const avisoPlaylist = useRascunho((s) => s.avisoPlaylist);
+  const atualizandoPlaylist = useRascunho((s) => s.atualizandoPlaylist);
   const iniciarLote = useIniciarLote();
 
   const sujo = estaSujo({ texto, textoSalvo });
@@ -264,6 +299,8 @@ export function Lista() {
   // a pré-visualização também confere a biblioteca, mas só com a stack no ar (é o beets que responde)
   const biblioteca = resumirStack(status).motivo === 'no-ar' && !opcoes.NaoPularExistentes && !opcoes.SemBeets;
   const retentar = opcoes.Retentar;
+  // a lista veio de uma playlist (primeira linha "# Spotify · Nome · link")
+  const origem = lista?.tipo === 'txt' ? origemDoTexto(texto) : null;
 
   // ao abrir a tela: volta para a última lista usada e carrega as recentes
   useEffect(() => {
@@ -310,6 +347,7 @@ export function Lista() {
   );
 
   const t = msg.lote.lista;
+  const tp = t.playlist;
   const paraBaixar = analiseOk?.toProcess ?? 0;
   const nAlteracoes = opcoesAlteradas(opcoes).length;
   const podeIniciar =
@@ -326,6 +364,24 @@ export function Lista() {
             </h1>
             {lista ? <EstadoDoSalvamento /> : null}
           </div>
+          {origem ? (
+            <div
+              className="flex flex-wrap items-center gap-[10px] text-[13px] text-texto-suave"
+              data-testid="origem-lista"
+            >
+              <Chip cor="neutro">{tp.origem(streamingPorId(origem.servico).nome)}</Chip>
+              <span className="min-w-0 truncate">{origem.nome}</span>
+              <Botao
+                pequeno
+                disabled={somenteLeitura || atualizandoPlaylist || salvando}
+                onClick={() => void useRascunho.getState().atualizarDaPlaylist()}
+                data-testid="atualizar-da-playlist"
+              >
+                <IconeReconstruir tamanho={14} />
+                {atualizandoPlaylist ? tp.atualizando : tp.atualizar}
+              </Botao>
+            </div>
+          ) : null}
         </div>
         <div className="flex flex-wrap gap-2">
           <Botao
@@ -342,10 +398,39 @@ export function Lista() {
             <IconeEnviar />
             {t.importar}
           </Botao>
+          <Botao onClick={() => setPlaylistAberta('spotify')} data-testid="abrir-importar-playlist">
+            <IconePlaylist />
+            {tp.botao}
+          </Botao>
         </div>
       </header>
 
       <EtapasDoLote />
+
+      {avisoPlaylist && lista ? (
+        <div
+          role="status"
+          className="flex flex-wrap items-center gap-3 rounded-lg border border-verde-borda bg-verde-fundo px-4 py-3 text-sm leading-normal"
+          data-testid="aviso-playlist"
+        >
+          <span aria-hidden="true" className="size-2 shrink-0 rounded-[2px] bg-led-verde" />
+          <span className="min-w-[280px] flex-1">
+            {avisoPlaylist.tipo === 'importada' ? (
+              <>
+                <strong>{tp.importada.titulo(avisoPlaylist.faixas, streamingPorId(avisoPlaylist.servico).nome)}</strong>{' '}
+                <span className="text-texto-claro">
+                  {tp.importada.corpo(avisoPlaylist.duplicadas, avisoPlaylist.videos)}
+                </span>
+              </>
+            ) : (
+              <strong>{tp.atualizada(avisoPlaylist.novas)}</strong>
+            )}
+          </span>
+          <Botao variante="fantasma" pequeno onClick={() => useRascunho.getState().dispensarAvisoPlaylist()}>
+            {msg.acoes.dispensar}
+          </Botao>
+        </div>
+      ) : null}
 
       {erro ? (
         <Cartao
@@ -365,7 +450,7 @@ export function Lista() {
       ) : null}
 
       {!lista ? (
-        <ListaVazia />
+        <ListaVazia aoImportarPlaylist={setPlaylistAberta} />
       ) : (
         <>
           {ultimaExecucao !== null && analiseOk ? (
@@ -419,7 +504,7 @@ export function Lista() {
                 marcadores={marcadores}
               />
               <div className="flex items-center gap-[10px] border-t border-dashed border-borda-forte px-4 py-3 text-[13px] text-texto-suave">
-                {somenteLeitura ? t.somenteLeitura : t.dica}
+                {somenteLeitura ? t.somenteLeitura : origem ? tp.dicaOrigem : t.dica}
               </div>
             </section>
 
@@ -501,6 +586,11 @@ export function Lista() {
         </>
       )}
 
+      <DialogoPlaylist
+        aberto={playlistAberta !== null}
+        servicoInicial={playlistAberta ?? 'spotify'}
+        aoFechar={() => setPlaylistAberta(null)}
+      />
       <DialogoRecentes
         aberto={recentesAbertas}
         aoFechar={() => setRecentesAbertas(false)}

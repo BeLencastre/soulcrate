@@ -353,3 +353,42 @@ describe('arquivos temporários', () => {
     expect(statSync(join(dir, 'a.txt')).isFile()).toBe(true);
   });
 });
+
+describe('lista de uma playlist importada', () => {
+  const CABECA = '# Spotify · Hard Techno Sexta · https://open.spotify.com/playlist/37i9dQZF1DXcBWIGoYBM5M';
+
+  it('criarComTexto grava UTF-8 com fim de linha do Windows, como .txt', () => {
+    const ref = novo().svc.criarComTexto(dir, 'hard-techno-sexta.txt', `${CABECA}\nByørn - 2 LOUD\n`);
+    expect(ref).toMatchObject({ nome: 'hard-techno-sexta.txt', tipo: 'txt' });
+    expect(readFileSync(join(dir, 'hard-techno-sexta.txt'), 'utf8')).toBe(`${CABECA}\r\nByørn - 2 LOUD\r\n`);
+  });
+
+  it('nunca sobrescreve, limpa o nome e não aceita virar .csv', () => {
+    escrever('set.txt', 'original');
+    const svc = novo().svc;
+    expect(svc.criarComTexto(dir, 'set', 'A - B').nome).toBe('set-2.txt');
+    // só o nome: a pasta some, os caracteres proibidos viram _ e o .csv vira .txt
+    expect(svc.criarComTexto(dir, 'a/b:c?.csv', 'A - B').nome).toBe('b_c_.txt');
+    expect(svc.criarComTexto(dir, '../../fora', 'A - B').nome).toBe('fora.txt');
+    expect(readFileSync(join(dir, 'set.txt'), 'utf8')).toBe('original');
+    expect(existsSync(join(dir, '..', 'fora.txt'))).toBe(false);
+  });
+
+  it('texto grande demais é recusado', () => {
+    expect(() => novo().svc.criarComTexto(dir, 'x', 'a'.repeat(5_000_001))).toThrow(/grande demais/);
+  });
+
+  it('as recentes dizem de qual streaming a lista veio (só pela primeira linha)', () => {
+    escrever('importada.txt', `\uFEFF${CABECA}\r\nAzyr - No Escape\r\n`, 2_000);
+    escrever('comum.txt', '# Uma faixa por linha\r\nAzyr - No Escape\r\n', 1_000);
+    escrever('meio.txt', `Azyr - No Escape\r\n${CABECA}\r\n`, 500);
+    const r = novo().svc.recentes(dir);
+    expect(r.find((l) => l.nome === 'importada.txt')?.origem).toEqual({
+      servico: 'spotify',
+      nome: 'Hard Techno Sexta',
+      url: 'https://open.spotify.com/playlist/37i9dQZF1DXcBWIGoYBM5M',
+    });
+    expect(r.find((l) => l.nome === 'comum.txt')).not.toHaveProperty('origem');
+    expect(r.find((l) => l.nome === 'meio.txt')).not.toHaveProperty('origem');
+  });
+});
