@@ -111,6 +111,38 @@ O fluxo está em [`.github/workflows/release.yml`](../.github/workflows/release.
 3. O workflow roda `npm run check`, os testes ponta a ponta, gera o instalador e cria um **rascunho** de release com `Soulcrate-Setup-<versão>.exe`, o `.blockmap`, o `latest.yml` (que o `electron-updater` lê) e o `SHA256SUMS.txt`.
 4. Instale o rascunho num Windows de teste, confira as notas (em português, voltadas ao usuário) e **publique** a release. Só então os apps instalados enxergam a atualização.
 
+**Como o rascunho é criado.** O workflow cria o rascunho **uma vez só**, antes de gerar o instalador, com o título `Soulcrate <versão>` e as notas vazias. O `electron-builder` acha esse rascunho pela tag e só anexa os arquivos. O workflow faz isso porque o `electron-builder` envia o `.exe` e o `.blockmap` em paralelo. Quando a release ainda não existia, cada envio criava o seu próprio rascunho: foi assim que a v1.1.0 saiu com dois rascunhos. Além disso:
+
+- Se o workflow rodar de novo para a mesma tag (*Re-run*), ele reaproveita o rascunho que já existe. Se já houver uma release **publicada** com a tag, ele para: suba a versão.
+- O passo dos checksums anexa o `SHA256SUMS.txt` ao rascunho pelo **id** devolvido no passo anterior e tenta de novo por alguns segundos se a API responder 404. Antes, ele confere que o rascunho tem o `.exe`, o `.blockmap` e o `latest.yml`. Se houver **mais de um rascunho** com a tag, ele falha e lista os ids e os arquivos de cada um.
+- O artefato `instalador-release` (o `.exe`, o `.blockmap`, o `latest.yml` e, se chegou a ser gerado, o `SHA256SUMS.txt`) é enviado mesmo quando um passo anterior falha. Fica na página da execução, em *Artifacts*, por 30 dias.
+
+**Se aparecer um rascunho duplicado** (o passo "Checksums SHA-256" falha com "Há N rascunhos com a tag…"):
+
+1. Veja os rascunhos da tag e o que cada um tem (troque `v1.1.0` pela versão):
+
+   ```bash
+   gh api repos/BeLencastre/soulcrate/releases --jq '.[] | select(.tag_name == "v1.1.0") | "\(.id) draft=\(.draft) \([.assets[].name] | join(", "))"'
+   ```
+
+2. O mais simples é **apagar todos os rascunhos da tag** e rodar de novo o workflow (*Re-run all jobs*). Ele cria um rascunho novo e completo. Apagar um rascunho não apaga a tag do Git.
+
+   ```bash
+   gh api -X DELETE repos/BeLencastre/soulcrate/releases/<id>
+   ```
+
+3. Para aproveitar o rascunho que já está pronto, sem rodar tudo de novo: baixe o artefato `instalador-release` da execução (`gh run download <id-da-execução> -n instalador-release`). Anexe ao rascunho certo (o id que aparece na mensagem de erro) os arquivos que faltam. Depois, **apague o outro rascunho antes de publicar**:
+
+   ```bash
+   gh api -X POST "https://uploads.github.com/repos/BeLencastre/soulcrate/releases/<id>/assets?name=SHA256SUMS.txt" -H "Content-Type: text/plain" --input SHA256SUMS.txt
+   ```
+
+   Se publicar com o outro rascunho ainda preso à tag, a release publicada vai ficar com uma tag `untagged-…`. Para corrigir, apague o rascunho que sobrou e devolva a tag à release:
+
+   ```bash
+   gh api -X PATCH repos/BeLencastre/soulcrate/releases/<id> -f tag_name=v1.1.0
+   ```
+
 Antes de cada release, rode também o roteiro manual: [`roteiro-manual.md`](roteiro-manual.md) (a matriz da [§7](interface-electron.md#7-estratégia-de-testes) da especificação, em forma de checklist).
 
 **Checklist da primeira release (1.0.0):**

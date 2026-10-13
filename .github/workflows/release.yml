@@ -13,6 +13,12 @@ on:
 permissions:
   contents: write
 
+# duas execuções para a mesma tag ao mesmo tempo (um re-run disparado durante outro, por exemplo) criariam rascunhos em
+# paralelo: a segunda espera a primeira terminar
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
 jobs:
   instalador:
     name: Instalador (testa, gera e publica o rascunho)
@@ -45,9 +51,58 @@ jobs:
       - name: Testes ponta a ponta (Playwright)
         run: npm run test:e2e
 
+      # O rascunho nasce AQUI, uma vez só, antes do electron-builder. Ele envia o .exe e o .blockmap em paralelo e, no
+      # electron-builder 26, cada envio pode montar o seu próprio "publisher" (PublishManager.getOrCreatePublisher só
+      # guarda o publisher no cache depois de um await): sem release, cada um criou a sua e a v1.1.0 saiu com DOIS
+      # rascunhos. Com o rascunho já criado, GitHubPublisher.getOrCreateRelease o acha na lista de releases (mesma tag,
+      # draft) e só anexa os arquivos. Numa nova execução do workflow, o rascunho que já existe é reaproveitado.
+      - name: Criar o rascunho da release (uma vez só)
+        id: rascunho
+        shell: pwsh
+        run: |
+          $repo = '${{ github.repository }}'
+          $tag = '${{ github.ref_name }}'
+          $versao = $tag.TrimStart('v')
+          $cabecalho = @{ Authorization = "Bearer $env:GH_TOKEN"; Accept = 'application/vnd.github+json' }
+          # a mesma lista que o electron-builder consulta; ele aceita a tag com ou sem o "v"
+          function Get-ReleasesDaTag {
+            @(Invoke-RestMethod -Headers $cabecalho -Uri "https://api.github.com/repos/$repo/releases?per_page=100" `
+                -FollowRelLink -MaximumFollowRelLink 10 |
+              ForEach-Object { $_ } | Where-Object { $_.tag_name -in @($tag, $versao) })
+          }
+
+          $daTag = Get-ReleasesDaTag
+          $publicadas = @($daTag | Where-Object { -not $_.draft })
+          $rascunhos = @($daTag | Where-Object { $_.draft })
+          if ($publicadas) {
+            throw "Já existe uma release PUBLICADA com a tag $tag ($($publicadas[0].html_url)): suba a versão em vez de republicar."
+          }
+          if ($rascunhos.Count -gt 1) {
+            throw "Há $($rascunhos.Count) rascunhos com a tag $tag (ids $($rascunhos.id -join ', ')): apague os que sobram e rode de novo (docs/distribuicao.md, §7)."
+          }
+          if ($rascunhos.Count -eq 1) {
+            $id = $rascunhos[0].id
+            Write-Host "Reaproveitando o rascunho $id que já existe para $tag."
+          } else {
+            $corpo = @{ tag_name = $tag; name = "Soulcrate $versao"; body = ''; draft = $true } | ConvertTo-Json
+            $id = (Invoke-RestMethod -Method Post -Headers $cabecalho -ContentType 'application/json' `
+                -Uri "https://api.github.com/repos/$repo/releases" -Body $corpo).id
+            Write-Host "Rascunho $id criado para $tag."
+          }
+
+          # o electron-builder procura o rascunho nessa lista: só segue quando ele aparece lá (senão ele criaria outro)
+          for ($tentativa = 1; $tentativa -le 6; $tentativa++) {
+            if (@(Get-ReleasesDaTag | Where-Object { $_.draft -and $_.id -eq $id }).Count -eq 1) { break }
+            if ($tentativa -eq 6) { throw "O rascunho $id não apareceu na lista de releases; o electron-builder criaria outro." }
+            Start-Sleep -Seconds 5
+          }
+          "id=$id" >> $env:GITHUB_OUTPUT
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
       # com os segredos CSC_LINK e CSC_KEY_PASSWORD no repositório o electron-builder assina o instalador sozinho (D3);
       # sem eles sai sem assinatura e o SmartScreen avisa (docs/distribuicao.md)
-      - name: Gerar o instalador e criar o rascunho da release
+      - name: Gerar o instalador e anexar ao rascunho da release
         run: npm run dist:publicar
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -56,7 +111,8 @@ jobs:
           CSC_IDENTITY_AUTO_DISCOVERY: ${{ secrets.CSC_LINK != '' && 'true' || 'false' }}
 
       # checksums SHA-256 junto da release (§8.1): quem baixa confere o arquivo antes de rodar. A release ainda é um
-      # RASCUNHO, e a API de "release por tag" (usada pelo `gh release upload`) não enxerga rascunhos: acha pelo id.
+      # RASCUNHO, e a API de "release por tag" (usada pelo `gh release upload`) não enxerga rascunhos: usa o id devolvido
+      # pelo passo do rascunho, confere que o electron-builder anexou tudo NELE e que não surgiu um segundo rascunho.
       - name: Checksums SHA-256
         shell: pwsh
         run: |
@@ -69,22 +125,60 @@ jobs:
 
           $repo = '${{ github.repository }}'
           $tag = '${{ github.ref_name }}'
+          $versao = $tag.TrimStart('v')
+          $id = '${{ steps.rascunho.outputs.id }}'
+          if (-not $id) { throw 'O passo "Criar o rascunho da release" não devolveu o id do rascunho.' }
           $cabecalho = @{ Authorization = "Bearer $env:GH_TOKEN"; Accept = 'application/vnd.github+json' }
-          $release = Invoke-RestMethod -Headers $cabecalho -Uri "https://api.github.com/repos/$repo/releases?per_page=30" |
-            Where-Object { $_.tag_name -eq $tag } | Select-Object -First 1
-          if (-not $release) { throw "Não achei a release $tag (o electron-builder a criou?)." }
-          Invoke-RestMethod -Method Post -Headers ($cabecalho + @{ 'Content-Type' = 'text/plain' }) `
-            -Uri "https://uploads.github.com/repos/$repo/releases/$($release.id)/assets?name=SHA256SUMS.txt" `
-            -InFile dist/SHA256SUMS.txt | Out-Null
-          Write-Host "SHA256SUMS.txt anexado à release $tag (rascunho)."
+
+          # nova tentativa curta: logo depois de criada ou alterada, a release pode responder 404 por alguns segundos
+          function Invoke-GitHub([string] $Metodo, [string] $Uri, [hashtable] $Extra = @{}) {
+            for ($tentativa = 1; $tentativa -le 5; $tentativa++) {
+              $resposta = Invoke-RestMethod -Method $Metodo -Headers $cabecalho -Uri $Uri @Extra `
+                -SkipHttpErrorCheck -StatusCodeVariable status
+              if ($status -lt 400) { return $resposta }
+              if ($status -ne 404 -or $tentativa -eq 5) {
+                throw "$Metodo $Uri respondeu ${status}: $($resposta | ConvertTo-Json -Compress -Depth 5)"
+              }
+              Write-Host "$Metodo $Uri respondeu 404; nova tentativa em 5 s ($tentativa/5)."
+              Start-Sleep -Seconds 5
+            }
+          }
+
+          $rascunhos = @(Invoke-RestMethod -Headers $cabecalho -Uri "https://api.github.com/repos/$repo/releases?per_page=100" `
+              -FollowRelLink -MaximumFollowRelLink 10 |
+            ForEach-Object { $_ } | Where-Object { $_.draft -and $_.tag_name -in @($tag, $versao) })
+          if ($rascunhos.Count -gt 1) {
+            $lista = ($rascunhos | ForEach-Object { "  id $($_.id): $(@($_.assets.name) -join ', ')" }) -join "`n"
+            throw ("Há $($rascunhos.Count) rascunhos com a tag $tag (o deste workflow é o $id):`n$lista`n" +
+              "Junte os arquivos no rascunho $id, APAGUE os outros antes de publicar e anexe o SHA256SUMS.txt do artefato " +
+              "instalador-release (docs/distribuicao.md, §7).")
+          }
+
+          $release = Invoke-GitHub Get "https://api.github.com/repos/$repo/releases/$id"
+          if (-not $release.draft -or $release.tag_name -ne $tag) { throw "A release $id não é mais o rascunho de $tag." }
+          $esperados = @("Soulcrate-Setup-$versao.exe", "Soulcrate-Setup-$versao.exe.blockmap", 'latest.yml')
+          $faltando = @($esperados | Where-Object { $_ -notin @($release.assets.name) })
+          if ($faltando) { throw "O rascunho $id está sem: $($faltando -join ', ') (o electron-builder anexou em outra release?)." }
+
+          # numa nova execução do workflow, o SHA256SUMS.txt antigo sai antes de o novo entrar
+          foreach ($asset in @($release.assets | Where-Object { $_.name -eq 'SHA256SUMS.txt' })) {
+            Invoke-GitHub Delete "https://api.github.com/repos/$repo/releases/assets/$($asset.id)" | Out-Null
+          }
+          Invoke-GitHub Post "https://uploads.github.com/repos/$repo/releases/$id/assets?name=SHA256SUMS.txt" `
+            @{ ContentType = 'text/plain'; InFile = 'dist/SHA256SUMS.txt' } | Out-Null
+          Write-Host "SHA256SUMS.txt anexado ao rascunho $id ($tag): $($release.html_url)"
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
+      # roda mesmo se um passo anterior falhar (os checksums, por exemplo): o instalador fica disponível para conferência
       - uses: actions/upload-artifact@v4
+        if: always()
         with:
           name: instalador-release
           path: |
             app/dist/Soulcrate-Setup-*.exe
+            app/dist/Soulcrate-Setup-*.exe.blockmap
             app/dist/latest.yml
             app/dist/SHA256SUMS.txt
+          if-no-files-found: warn
           retention-days: 30
