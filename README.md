@@ -17,7 +17,7 @@ flowchart LR
     D --> E[Rekordbox, pendrive, CDJ/XDJ]
 ```
 
-> **Status:** o **app desktop para Windows** está na versão `1.0.1` e a stack (Docker Compose, scripts e configuração do beets) na `1.2.0` (veja o [`CHANGELOG.md`](CHANGELOG.md)). O instalador está na página de [Releases](https://github.com/BeLencastre/soulcrate/releases) (veja [Instalação pelo app](#instalação-pelo-app-windows)). Os `.bat` continuam funcionando em qualquer caso.
+> **Status:** o **app desktop para Windows** está na versão `1.1.0` e a stack (Docker Compose, scripts e configuração do beets) na `1.2.0` (veja o [`CHANGELOG.md`](CHANGELOG.md)). O instalador está na página de [Releases](https://github.com/BeLencastre/soulcrate/releases) (veja [Instalação pelo app](#instalação-pelo-app-windows)). Os `.bat` continuam funcionando em qualquer caso.
 
 ![O app do Soulcrate: a tela Baixar lista, com o editor e a pré-visualização do que o lote vai ler](docs/img/03-lista.png)
 
@@ -335,6 +335,10 @@ Editor da lista com pré-visualização feita pelo próprio script (repetidas, "
 
 ![Tela Baixar lista: o editor à esquerda e a pré-visualização do que o lote vai ler à direita](docs/img/03-lista.png)
 
+**Importar playlist** traz uma playlist **pública** do Spotify, Apple Music, YouTube Music ou Deezer pelo link. Antes de criar a lista, a revisão mostra as faixas, as repetidas e o nome do arquivo; depois, **Atualizar da playlist** traz só as faixas novas. Sem login e sem conta: o app só lê o que é público. Pelo link, o Spotify entrega no máximo 100 faixas, e a Amazon Music não é aceita (não há caminho gratuito para ler as playlists dela).
+
+![Diálogo Importar playlist: a revisão de uma playlist do Deezer, com as faixas, a repetida marcada e o nome da lista](docs/img/03-importar-playlist.png)
+
 Depois vêm as **opções** do lote: as receitas da tabela de [Opções](#opções), com o que difere do padrão destacado e o comando equivalente.
 
 ![Tela de opções do lote, com as receitas e os interruptores, e o que difere do padrão destacado](docs/img/04-opcoes.png)
@@ -484,6 +488,8 @@ Cloudy - Yeah (Cloudy Remix)
 - **Versões:** remix, edit, rework, bootleg, dub, VIP, live, acapella, instrumental, radio, mashup, cover, sped/slowed etc. só entram se a palavra estiver na sua linha.
 
 **Colando de outros lugares:** o script limpa sozinho a numeração (`01.`, `1)`, `-` , `*` ), o traço longo (`–` e `—` viram `-`) e a duração no fim (`3:45`). Dá para colar tracklist do 1001Tracklists, Beatport ou YouTube quase direto.
+
+**Playlist de streaming no app:** em *Baixar lista → Importar playlist*, escolha Spotify, Apple Music, YouTube Music ou Deezer e cole o link de uma playlist **pública**. O app revisa as faixas e cria a `.txt`; *Atualizar da playlist* traz depois só as faixas novas. Pelo link, o Spotify entrega no máximo 100 faixas: para playlists maiores, use o CSV abaixo.
 
 **Playlist do Spotify:** exporte em CSV (pelo [Exportify](https://exportify.app) ou TuneMyMusic, por exemplo) e use o `.csv` no lugar do `.txt`. Ele lê as colunas *Track Name* e *Artist Name(s)*, e o "Título - X Remix" do Spotify vira "Título (X Remix)".
 
@@ -698,7 +704,7 @@ soulcrate/                      # repositório (código)
 │   │                           #   configuração, spikes e img/ (as capturas de tela do README)
 ├── tests/                      # testes (Pester) e o slskd falso usado por eles
 ├── .github/                    # workflows (CI e release do instalador) e modelos de issue
-└── app/                        # app desktop (Electron, React, TypeScript), versão 1.0.1
+└── app/                        # app desktop (Electron, React, TypeScript), versão 1.1.0
     ├── src/main/               # processo principal: serviços (Docker, lote, biblioteca, configuração, atualização…)
     ├── src/preload/            # a API mínima e tipada que a interface enxerga
     ├── src/renderer/           # a interface: as telas e os componentes
@@ -1069,7 +1075,7 @@ Plugins do beets ativos (`soulbeet/config/config.yaml`): `musicbrainz`, `mbtwopa
 | PowerShell     | `5.1` (Windows) | 5.1 no Windows, ou `pwsh` 7+ no Linux/macOS para o `baixar-lista.ps1` |
 | Node.js        | `24.15`         | Só para desenvolver: testes de integração e o app (`app/.nvmrc`)      |
 | Electron       | `44.x`          | O app (`app/package.json`), com React 19 e TypeScript; já vem no instalador |
-| App Soulcrate  | `1.0.1`         | Versão própria, independente da `VERSION` da stack (`app/package.json`) |
+| App Soulcrate  | `1.1.0`         | Versão própria, independente da `VERSION` da stack (`app/package.json`) |
 
 
 > [!TIP]
