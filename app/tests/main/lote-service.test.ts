@@ -251,8 +251,12 @@ describe('acompanhamento', () => {
   it('run.end: marca como terminada, guarda os arquivos, para de ler e notifica uma vez', async () => {
     const r = await iniciar();
     const id = r.ok ? r.runId : '';
+    // o processo está vivo enquanto escreve o run.end (como na vida real): sem isto, num computador lento, duas
+    // leituras sem novidade bastariam para o serviço concluir que o lote sumiu e notificar "Lote interrompido" antes
+    vivos.add(4242);
     appendFileSync(eventosDe(id), `${runStart(id)}\n${runEnd()}\n`);
     await ate(() => svc.anexar(id)?.resumo.terminou === true);
+    vivos.delete(4242);
     expect(notificacoes).toEqual([
       { tipo: 'fim', titulo: 'Lote concluído', corpo: 'set.txt: 2 baixadas · 0 não encontradas · 0 falhas' },
     ]);
