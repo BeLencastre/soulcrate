@@ -8,7 +8,9 @@ import {
   exigirFiltro,
   exigirFinalidade,
   exigirIdDeFaixa,
+  exigirLinkDePlaylist,
   exigirLogin,
+  exigirNomeSugerido,
   exigirOpcoesDaCorrecao,
   exigirOpcoesSetup,
   exigirTarefa,
@@ -152,6 +154,22 @@ describe('Fase 5: biblioteca', () => {
     expect(exigirIdDeFaixa(1204)).toBe(1204);
     for (const ruim of [-1, 1.5, NaN, Infinity, '3', '../x', null, 2 ** 60]) {
       expect(() => exigirIdDeFaixa(ruim), String(ruim)).toThrow();
+    }
+  });
+});
+
+describe('importação de playlist', () => {
+  it('link: texto de até 2048 caracteres (quem decide para onde o app se conecta é o serviço)', () => {
+    expect(exigirLinkDePlaylist('https://open.spotify.com/playlist/x')).toBe('https://open.spotify.com/playlist/x');
+    for (const ruim of [null, 1, {}, 'x'.repeat(2049)]) {
+      expect(() => exigirLinkDePlaylist(ruim), String(ruim)).toThrow();
+    }
+  });
+
+  it('nome sugerido: texto não vazio e curto (o serviço ainda limpa)', () => {
+    expect(exigirNomeSugerido('hard-techno-sexta.txt')).toBe('hard-techno-sexta.txt');
+    for (const ruim of ['', '   ', null, 'x'.repeat(201)]) {
+      expect(() => exigirNomeSugerido(ruim), String(ruim)).toThrow();
     }
   });
 });

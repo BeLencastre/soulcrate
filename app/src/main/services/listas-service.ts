@@ -4,9 +4,12 @@
 // é montado aqui dentro da pasta do Soulcrate.
 import { randomBytes } from 'node:crypto';
 import {
+  closeSync,
   copyFileSync,
   existsSync,
   mkdirSync,
+  openSync,
+  readSync,
   readdirSync,
   readFileSync,
   renameSync,
@@ -17,6 +20,7 @@ import {
 import { tmpdir } from 'node:os';
 import { basename, dirname, join, resolve } from 'node:path';
 import { lerAnaliseLista } from '@shared/analise-lista';
+import { lerOrigem } from '@shared/playlists';
 import {
   ARQUIVO_EXEMPLO,
   LIMITE_LISTA_BYTES,
@@ -77,7 +81,9 @@ export class ListasService {
     for (const nome of nomes) {
       if (!nomeDeListaValido(nome) || nome.toLowerCase() === ARQUIVO_EXEMPLO) continue;
       const ref = this.referencia(dir, nome);
-      if (ref) listas.push(ref);
+      if (!ref) continue;
+      const origem = ref.tipo === 'txt' ? lerOrigem(primeiraLinha(join(dir, nome))) : null;
+      listas.push(origem ? { ...ref, origem } : ref);
     }
     return listas.sort((a, b) => b.modificadaEm - a.modificadaEm).slice(0, MAX_RECENTES);
   }
@@ -115,6 +121,20 @@ export class ListasService {
       conteudo = existsSync(exemplo) ? decodificar(readFileSync(exemplo)) : EXEMPLO_PADRAO;
     }
     gravarAtomico(join(dir, nome), Buffer.from(conteudo.replace(/\r?\n/g, '\r\n'), 'utf8'));
+    return this.referenciaOuErro(dir, nome);
+  }
+
+  /**
+   * Lista nova com um texto pronto (playlist importada). O nome vem da pessoa: é limpo como um arquivo importado e
+   * nunca sobrescreve (`-2`, `-3`…). Sempre .txt: o texto é do formato do editor.
+   */
+  criarComTexto(dir: string, nomeSugerido: string, texto: string): ListaRef {
+    if (typeof texto !== 'string' || Buffer.byteLength(texto) > LIMITE_LISTA_BYTES) {
+      throw new Error('Texto da lista inválido ou grande demais.');
+    }
+    // sem a extensão que a pessoa tenha digitado: o nomeSeguro põe o .txt
+    const nome = nomeLivre(dir, nomeSeguro(nomeSugerido.trim().replace(/\.(txt|csv)$/i, '')));
+    gravarAtomico(join(dir, nome), Buffer.from(texto.replace(/\r?\n/g, '\r\n'), 'utf8'));
     return this.referenciaOuErro(dir, nome);
   }
 
@@ -225,6 +245,23 @@ export class ListasService {
     const ref = this.referencia(dir, nome);
     if (!ref) throw new Error(`Não consegui ler a lista ${nome} depois de gravar.`);
     return ref;
+  }
+}
+
+/** Os primeiros bytes do arquivo até a primeira quebra de linha (as recentes só precisam da origem). */
+function primeiraLinha(caminho: string): string {
+  let fd: number | null = null;
+  try {
+    fd = openSync(caminho, 'r');
+    const buf = Buffer.alloc(2048);
+    const n = readSync(fd, buf, 0, buf.length, 0);
+    // corta na quebra de linha antes de decodificar: um acento partido no fim do bloco mudaria a codificação
+    const fim = buf.subarray(0, n).indexOf(0x0a);
+    return decodificar(buf.subarray(0, fim === -1 ? n : fim));
+  } catch {
+    return '';
+  } finally {
+    if (fd !== null) closeSync(fd);
   }
 }
 

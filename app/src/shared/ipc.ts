@@ -48,6 +48,7 @@ import type {
   ResumoExecucao,
 } from './lote.js';
 import type { OpcoesLote } from './opcoes-lote.js';
+import type { ResultadoBuscaPlaylist } from './playlists.js';
 import type { ArquivoDeLicencaId, CreditosELicenca, InfoSobre, ResultadoPacoteSuporte } from './sobre.js';
 import type { ServicoId } from './servicos.js';
 import type { ConfigStatus, DockerStatus, ProjetoStatus, StackStatus } from './stack.js';
@@ -274,6 +275,12 @@ export interface SoulcrateApi {
     importBytes(nome: string, bytes: Uint8Array): Promise<ListaRef>;
     /** `baixar-lista.ps1 -SoAnalisar` na lista salva (P5) */
     analyze(nome: string, opcoes: OpcoesAnalise): Promise<ResultadoAnalise>;
+    /** cria uma lista com o texto dado (playlist importada); o nome ganha `-2`, `-3`… se já existe */
+    createWithText(nome: string, texto: string): Promise<ListaRef>;
+  };
+  playlists: {
+    /** busca a playlist pública pelo link; erros esperados (privada, link de faixa, sem internet) voltam em `erro` */
+    fetch(link: string): Promise<ResultadoBuscaPlaylist>;
   };
   batch: {
     /** inicia o lote destacado; erros esperados (stack fora, lista já rodando) voltam em `erro`, sem lançar */
@@ -435,6 +442,8 @@ export interface IpcInvoke {
   'lists:import': { args: []; result: ListaRef | null };
   'lists:importBytes': { args: [nome: string, bytes: Uint8Array]; result: ListaRef };
   'lists:analyze': { args: [nome: string, opcoes: OpcoesAnalise]; result: ResultadoAnalise };
+  'lists:createWithText': { args: [nome: string, texto: string]; result: ListaRef };
+  'playlists:fetch': { args: [link: string]; result: ResultadoBuscaPlaylist };
   'batch:start': { args: [entrada: { lista: string; opcoes: OpcoesLote }]; result: ResultadoInicio };
   'batch:stop': { args: [runId: string]; result: void };
   'batch:active': { args: []; result: ResumoExecucao[] };

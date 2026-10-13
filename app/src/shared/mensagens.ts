@@ -633,7 +633,102 @@ export const msg = {
       vazio: {
         titulo: 'Escolha uma lista',
         corpo:
-          'Uma faixa por linha, no formato Artista - Título (Mix). Abra uma lista que você já tem, importe um .txt ou .csv, ou comece pelo exemplo.',
+          'Uma faixa por linha, no formato Artista - Título (Mix). Abra uma lista que você já tem, importe um .txt ou .csv, traga uma playlist de um streaming ou comece pelo exemplo.',
+      },
+      playlist: {
+        botao: 'Importar playlist',
+        ouImporte: 'Ou importe uma playlist',
+        ouImporteDica: 'Escolha o streaming. Depois é só colar o link da playlist.',
+        peloLink: 'Pelo link',
+        titulo: 'Importar playlist',
+        corpo: 'A playlist vira uma lista .txt no formato Artista - Título. Nada é baixado até você iniciar o lote.',
+        fechar: 'Fechar',
+        passoStreaming: '1 · Streaming',
+        passoLink: '2 · Link da playlist',
+        dicaTroca: 'Colou um link de outro streaming? O app reconhece e troca sozinho.',
+        soPublicas: 'Só playlists públicas: o app não entra na sua conta e não guarda senha.',
+        cancelar: 'Cancelar',
+        buscar: 'Buscar playlist',
+        buscando: 'Buscando…',
+        erros: {
+          invalido: 'Isso não parece um link. Cole o endereço completo da playlist.',
+          desconhecido:
+            'Esse link não é de um streaming aceito. Use um link do Spotify, Apple Music, YouTube Music ou Deezer.',
+          naoEPlaylist: (oque: string, servico: string, menu: string) =>
+            `Esse link é de ${oque}, não de uma playlist. No ${servico}, abra a playlist e use ${menu}.`,
+          indisponivelTitulo: 'Não consegui abrir essa playlist.',
+          indisponivel: (servico: string) =>
+            `Ela é privada, foi apagada ou o link está incompleto. Deixe a playlist pública no ${servico} e copie o link de novo.`,
+          redeTitulo: 'Não consegui falar com o streaming.',
+          rede: 'Confira a internet e tente de novo. Se continuar, o streaming pode estar recusando pedidos por alguns minutos.',
+          formatoTitulo: 'O streaming mudou a página da playlist.',
+          formato: (servico: string) =>
+            `O app não achou as faixas na resposta do ${servico}. Atualize o Soulcrate ou exporte a playlist em .csv por enquanto.`,
+          vaziaTitulo: 'A playlist está vazia.',
+          vazia: 'Não há nenhuma faixa nela para importar.',
+          outroLink: 'Outro link',
+          tentarDeNovo: 'Tentar de novo',
+        },
+        oque: {
+          faixa: 'uma faixa',
+          album: 'um álbum',
+          artista: 'um artista',
+          podcast: 'um podcast',
+          video: 'um vídeo',
+          perfil: 'um perfil',
+          biblioteca: 'uma biblioteca pessoal (que só abre na sua conta)',
+          mix: 'uma mix automática (que muda a cada vez)',
+        },
+        revisao: {
+          rotulo: (servico: string) => `Playlist do ${servico}`,
+          capa: 'Capa da playlist',
+          semCapa: 'CAPA',
+          por: (autor: string) => `por ${autor}`,
+          faixas: (n: number) => `${n.toLocaleString('pt-BR')} ${plural(n, 'faixa', 'faixas')}`,
+          paraBaixar: (n: number) => `${n} para baixar`,
+          duplicadas: (n: number) => `${n} ${plural(n, 'duplicada', 'duplicadas')}`,
+          videos: (n: number) => `${n} ${plural(n, 'vídeo', 'vídeos')}`,
+          duplicada: (n: number) => `Duplicada · ${n}`,
+          video: 'Vídeo: entra comentado',
+          colunas: { numero: '#', artista: 'Artista', titulo: 'Título', aviso: 'Aviso' },
+          mais: (n: number) => `+ ${n.toLocaleString('pt-BR')} ${plural(n, 'faixa', 'faixas')}`,
+          parcialSpotify:
+            'Pelo link, o Spotify entrega no máximo 100 faixas. Se a playlist tem mais, as outras ficam de fora: divida a playlist ou exporte em .csv.',
+          parcial: (vieram: number, total: number) =>
+            `Vieram ${vieram} de ${total} faixas: o streaming não entregou o resto pelo link.`,
+          videosDica:
+            'Vídeos que não parecem faixas entram na lista com # na frente: o lote os ignora. Tire o # se quiser baixar.',
+          nome: 'Nome da lista',
+          lembrar: 'Lembrar a playlist para atualizar a lista depois. Faixas novas entram no fim; nenhuma é apagada.',
+          outra: 'Outra playlist',
+          importar: (n: number) => `Importar ${n.toLocaleString('pt-BR')} ${plural(n, 'faixa', 'faixas')}`,
+          importando: 'Importando…',
+          nomeVazio: 'Dê um nome à lista.',
+        },
+        importada: {
+          titulo: (n: number, servico: string) =>
+            `${n.toLocaleString('pt-BR')} ${plural(n, 'faixa importada', 'faixas importadas')} do ${servico}.`,
+          corpo: (duplicadas: number, videos: number) => {
+            const partes: string[] = [];
+            if (duplicadas > 0)
+              partes.push(`${duplicadas} ${plural(duplicadas, 'duplicada será pulada', 'duplicadas serão puladas')}`);
+            if (videos > 0)
+              partes.push(`${videos} ${plural(videos, 'vídeo entrou comentado', 'vídeos entraram comentados')}`);
+            const inicio = partes.length > 0 ? `${partes.join(' e ')}. ` : '';
+            return `${inicio}Revise o texto à vontade: a playlist não muda.`;
+          },
+        },
+        origem: (servico: string) => `Playlist do ${servico}`,
+        atualizar: 'Atualizar da playlist',
+        atualizando: 'Atualizando…',
+        atualizada: (n: number) =>
+          n === 0
+            ? 'A lista já tem todas as faixas da playlist.'
+            : `${n} ${plural(n, 'faixa nova entrou', 'faixas novas entraram')} no fim da lista.`,
+        erroAtualizar: 'Não consegui atualizar da playlist',
+        erroImportar: 'Não consegui importar a playlist',
+        dicaOrigem:
+          'A primeira linha guarda de onde a lista veio: o lote a ignora e “Atualizar da playlist” usa o link.',
       },
       recentes: {
         titulo: 'Listas recentes',

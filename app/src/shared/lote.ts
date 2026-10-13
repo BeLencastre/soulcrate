@@ -3,6 +3,7 @@
 import type { AnaliseLista } from './analise-lista.js';
 import type { AppError } from './erros.js';
 import type { EventoLote } from './eventos-lote.js';
+import type { OrigemLista } from './playlists.js';
 
 export type TipoLista = 'txt' | 'csv';
 
@@ -13,6 +14,8 @@ export interface ListaRef {
   /** epoch ms */
   modificadaEm: number;
   bytes: number;
+  /** a lista veio de uma playlist de streaming (primeira linha `# Spotify · Nome · link`); só nas recentes */
+  origem?: OrigemLista;
 }
 
 export interface ListaConteudo extends ListaRef {

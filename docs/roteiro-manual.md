@@ -92,6 +92,19 @@
 - [ ] **Web UIs:** Soulbeet, slskd e Navidrome abrem dentro do app, o login persiste ao reabrir, e o botão ao lado abre no navegador.
 - [ ] Com `BIND_ADDR=0.0.0.0`, o Navidrome abre de outro aparelho da rede; sem a variável, **só neste PC**.
 
+### J. Importar playlist (rede de verdade)
+
+Os testes automáticos usam respostas gravadas; só aqui o app fala com os streamings. Use playlists **públicas** (as editoriais servem).
+
+- [ ] **Spotify, Apple Music, YouTube Music e Deezer:** colar o link de uma playlist de cada um traz nome, dono, faixas e capa; a lista criada abre no editor, com a primeira linha `# <Streaming> · <Nome> · <link>`.
+- [ ] Um link do YouTube Music com envios de usuário (vídeos sem artista) mostra o chip *vídeos* na revisão e esses itens entram comentados.
+- [ ] Uma playlist do Spotify com mais de 100 faixas mostra o aviso de que o link entrega no máximo 100.
+- [ ] Link de faixa, de álbum e da Amazon Music são recusados sem buscar; uma playlist privada mostra *Não consegui abrir essa playlist*.
+- [ ] Sem internet (desligue o Wi-Fi): *Não consegui falar com o streaming*, e o app continua usável.
+- [ ] **Atualizar da playlist:** acrescente uma faixa à playlist no streaming; o botão traz só ela, no fim, e nada da lista some.
+
+Falhas aqui não bloqueiam a release, mas viram issue: os sites mudam sem aviso, e o caminho de saída é exportar a playlist em `.csv`.
+
 ## O que os testes automáticos já cobrem
 
 Para não repetir à mão o que o CI faz a cada push (`.github/workflows/ci.yml`):
@@ -101,6 +114,7 @@ Para não repetir à mão o que o CI faz a cada push (`.github/workflows/ci.yml`
 | Instalar → atualizar por cima → desinstalar, com os instaladores de verdade, sem perder a pasta do Soulcrate nem os dados do app | Job `instalador`: `app/scripts/testar-instalador.ps1` |
 | O app instalado abre, o preload e o IPC respondem (`--smoke-test`) | Job `instalador` |
 | Assistente, ligar/desligar/reconstruir, lote de 30 faixas com o PowerShell e o `baixar-lista.ps1` de verdade contra um slskd falso, histórico, diagnóstico, biblioteca com um "beets" falso | `app/tests/e2e/` |
+| Importar playlist: reconhecimento do link, leitores de cada streaming (com respostas gravadas), revisão, lista gerada e "Atualizar da playlist", sem sair para a internet | `app/tests/shared/playlists.test.ts`, `app/tests/main/playlists-service.test.ts`, `app/tests/e2e/playlist.spec.ts` |
 | Acessibilidade (axe-core, WCAG 2.1 AA) em todas as telas, nos dois temas, e navegação por teclado | `app/tests/e2e/acessibilidade.spec.ts` |
 | Atualização do app e dos arquivos da stack (contra um `electron-updater` de mentira) | `app/tests/main/` e `app/tests/e2e/fase-6-7.spec.ts` |
 | Segredos fora do pacote de suporte, do renderer e dos logs | `app/tests/main/` |

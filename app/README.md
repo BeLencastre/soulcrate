@@ -1,6 +1,6 @@
 # App do Soulcrate (Electron)
 
-App desktop do Soulcrate: liga e desliga a stack (slskd, Soulbeet e Navidrome), mostra o estado de cada serviço e abre as Web UIs dentro da janela. A [especificação](../docs/interface-electron.md) tem o plano completo; **as Fases 0 a 7 estão implementadas** (esqueleto, ambiente e stack, assistente de configuração, download em lote, histórico e diagnóstico, biblioteca e manutenção, polimento e distribuição). O app está na **versão 1.0.0**; o roteiro de teste com a stack real está em [`docs/roteiro-manual.md`](../docs/roteiro-manual.md) e o passo a passo de publicar uma release em [`docs/distribuicao.md`](../docs/distribuicao.md#7-publicar-uma-versão).
+App desktop do Soulcrate: liga e desliga a stack (slskd, Soulbeet e Navidrome), mostra o estado de cada serviço e abre as Web UIs dentro da janela. A [especificação](../docs/interface-electron.md) tem o plano completo; **as Fases 0 a 7 estão implementadas** (esqueleto, ambiente e stack, assistente de configuração, download em lote, histórico e diagnóstico, biblioteca e manutenção, polimento e distribuição). O app está na **versão 1.1.0**, que trouxe a importação de playlists públicas (Spotify, Apple Music, YouTube Music e Deezer) na tela Baixar lista; o roteiro de teste com a stack real está em [`docs/roteiro-manual.md`](../docs/roteiro-manual.md) e o passo a passo de publicar uma release em [`docs/distribuicao.md`](../docs/distribuicao.md#7-publicar-uma-versão).
 
 ## Requisitos
 

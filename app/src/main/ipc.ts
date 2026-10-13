@@ -34,9 +34,11 @@ import {
   exigirFinalidade,
   exigirIdDeFaixa,
   exigirInicioDeLote,
+  exigirLinkDePlaylist,
   exigirLogin,
   exigirModelo,
   exigirNomeDeLista,
+  exigirNomeSugerido,
   exigirOpcoesAnalise,
   exigirOpcoesDaCorrecao,
   exigirOpcoesSetup,
@@ -58,6 +60,7 @@ import type { LoteService } from './services/lote-service';
 import type { LogsService } from './services/logs-service';
 import type { OperacoesService } from './services/operacoes-service';
 import type { PastaService } from './services/pasta-service';
+import type { PlaylistsService } from './services/playlists-service';
 import type { RelatoriosService } from './services/relatorios-service';
 import { ehPastaDoSoulcrate } from './services/project-service';
 import type { SetupService } from './services/setup-service';
@@ -82,6 +85,7 @@ export interface ContextoIpc {
   pasta: PastaService;
   setup: SetupService;
   listas: ListasService;
+  playlists: PlaylistsService;
   lote: LoteService;
   relatorios: RelatoriosService;
   biblioteca: BibliotecaService;
@@ -374,6 +378,10 @@ export function registrarIpc(ctx: ContextoIpc): void {
   tratar('lists:analyze', (_e, nome, opcoes) =>
     ctx.listas.analisar(exigirDir(), exigirNomeDeLista(nome), exigirOpcoesAnalise(opcoes)),
   );
+  tratar('lists:createWithText', (_e, nome, texto) =>
+    ctx.listas.criarComTexto(exigirDir(), exigirNomeSugerido(nome), exigirTextoDaLista(texto)),
+  );
+  tratar('playlists:fetch', (_e, link) => ctx.playlists.buscar(exigirLinkDePlaylist(link)));
   tratar('batch:start', (_e, entrada) => ctx.lote.iniciar(exigirInicioDeLote(entrada)));
   tratar('batch:stop', (_e, runId) => ctx.lote.parar(exigirRunId(runId)));
   tratar('batch:active', () => ctx.lote.ativas());

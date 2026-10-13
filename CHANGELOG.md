@@ -8,6 +8,16 @@ O **app desktop** e a **stack** (Docker Compose, scripts e configuração do bee
 
 Nada ainda.
 
+## App 1.1.0 (2026-10-13)
+
+Importação de playlists de streaming na tela **Baixar lista**. Traz a mesma stack 1.2.0 (os arquivos da stack não mudaram).
+
+### Adicionado
+
+- **Baixar lista → Importar playlist:** traz uma playlist **pública** do **Spotify**, **Apple Music**, **YouTube Music** ou **Deezer** pelo link e cria uma lista `.txt` no formato Artista - Título (Mix). Antes de importar, a revisão mostra capa, faixas, duplicadas e vídeos que não parecem faixas (estes entram comentados). Colar um link de outro streaming troca o streaming sozinho; link de faixa ou álbum é recusado na hora.
+- **Atualizar da playlist:** a lista importada guarda de onde veio na primeira linha (`# Spotify · Nome · link`, que o lote ignora) e traz depois só as faixas novas, no fim. As *Listas recentes* mostram o streaming de cada lista.
+- Sem login e sem conta: só playlists públicas. Pelo link, o Spotify entrega no máximo 100 faixas. A Amazon Music não entrou (não há caminho gratuito para ler as playlists).
+
 ## App 1.0.1 (2026-10-09)
 
 Muda o que o download em lote aceita por padrão e traz a stack 1.2.0. **Atenção:** o MP3 320 deixou de ser aceito por padrão (veja abaixo).

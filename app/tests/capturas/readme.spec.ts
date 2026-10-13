@@ -302,3 +302,43 @@ test('capturas: biblioteca', async () => {
   await expect(janela.getByTestId('pasta-rekordbox')).toBeVisible();
   await foto(janela, '09-biblioteca');
 });
+
+// ---------------------------------------------------------------- Importar playlist
+
+test('capturas: importar playlist', async () => {
+  amb = criarAmbiente({ comScript: true, mundo: { containers: TODOS_NO_AR } });
+  // uma playlist pública de demonstração, servida pelo dublê (nada sai para a internet)
+  const api = 'https://api.deezer.com/playlist/908622995';
+  const faixas = [
+    ['Azyr', 'No Escape'],
+    ['Azyr', 'No Escape'],
+    ['Creeds', 'Push Up (Original Mix)'],
+    ['RIOT CODE', 'Direct It To The Roof (Azyr Remix)'],
+    ['Charlie Sparks', 'Tatakai'],
+    ['Vendex', 'Abaddon'],
+    ['Vendex', 'Vengeance Of The Masked'],
+    ['Novah', 'ACID'],
+    ['Luciid', 'Bye Bye'],
+  ].map(([artista, titulo]) => ({ title: titulo, artist: { name: artista }, duration: 330 }));
+  const duble = join(amb.raiz, 'playlists.json');
+  writeFileSync(
+    duble,
+    JSON.stringify({
+      [api]: {
+        corpo: JSON.stringify({ title: 'Hard Techno Sexta', nb_tracks: faixas.length, creator: { name: 'belen' } }),
+      },
+      [`${api}/tracks`]: { corpo: JSON.stringify({ data: faixas }) },
+    }),
+  );
+  aberto = await abrirApp(amb, { ...BASE, SOULCRATE_DUBLE_PLAYLISTS: duble });
+  const { janela } = aberto;
+  await menu(janela, 'Baixar lista').click();
+  await janela
+    .getByTestId('grade-streamings')
+    .getByRole('button', { name: /Deezer/ })
+    .click();
+  await janela.getByTestId('link-playlist').fill('https://www.deezer.com/br/playlist/908622995');
+  await janela.getByTestId('buscar-playlist').click();
+  await expect(janela.getByTestId('nome-da-playlist')).toHaveText('Hard Techno Sexta');
+  await foto(janela, '03-importar-playlist');
+});

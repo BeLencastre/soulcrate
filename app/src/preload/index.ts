@@ -77,6 +77,10 @@ const api: SoulcrateApi = {
     importFile: () => chamar('lists:import'),
     importBytes: (nome, bytes) => chamar('lists:importBytes', nome, bytes),
     analyze: (nome, opcoes) => chamar('lists:analyze', nome, opcoes),
+    createWithText: (nome, texto) => chamar('lists:createWithText', nome, texto),
+  },
+  playlists: {
+    fetch: (link) => chamar('playlists:fetch', link),
   },
   batch: {
     start: (entrada) => chamar('batch:start', entrada),

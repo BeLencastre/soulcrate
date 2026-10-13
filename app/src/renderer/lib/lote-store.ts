@@ -14,7 +14,9 @@ import type {
 import { aplicarEventos, estadoInicialLote, novosDoLote, type EstadoLote } from '@shared/lote-estado';
 import { msg } from '@shared/mensagens';
 import { novasOpcoes, type OpcoesLote } from '@shared/opcoes-lote';
+import { mesclarPlaylist, origemDoTexto, type StreamingId } from '@shared/playlists';
 import { api } from './api';
+import { textoDoErro } from './playlist';
 
 const CHAVE_ULTIMA_LISTA = 'soulcrate.ultimaLista';
 /** O log bruto fica com as últimas linhas; o arquivo em lotes/ tem tudo. */
@@ -50,6 +52,11 @@ export interface AnaliseGuardada {
   texto: string;
 }
 
+/** A faixa verde depois de importar ou atualizar uma lista a partir de uma playlist. */
+export type AvisoPlaylist =
+  | { tipo: 'importada'; servico: StreamingId; faixas: number; duplicadas: number; videos: number }
+  | { tipo: 'atualizada'; novas: number };
+
 interface RascunhoStore {
   lista: ListaConteudo | null;
   texto: string;
@@ -64,10 +71,21 @@ interface RascunhoStore {
   erro: string | null;
   opcoes: OpcoesLote;
   recentes: ListaRef[];
+  avisoPlaylist: AvisoPlaylist | null;
+  atualizandoPlaylist: boolean;
   abrir(nome: string): Promise<boolean>;
   criar(modelo: ModeloLista): Promise<void>;
   importarArquivo(): Promise<void>;
   importarBytes(nome: string, bytes: Uint8Array): Promise<void>;
+  /** cria a lista com o texto da playlist e a abre; devolve o erro (para o diálogo mostrar) ou null */
+  importarPlaylist(
+    nome: string,
+    texto: string,
+    aviso: Extract<AvisoPlaylist, { tipo: 'importada' }>,
+  ): Promise<string | null>;
+  /** busca de novo a playlist da primeira linha e põe as faixas novas no fim (nada é apagado) */
+  atualizarDaPlaylist(): Promise<void>;
+  dispensarAvisoPlaylist(): void;
   editar(texto: string): void;
   salvar(): Promise<boolean>;
   analisar(o: OpcoesAnalise): Promise<void>;
@@ -92,6 +110,8 @@ export const useRascunho = create<RascunhoStore>((set, get) => ({
   erro: null,
   opcoes: novasOpcoes(),
   recentes: [],
+  avisoPlaylist: null,
+  atualizandoPlaylist: false,
 
   async abrir(nome) {
     // o que foi digitado na lista que está aberta não se perde ao trocar de lista
@@ -108,6 +128,7 @@ export const useRascunho = create<RascunhoStore>((set, get) => ({
         analisando: false,
         erroAnalise: null,
         erro: null,
+        avisoPlaylist: null,
       });
       lembrarLista(l.nome);
       return true;
@@ -148,6 +169,46 @@ export const useRascunho = create<RascunhoStore>((set, get) => ({
       set({ erro: `${msg.lote.lista.erroImportar}: ${semPrefixoIpc(mensagemDe(e))}` });
     }
   },
+
+  async importarPlaylist(nome, texto, aviso) {
+    let ref: ListaRef;
+    try {
+      ref = await api.lists.createWithText(nome, texto);
+    } catch (e) {
+      return `${msg.lote.lista.playlist.erroImportar}: ${semPrefixoIpc(mensagemDe(e))}`;
+    }
+    void get().carregarRecentes();
+    if (!(await get().abrir(ref.nome))) return get().erro ?? msg.lote.lista.playlist.erroImportar;
+    set({ avisoPlaylist: aviso });
+    return null;
+  },
+
+  async atualizarDaPlaylist() {
+    const { lista, texto, atualizandoPlaylist } = get();
+    const origem = origemDoTexto(texto);
+    if (!lista || lista.somenteLeitura || !origem || atualizandoPlaylist) return;
+    const t = msg.lote.lista.playlist;
+    set({ atualizandoPlaylist: true, avisoPlaylist: null });
+    try {
+      const r = await api.playlists.fetch(origem.url);
+      if (!r.ok) {
+        const e = textoDoErro(r.erro, origem.servico);
+        set({ erro: `${t.erroAtualizar}: ${e.titulo} ${e.corpo}` });
+        return;
+      }
+      // a pessoa pode ter trocado de lista enquanto buscava
+      if (get().lista?.nome !== lista.nome) return;
+      const m = mesclarPlaylist(get().texto, r.playlist);
+      if (m.novas > 0) get().editar(m.texto);
+      set({ avisoPlaylist: { tipo: 'atualizada', novas: m.novas }, erro: null });
+    } catch (e) {
+      set({ erro: `${t.erroAtualizar}: ${semPrefixoIpc(mensagemDe(e))}` });
+    } finally {
+      set({ atualizandoPlaylist: false });
+    }
+  },
+
+  dispensarAvisoPlaylist: () => set({ avisoPlaylist: null }),
 
   editar(texto) {
     if (get().lista?.somenteLeitura) return;
