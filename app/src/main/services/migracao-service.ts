@@ -7,7 +7,7 @@ import { existsSync, readFileSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 import { ARQUIVOS_DA_STACK } from '@shared/stack-arquivos';
 import type { MigracaoInfo } from '@shared/stack-atualizacao';
-import type { Executor } from '../processos';
+import type { Executor } from '../infra/processos';
 import { sha256 } from './manifesto';
 
 /** Documentação e modelos: diferir deles não muda o funcionamento da stack, então não entram no aviso. */

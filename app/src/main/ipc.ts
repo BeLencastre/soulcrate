@@ -49,7 +49,7 @@ import {
   exigirToken,
   exigirTokenOuNulo,
 } from './ipc-entradas';
-import { ehUrlDoApp, podeAbrirNoNavegador } from './seguranca';
+import { ehUrlDoApp, podeAbrirNoNavegador } from './infra/seguranca';
 import type { AppSettingsService } from './services/app-settings';
 import type { BibliotecaService } from './services/biblioteca-service';
 import type { ChecksService } from './services/checks-service';

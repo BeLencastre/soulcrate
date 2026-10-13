@@ -18,10 +18,10 @@ import {
   receitaAtiva,
   RECEITAS,
   validarOpcoes,
-} from '../src/shared/opcoes-lote';
-import { msg } from '../src/shared/mensagens';
+} from '../../src/shared/opcoes-lote';
+import { msg } from '../../src/shared/mensagens';
 
-const REPO = join(import.meta.dirname, '..', '..');
+const REPO = join(import.meta.dirname, '..', '..', '..');
 
 describe('padrões', () => {
   it('são os padrões do param() do baixar-lista.ps1', () => {

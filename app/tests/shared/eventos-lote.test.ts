@@ -3,8 +3,8 @@
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
-import { lerAnaliseLista } from '../src/shared/analise-lista.js';
-import { BOM } from '../src/shared/texto.js';
+import { lerAnaliseLista } from '../../src/shared/analise-lista.js';
+import { BOM } from '../../src/shared/texto.js';
 import {
   CODIGOS_SAIDA,
   ehTipoConhecido,
@@ -14,9 +14,9 @@ import {
   lerLinhaEvento,
   STATUS_EM_ANDAMENTO,
   STATUS_FINAIS,
-} from '../src/shared/eventos-lote.js';
+} from '../../src/shared/eventos-lote.js';
 
-const fixture = (nome: string) => fileURLToPath(new URL(`./fixtures/lote/${nome}`, import.meta.url));
+const fixture = (nome: string) => fileURLToPath(new URL(`../fixtures/lote/${nome}`, import.meta.url));
 
 function lerEventos(nome: string): EventoLote[] {
   return readFileSync(fixture(nome), 'utf8')

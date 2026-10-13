@@ -5,7 +5,7 @@ import { Link } from 'react-router';
 import type { ExecucaoResumo } from '@shared/historico';
 import { rotuloDaHora, rotuloDoDia } from '@shared/historico';
 import { msg } from '@shared/mensagens';
-import { Carregando, ErroDeLeitura, SemPasta, useSemPasta } from '../../components/historico/estados';
+import { Carregando, ErroDeLeitura, SemPasta, useSemPasta } from '../../components/estados';
 import { DialogoLimpeza } from '../../components/historico/DialogoLimpeza';
 import { IconePasta } from '../../components/icones';
 import { Botao, CabecalhoPagina, Cartao, Chip, classeBotao } from '../../components/ui';

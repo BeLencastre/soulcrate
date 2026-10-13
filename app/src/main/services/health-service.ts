@@ -11,7 +11,7 @@ import {
   type ServicoStatus,
   type StackStatus,
 } from '@shared/stack';
-import { servicosDoPs, type ContainerPs } from '../docker-parsers';
+import { servicosDoPs, type ContainerPs } from '../infra/docker-parsers';
 import type { DeteccaoDocker, DockerService } from './docker-service';
 
 /** §6.4: a cada 5 s com a janela visível e a cada 30 s quando está minimizada ou na bandeja. */

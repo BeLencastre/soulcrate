@@ -13,11 +13,11 @@ import {
   type ResultadoValidacao,
 } from '@shared/configuracao';
 import { msg } from '@shared/mensagens';
-import { seguro } from '../lib/acoes';
-import { api } from '../lib/api';
-import { achadosVisiveis, gerarSenha, paiDoCaminho } from '../lib/formulario';
-import { AchadosDoCampo, CaixaAviso, Campo, CampoSenha, Interruptor } from './campos';
-import { Botao, Cartao, Chip } from './ui';
+import { seguro } from '../../lib/acoes';
+import { api } from '../../lib/api';
+import { achadosVisiveis, gerarSenha, paiDoCaminho } from '../../lib/formulario';
+import { AchadosDoCampo, CaixaAviso, Campo, CampoSenha, Interruptor } from '../campos';
+import { Botao, Cartao, Chip } from '../ui';
 
 export interface PropsSecao {
   entrada: ConfigEntrada;

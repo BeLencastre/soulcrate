@@ -10,7 +10,7 @@ import {
   parseLinhaLog,
   saudeDoContainer,
   servicosDoPs,
-} from '../../src/main/docker-parsers';
+} from '../../../src/main/infra/docker-parsers';
 
 const NDJSON = [
   '{"Name":"slskd","Service":"slskd","State":"running","Health":"healthy","Status":"Up 2 hours (healthy)","ExitCode":0}',

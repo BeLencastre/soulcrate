@@ -31,7 +31,7 @@ import {
 import { criarErro, erroInesperado, type AppError } from '@shared/erros';
 import type { MainEvent } from '@shared/ipc';
 import { servicoDe, type ProjetoStatus, type StackStatus } from '@shared/stack';
-import { redigirSegredos } from '../seguranca';
+import { redigirSegredos } from '../infra/seguranca';
 import type { DockerService } from './docker-service';
 
 /** O que vem antes dos argumentos do beets (README, "Manutenção da biblioteca"). */

@@ -8,7 +8,7 @@ import type { DiagnosticoFaixa, ExecucaoDetalhe, MotivoListaNaoAtualizada } from
 import { rotuloDoMomento } from '@shared/historico';
 import type { MotivoTraduzido } from '@shared/motivos';
 import { msg } from '@shared/mensagens';
-import { Carregando, ErroDeLeitura, SemPasta, useSemPasta } from '../../components/historico/estados';
+import { Carregando, ErroDeLeitura, SemPasta, useSemPasta } from '../../components/estados';
 import { IconeVoltarPagina } from '../../components/icones';
 import { Botao, Cartao, Chip, classeBotao, Rotulo } from '../../components/ui';
 import { seguro } from '../../lib/acoes';

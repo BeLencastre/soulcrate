@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
-import { lerLinhaEvento, STATUS_EM_ANDAMENTO, STATUS_FINAIS, type EventoLote } from '../src/shared/eventos-lote';
+import { lerLinhaEvento, STATUS_EM_ANDAMENTO, STATUS_FINAIS, type EventoLote } from '../../src/shared/eventos-lote';
 import {
   aplicarEventos,
   contagemVazia,
@@ -17,9 +17,9 @@ import {
   separarLinha,
   type EstadoLote,
   type FaixaLote,
-} from '../src/shared/lote-estado';
+} from '../../src/shared/lote-estado';
 
-const fixture = (nome: string) => fileURLToPath(new URL(`./fixtures/lote/${nome}`, import.meta.url));
+const fixture = (nome: string) => fileURLToPath(new URL(`../fixtures/lote/${nome}`, import.meta.url));
 const eventos = (nome: string): EventoLote[] =>
   readFileSync(fixture(nome), 'utf8')
     .split('\n')

@@ -11,6 +11,8 @@ cd app && npm ci && npm run check                        # app: lint, formataç�
 cd app && npm run test:e2e                                # app: ponta a ponta (abre o app de verdade, com um dublê do docker)
 ```
 
+**Onde fica cada coisa no `app/`:** `src/main/` tem a entrada e o IPC; as regras por assunto ficam em `services/`, as peças sem regra de negócio (executor de processos, parsers do Docker, filtro de segredos, log, .zip) em `infra/` e os dublês de desenvolvimento e teste em `dubles/`. Em `src/renderer/`, `paginas/` guarda as telas (uma pasta por fluxo), `components/` o que as telas compartilham (com subpastas para o que é de uma tela só) e `lib/` os hooks e o estado. A pasta `tests/` espelha o `src/`: o teste de `src/main/infra/zip.ts` fica em `tests/main/infra/zip.test.ts`, o de `src/shared/motivos.ts` em `tests/shared/motivos.test.ts`. Detalhes em [`app/README.md`](app/README.md#estrutura).
+
 | Arquivo | O que cobre |
 | --- | --- |
 | `tests/baixar-lista.lib.Tests.ps1` | Limpeza e leitura da lista, comparação de arquivos, formato, grafia e catálogo, com os exemplos do README |

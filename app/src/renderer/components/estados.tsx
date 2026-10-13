@@ -1,9 +1,9 @@
 // Estados comuns das telas do histórico (carregando, erro de leitura, sem pasta do Soulcrate), do protótipo "Estados".
 import { criarErro, erroInesperado, type AppError } from '@shared/erros';
 import { msg } from '@shared/mensagens';
-import { useStackStatus } from '../../lib/estado';
-import { CartaoErro } from '../CartaoErro';
-import { Cartao } from '../ui';
+import { useStackStatus } from '../lib/estado';
+import { CartaoErro } from './CartaoErro';
+import { Cartao } from './ui';
 
 /** Esqueleto de uma lista que ainda está sendo lida. */
 export function Carregando({ rotulo }: { rotulo: string }) {

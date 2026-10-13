@@ -4,7 +4,7 @@
 import { shell, WebContentsView, type BrowserWindow } from 'electron';
 import type { Limites, MainEvent, WebUiCarga, WebUiEstado } from '@shared/ipc';
 import { urlDoServico, type ServicoId } from '@shared/servicos';
-import { mesmaOrigemDoServico, particaoDo, podeAbrirNoNavegador } from '../seguranca';
+import { mesmaOrigemDoServico, particaoDo, podeAbrirNoNavegador } from '../infra/seguranca';
 
 /** Chrome devolve -3 (ERR_ABORTED) quando uma navegação é substituída por outra: não é falha. */
 const ERR_ABORTED = -3;

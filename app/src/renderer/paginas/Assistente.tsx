@@ -24,7 +24,7 @@ import {
   SecaoSoulseek,
   SecaoWebUi,
   type PropsSecao,
-} from '../components/secoes-config';
+} from '../components/configuracoes/secoes-config';
 import { Botao, Rotulo } from '../components/ui';
 import { api } from '../lib/api';
 import { useStackStatus, useUi } from '../lib/estado';

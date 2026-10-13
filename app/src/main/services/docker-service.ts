@@ -3,8 +3,8 @@
 import { join } from 'node:path';
 import type { AlvoLog } from '@shared/ipc';
 import type { DockerDesktopEstado, DockerInstalacao } from '@shared/stack';
-import { parseComposePs, parseDesktopStatus, type ContainerPs } from '../docker-parsers';
-import type { Executor, OpcoesProcesso, ProcessoVivo, ResultadoProcesso } from '../processos';
+import { parseComposePs, parseDesktopStatus, type ContainerPs } from '../infra/docker-parsers';
+import type { Executor, OpcoesProcesso, ProcessoVivo, ResultadoProcesso } from '../infra/processos';
 
 /** Tempos medidos no SP1: 0,7–2 s para detectar; o primeiro `compose ps` a frio chegou a 14 s. */
 export const TIMEOUT_DETECCAO_MS = 10_000;

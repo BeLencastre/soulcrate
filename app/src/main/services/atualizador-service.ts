@@ -12,7 +12,7 @@ import {
   type MotivoIndisponivel,
   type ResultadoReiniciar,
 } from '@shared/atualizacao';
-import { redigirSegredos } from '../seguranca';
+import { redigirSegredos } from '../infra/seguranca';
 
 /** O pedaço do `autoUpdater` do electron-updater que o app usa. */
 export interface AutoUpdaterLike {

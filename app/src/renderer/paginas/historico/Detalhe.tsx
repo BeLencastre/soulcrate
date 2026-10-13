@@ -11,7 +11,7 @@ import {
 } from '@shared/historico';
 import { msg } from '@shared/mensagens';
 import { CartaoErro } from '../../components/CartaoErro';
-import { Carregando, ErroDeLeitura, SemPasta, useSemPasta } from '../../components/historico/estados';
+import { Carregando, ErroDeLeitura, SemPasta, useSemPasta } from '../../components/estados';
 import { DialogoReprocessar } from '../../components/historico/DialogoReprocessar';
 import { IconeArquivo, IconePasta, IconeVoltarPagina } from '../../components/icones';
 import { TabelaVirtual } from '../../components/TabelaVirtual';

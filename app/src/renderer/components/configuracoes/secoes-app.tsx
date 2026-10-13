@@ -8,16 +8,16 @@ import { msg } from '@shared/mensagens';
 import type { ResultadoPacoteSuporte } from '@shared/sobre';
 import { erroInesperado, type AppError } from '@shared/erros';
 import { resumirStack } from '@shared/stack';
-import { seguro } from '../lib/acoes';
-import { api } from '../lib/api';
-import { textoDaAtualizacao, useArquivosDaStack, useEstadoAtualizacao } from '../lib/atualizacao';
-import { useStackStatus } from '../lib/estado';
-import { formatarBytes } from '../lib/historico';
-import { useMudarSettings, useSettings } from '../lib/preferencias';
-import { CartaoErro } from './CartaoErro';
-import { ErroDeLeitura } from './historico/estados';
-import { Interruptor } from './campos';
-import { Botao, Cartao, Chip, Rotulo } from './ui';
+import { seguro } from '../../lib/acoes';
+import { api } from '../../lib/api';
+import { textoDaAtualizacao, useArquivosDaStack, useEstadoAtualizacao } from '../../lib/atualizacao';
+import { useStackStatus } from '../../lib/estado';
+import { formatarBytes } from '../../lib/historico';
+import { useMudarSettings, useSettings } from '../../lib/preferencias';
+import { CartaoErro } from '../CartaoErro';
+import { ErroDeLeitura } from '../estados';
+import { Interruptor } from '../campos';
+import { Botao, Cartao, Chip, Rotulo } from '../ui';
 
 // ---------------------------------------------------------------- Aplicativo
 

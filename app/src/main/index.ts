@@ -11,11 +11,11 @@ import { CANAL_EVENTOS, type MainEvent, type OndeAbrirServico } from '@shared/ip
 import { msg } from '@shared/mensagens';
 import { listaDoArgv } from './argv';
 import { Bandeja } from './bandeja';
-import { ExecutorComDockerFalso, VAR_DOCKER_DUBLE, VAR_HTTP_DUBLE } from './duble-docker';
-import { buscadorDuble, VAR_PLAYLISTS_DUBLE } from './duble-playlists';
+import { ExecutorComDockerFalso, VAR_DOCKER_DUBLE, VAR_HTTP_DUBLE } from './dubles/duble-docker';
+import { buscadorDuble, VAR_PLAYLISTS_DUBLE } from './dubles/duble-playlists';
 import { registrarIpc } from './ipc';
 import { criarJanelaPrincipal } from './janela';
-import { iniciarLog, pastaDeLogs } from './log';
+import { iniciarLog, pastaDeLogs } from './infra/log';
 import { criarMenu } from './menu';
 import {
   aplicarPreferencias,
@@ -24,9 +24,9 @@ import {
   iniciarEscondido,
   type DepsPreferencias,
 } from './preferencias';
-import { ExecutorReal, LancadorReal } from './processos';
+import { ExecutorReal, LancadorReal } from './infra/processos';
 import { AppSettingsService } from './services/app-settings';
-import { criarUpdaterDuble } from './duble-atualizador';
+import { criarUpdaterDuble } from './dubles/duble-atualizador';
 import { AtualizadorService, type AutoUpdaterLike, type DependenciasAtualizador } from './services/atualizador-service';
 import { BibliotecaService } from './services/biblioteca-service';
 import { ChecksService } from './services/checks-service';

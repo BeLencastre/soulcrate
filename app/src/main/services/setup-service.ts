@@ -24,7 +24,7 @@ import {
 import type { MainEvent } from '@shared/ipc';
 import { SERVICOS } from '@shared/servicos';
 import { servicoSaudavel, type ProjetoStatus, type StackStatus } from '@shared/stack';
-import { redigirSegredos } from '../seguranca';
+import { redigirSegredos } from '../infra/seguranca';
 import { lerChaveSlskd, lerEnv } from './config-validacao';
 
 export interface UrlsSetup {

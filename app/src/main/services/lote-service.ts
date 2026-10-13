@@ -22,8 +22,8 @@ import type { MainEvent } from '@shared/ipc';
 import type { OpcoesLote } from '@shared/opcoes-lote';
 import type { ProjetoStatus } from '@shared/stack';
 import { semBom } from '@shared/texto';
-import { LeitorIncremental } from '../leitor-incremental';
-import type { Lancador } from '../processos';
+import { LeitorIncremental } from '../infra/leitor-incremental';
+import type { Lancador } from '../infra/processos';
 import { argumentosDoLancador, argumentosDoLote, POWERSHELL } from './lote-comando';
 
 /** Quanto do log bruto fica em memória (o arquivo em `lotes/` guarda tudo). */

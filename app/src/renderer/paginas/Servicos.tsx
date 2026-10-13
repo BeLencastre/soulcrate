@@ -6,7 +6,7 @@ import { Link } from 'react-router';
 import type { AlvoLog, CheckEstado, CheckItem, HealthCheckResult, LinhaLog } from '@shared/ipc';
 import { msg } from '@shared/mensagens';
 import { SERVICOS, type ServicoId } from '@shared/servicos';
-import { ErroDeLeitura } from '../components/historico/estados';
+import { ErroDeLeitura } from '../components/estados';
 import { IconeRecarregar } from '../components/icones';
 import { Botao, CabecalhoPagina, Cartao, Chip, classeBotao, Led, type CorChip, type CorLed } from '../components/ui';
 import { seguro } from '../lib/acoes';

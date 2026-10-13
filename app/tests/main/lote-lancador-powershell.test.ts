@@ -6,7 +6,7 @@ import { existsSync, mkdirSync, mkdtempSync, readFileSync, realpathSync, writeFi
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { LancadorReal } from '../../src/main/processos';
+import { LancadorReal } from '../../src/main/infra/processos';
 import { argumentosDoLancador, argumentosDoLote, POWERSHELL } from '../../src/main/services/lote-comando';
 import { arquivosDaExecucao } from '../../src/shared/lote';
 import { novasOpcoes } from '../../src/shared/opcoes-lote';

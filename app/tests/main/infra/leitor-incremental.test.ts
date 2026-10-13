@@ -2,7 +2,7 @@ import { appendFileSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { LeitorIncremental } from '../../src/main/leitor-incremental';
+import { LeitorIncremental } from '../../../src/main/infra/leitor-incremental';
 
 let dir: string;
 let arquivo: string;
