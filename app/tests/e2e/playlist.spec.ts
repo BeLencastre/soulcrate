@@ -73,8 +73,8 @@ test('importar uma playlist do Deezer pelo link, revisar e atualizar depois', as
     '# Deezer · Hard Techno Sexta · https://www.deezer.com/playlist/908622995\r\n' +
       'Azyr - No Escape\r\nAzyr - No Escape\r\nCreeds - Push Up (Original Mix)\r\n',
   );
-  // a análise do script ignora a primeira linha e marca a repetida
-  await expect(janela.getByTestId('previa-lista')).toContainText('Duplicada · linha 2');
+  // a análise do script ignora a primeira linha e marca a repetida (o PowerShell, com a biblioteca, pode demorar no CI)
+  await expect(janela.getByTestId('previa-lista')).toContainText('Duplicada · linha 2', { timeout: 60_000 });
   await capturar(janela, 'playlist-4-importada');
 
   // a playlist ganhou uma faixa: "Atualizar da playlist" põe só ela no fim

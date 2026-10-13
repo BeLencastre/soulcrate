@@ -279,6 +279,7 @@ test.describe('segurança do renderer (§6.1)', () => {
       'lists',
       'logs',
       'onEvent',
+      'playlists',
       'project',
       'reports',
       'setup',
