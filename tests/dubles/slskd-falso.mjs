@@ -111,6 +111,11 @@ const servidor = http.createServer(async (req, res) => {
 
     if (req.method === 'POST' && rota === '/searches') {
       const corpo = await lerCorpo(req);
+      // como o slskd de verdade: precisa de ao menos um termo (sem "-") com mais de 1 caractere
+      const termos = String(corpo.searchText ?? '').split(/\s+/).filter(Boolean);
+      if (!termos.some((t) => t.length > 1 && !t.startsWith('-'))) {
+        return enviar(res, 400, { error: 'Search query must contain at least one non-exclusion term with length greater than 1 (Parameter \'query\')' });
+      }
       buscas.set(corpo.id, { texto: corpo.searchText, respostas: responder(corpo.searchText) });
       return enviar(res, 200, { id: corpo.id, searchText: corpo.searchText, state: 'InProgress' });
     }

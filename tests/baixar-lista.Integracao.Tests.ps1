@@ -69,6 +69,28 @@ Describe 'baixar-lista.ps1 (integracao)' -Tag 'Integracao' {
     }
   }
 
+  Context 'artista escrito letra por letra (o slskd recusa a busca so pelo artista com HTTP 400)' {
+    BeforeAll {
+      $amb = New-AmbienteLote -Arquivos $Catalogo
+      $r = Invoke-Lote $amb -Linhas @('t e s t p r e s s - FREAKY', 'Azyr - No Escape')
+      $saidaTxt = ($r.Saida -join "`n")
+    }
+    AfterAll { Remove-AmbienteLote $amb }
+
+    It 'nao confunde com slskd fora do ar: termina com codigo 0' { $r.ExitCode | Should -Be 0 }
+    It 'nao repete a busca recusada nem fala em erro do slskd' {
+      $saidaTxt | Should -Not -Match 'erro falando com o slskd'
+      $saidaTxt | Should -Not -Match 'slskd fora do ar'
+    }
+    It 'as outras faixas da lista continuam sendo baixadas' {
+      Join-Path $amb.Raiz 'downloads\Azyr\Azyr - No Escape.flac' | Should -Exist
+    }
+    It 'a faixa do artista invalido aparece como nao encontrada, sem derrubar o lote' {
+      $rel = Get-Content -LiteralPath (Get-RelatorioLote $amb 'resultado-')[0].FullName -Encoding UTF8
+      ($rel -match '^NAO ENCONTRADA\tt e s t p r e s s - FREAKY\t').Count | Should -Be 1
+    }
+  }
+
   Context 'troca de usuario' {
     BeforeAll {
       $amb = New-AmbienteLote -Arquivos @(

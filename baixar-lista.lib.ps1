@@ -107,6 +107,15 @@ function Clean-Line([string]$l) {
 }
 function Clean-Query([string]$q) { return ($q -replace '[^\w\s]', ' ' -replace '\s+', ' ').Trim() }
 
+# O slskd recusa (HTTP 400) a busca em que nenhum termo tem mais de 1 caractere ("t e s t p r e s s").
+# Termos com "-" na frente sao exclusoes e tambem nao contam.
+function Test-SearchQuery([string]$q) {
+  foreach ($t in @(($q -split '\s+') | Where-Object { $_ })) {
+    if ($t.Length -gt 1 -and -not $t.StartsWith('-')) { return $true }
+  }
+  return $false
+}
+
 function Parse-Line([string]$line) {
   $artist = ""; $title = $line
   $i = $line.IndexOf(" - ")

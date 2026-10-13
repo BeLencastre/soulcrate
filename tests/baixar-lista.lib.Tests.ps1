@@ -380,6 +380,27 @@ Describe 'baixar-lista.lib' {
     }
   }
 
+  Describe 'Test-SearchQuery (o slskd recusa busca sem termo de 2+ caracteres)' {
+    It 'recusa nome escrito letra por letra' {
+      Test-SearchQuery 't e s t p r e s s' | Should -BeFalse
+    }
+    It 'recusa vazio e so exclusoes' {
+      Test-SearchQuery '' | Should -BeFalse
+      Test-SearchQuery 'a -remix' | Should -BeFalse
+    }
+    It 'aceita quando algum termo tem 2+ caracteres' {
+      Test-SearchQuery 't e s t p r e s s FREAKY' | Should -BeTrue
+      Test-SearchQuery 'Azyr' | Should -BeTrue
+      Test-SearchQuery 'DJ X' | Should -BeTrue
+    }
+    It 'a busca so pelo artista de "t e s t p r e s s - FREAKY" e invalida, mas a da faixa nao' {
+      $st = New-Stages (Parse-Line 't e s t p r e s s - FREAKY')
+      @($st | Where-Object { Test-SearchQuery $_.Q }).Count | Should -BeGreaterThan 0
+      ($st | Where-Object { $_.Kind -eq 'artist' }).Q | Should -Be 't e s t p r e s s'
+      Test-SearchQuery ($st | Where-Object { $_.Kind -eq 'artist' }).Q | Should -BeFalse
+    }
+  }
+
   Describe 'In-Library' {
     It 'acha a faixa pelo indice de artistas, respeitando mix e versao' {
       $e = [pscustomobject]@{ A = 'azyr'; T = 'no escape' }; $e | Add-Member NoteProperty AT 'azyr no escape'
