@@ -4,9 +4,11 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
 import { criarZip, dataDos } from '../../../src/main/infra/zip';
+import { PROCESSO_REAL } from '../ajudantes';
 import { lerZip } from '../ajudantes-zip';
 
 const pastas: string[] = [];
+const ehWindows = process.platform === 'win32';
 afterEach(() => {
   while (pastas.length) rmSync(pastas.pop() as string, { recursive: true, force: true });
 });
@@ -49,7 +51,7 @@ describe('criarZip', () => {
   });
 
   // o Expand-Archive do Windows é o leitor que o usuário (e o suporte) de fato vai usar
-  it.skipIf(process.platform !== 'win32')('o Expand-Archive do Windows abre o pacote, acentos inclusive', () => {
+  it.runIf(ehWindows)('o Expand-Archive do Windows abre o pacote, acentos inclusive', PROCESSO_REAL, () => {
     const raiz = mkdtempSync(join(tmpdir(), 'sc-zip-'));
     pastas.push(raiz);
     const arquivo = join(raiz, 'pacote.zip');

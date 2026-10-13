@@ -1,7 +1,7 @@
 // Executor real, com processos de verdade (o próprio Node): saída, códigos, timeout, ENOENT e encerramento da árvore.
 import { describe, expect, it } from 'vitest';
 import { DivisorDeLinhas, ExecutorReal } from '../../../src/main/infra/processos';
-import { ate } from '../ajudantes';
+import { ate, PROCESSO_REAL } from '../ajudantes';
 
 const NODE = process.execPath;
 
@@ -19,7 +19,7 @@ describe('DivisorDeLinhas', () => {
   });
 });
 
-describe('ExecutorReal.executar', () => {
+describe('ExecutorReal.executar', PROCESSO_REAL, () => {
   const ex = new ExecutorReal();
 
   it('devolve stdout, stderr e o código de saída', async () => {
@@ -40,10 +40,10 @@ describe('ExecutorReal.executar', () => {
   });
 
   it('timeout mata o processo e marca tempoEsgotado', async () => {
-    const inicio = Date.now();
+    // o filho nunca sai sozinho: voltar com tempoEsgotado já prova que o timeout o matou. Conferir o relógio aqui só
+    // media a máquina (sob carga, o taskkill /T levou mais de 5 s).
     const r = await ex.executar(NODE, ['-e', 'setInterval(() => {}, 1000)'], { timeoutMs: 300 });
     expect(r.tempoEsgotado).toBe(true);
-    expect(Date.now() - inicio).toBeLessThan(5000);
     expect(ex.quantidadeVivos).toBe(0);
   });
 
@@ -68,7 +68,7 @@ describe('ExecutorReal.executar', () => {
   });
 });
 
-describe('ExecutorReal.iniciar', () => {
+describe('ExecutorReal.iniciar', PROCESSO_REAL, () => {
   it('entrega linha a linha, de stdout e de stderr', async () => {
     const ex = new ExecutorReal();
     const linhas: [string, string][] = [];
