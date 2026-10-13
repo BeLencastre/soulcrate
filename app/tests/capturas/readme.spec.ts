@@ -104,8 +104,6 @@ test('capturas: início, assistente, serviços e configurações', async () => {
 
   await irPara(janela, '/configuracoes');
   const secoes = janela.getByRole('navigation', { name: 'Seções' });
-  await secoes.getByRole('button', { name: 'Pastas' }).click();
-  await foto(janela, '08-configuracoes');
   await secoes.getByRole('button', { name: 'Aplicativo' }).click();
   await foto(janela, '08-configuracoes-aplicativo');
 });

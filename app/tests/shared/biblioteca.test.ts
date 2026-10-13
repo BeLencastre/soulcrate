@@ -1,5 +1,5 @@
 // A parte pura da Fase 5 (src/shared/biblioteca.ts), conferida contra saídas REAIS do beets 2.11 gravadas em
-// tests/fixtures/biblioteca/ (o `ls -f`, o `update -p`, o `move -p` e o `remove` rodados na imagem local/soulbeet-dj
+// tests/fixtures/biblioteca/ (o `ls -f`, o `update -p` e o `move -p` rodados na imagem local/soulbeet-dj
 // contra uma biblioteca descartável): o formato que o app lê é o que o beets de verdade escreve.
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';

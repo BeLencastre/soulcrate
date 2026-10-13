@@ -1,0 +1,12 @@
+#!/bin/sh
+# Mapa de dependências em dia e com motivo (docs/dependencias.md e docs/dependencias.justificativas.json).
+# O CI roda a mesma conferência; aqui ela só chega antes.
+if ! command -v node >/dev/null 2>&1; then
+  echo "pre-commit: Node.js não encontrado; pulando a conferência do mapa de dependências (o CI confere)." >&2
+  exit 0
+fi
+node scripts/dependencias.mjs --check || {
+  echo "" >&2
+  echo "pre-commit: o mapa de dependências não está em dia. Veja a seção Dependências do CLAUDE.md." >&2
+  exit 1
+}

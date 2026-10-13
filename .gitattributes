@@ -9,6 +9,9 @@ Dockerfile text eol=lf
 *.yaml text eol=lf
 *.sh text eol=lf
 
+# Git hooks rodam no sh do Git (também no Windows): CRLF quebra o script
+.githooks/* text eol=lf
+
 * text=auto
 
 # App: sempre LF, inclusive no checkout do Windows (o Prettier confere o fim de linha)

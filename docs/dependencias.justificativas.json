@@ -1,0 +1,206 @@
+{
+  "_leia": "Motivo de cada dependência do Soulcrate (chave = ecossistema:nome). O scripts/dependencias.mjs cria a entrada com motivo PENDENTE quando uma dependência aparece e apaga a entrada quando ela sai; o CI recusa PENDENTE. Campos: motivo (obrigatório: o que ela resolve aqui e por que não código próprio), adicionada (AAAA-MM-DD), alternativas (opcional: o que foi descartado e por quê), licencaRevisada (opcional: análise de licença fora da lista permissiva).",
+  "dependencias": {
+    "actions:actions/checkout": {
+      "motivo": "Baixa o repositório nos jobs do CI e da release. Ação oficial do GitHub.",
+      "adicionada": "2026-10-07"
+    },
+    "actions:actions/setup-node": {
+      "motivo": "Instala o Node.js da versão do app/.nvmrc e guarda o cache do npm no CI e na release. Ação oficial do GitHub.",
+      "adicionada": "2026-10-07"
+    },
+    "actions:actions/upload-artifact": {
+      "motivo": "Guarda resultados do Pester, capturas do Playwright e o instalador gerado como artefatos do CI. Ação oficial do GitHub.",
+      "adicionada": "2026-10-07"
+    },
+    "docker:debian": {
+      "motivo": "Estágio de build do Dockerfile do Soulbeet que compila libkeyfinder e keyfinder-cli. bookworm-slim tem a mesma glibc (2.36) da imagem final distroless.",
+      "adicionada": "2026-10-07"
+    },
+    "docker:deluan/navidrome": {
+      "motivo": "Servidor de streaming da biblioteca (interface web e API Subsonic para ouvir no celular). Serviço da stack, com tag fixa.",
+      "adicionada": "2026-10-07"
+    },
+    "docker:docccccc/soulbeet": {
+      "motivo": "Base da imagem do Soulbeet (beets 2.11 com fetchart, embedart, lastgenre, chroma). A tag full não tem versão, por isso fica travada pelo digest.",
+      "adicionada": "2026-10-07"
+    },
+    "docker:python": {
+      "motivo": "Estágio de build do Dockerfile do Soulbeet. Instala os plugins Python no venv da imagem base, que é distroless e não tem pip usável.",
+      "adicionada": "2026-10-07"
+    },
+    "docker:slskd/slskd": {
+      "motivo": "Cliente do Soulseek com API REST. É o que busca e baixa as faixas, e o baixar-lista.ps1 fala com ele. Serviço da stack, com tag fixa.",
+      "adicionada": "2026-10-07"
+    },
+    "git:keyfinder-cli": {
+      "motivo": "CLI que o plugin keyfinder do beets chama para detectar o tom harmônico (mixagem harmônica para DJ). Compilado do fonte, travado por commit.",
+      "adicionada": "2026-10-07"
+    },
+    "git:libkeyfinder": {
+      "motivo": "Biblioteca de detecção de tom usada pelo keyfinder-cli. Não tem pacote no Debian, então é compilada do fonte com tag fixa.",
+      "adicionada": "2026-10-07"
+    },
+    "npm:@axe-core/playwright": {
+      "motivo": "Auditoria de acessibilidade (WCAG) das telas nos testes ponta a ponta.",
+      "adicionada": "2026-10-08",
+      "licencaRevisada": "MPL-2.0, só no desenvolvimento e nos testes. Não vai no instalador."
+    },
+    "npm:@eslint/js": {
+      "motivo": "Regras recomendadas do ESLint para JavaScript, base do eslint.config.js.",
+      "adicionada": "2026-10-07"
+    },
+    "npm:@fontsource-variable/archivo": {
+      "motivo": "Fonte da interface empacotada no app, que funciona offline e não chama a CDN do Google Fonts.",
+      "adicionada": "2026-10-07"
+    },
+    "npm:@fontsource-variable/jetbrains-mono": {
+      "motivo": "Fonte monoespaçada (logs, comandos, caminhos) empacotada no app, que funciona offline.",
+      "adicionada": "2026-10-07"
+    },
+    "npm:@playwright/test": {
+      "motivo": "Testes ponta a ponta que abrem o Electron de verdade (com o dublê do docker) e geram as capturas do README.",
+      "adicionada": "2026-10-07"
+    },
+    "npm:@radix-ui/react-collapsible": {
+      "motivo": "Seções recolhíveis acessíveis (teclado, ARIA) sem escrever esse comportamento à mão.",
+      "adicionada": "2026-10-07"
+    },
+    "npm:@radix-ui/react-dialog": {
+      "motivo": "Diálogos modais acessíveis (foco preso, Esc, ARIA) da biblioteca e das configurações.",
+      "adicionada": "2026-10-07"
+    },
+    "npm:@radix-ui/react-tabs": {
+      "motivo": "Abas acessíveis (navegação por setas, ARIA) nas telas com várias seções.",
+      "adicionada": "2026-10-07"
+    },
+    "npm:@tailwindcss/vite": {
+      "motivo": "Integra o Tailwind v4 ao build do Vite do renderer.",
+      "adicionada": "2026-10-07"
+    },
+    "npm:@tanstack/react-query": {
+      "motivo": "Cache, polling e estado assíncrono das chamadas IPC no renderer (estado da stack, histórico, biblioteca).",
+      "adicionada": "2026-10-07"
+    },
+    "npm:@testing-library/react": {
+      "motivo": "Testes de componentes React pelo comportamento visível (o que o usuário vê e clica).",
+      "adicionada": "2026-10-07"
+    },
+    "npm:@types/node": {
+      "motivo": "Tipos do Node.js para o processo principal, o preload e os scripts.",
+      "adicionada": "2026-10-07"
+    },
+    "npm:@types/react": {
+      "motivo": "Tipos do React para o TypeScript estrito do renderer.",
+      "adicionada": "2026-10-07"
+    },
+    "npm:@types/react-dom": {
+      "motivo": "Tipos do React DOM para o TypeScript estrito do renderer.",
+      "adicionada": "2026-10-07"
+    },
+    "npm:@vitejs/plugin-react": {
+      "motivo": "Suporte a JSX e Fast Refresh no build e no modo dev do renderer.",
+      "adicionada": "2026-10-07"
+    },
+    "npm:electron": {
+      "motivo": "Plataforma do app desktop (Chromium + Node.js). Fica em devDependencies porque o electron-builder embute o runtime.",
+      "adicionada": "2026-10-07"
+    },
+    "npm:electron-builder": {
+      "motivo": "Gera o instalador NSIS do Windows e o latest.yml que o atualizador automático lê.",
+      "adicionada": "2026-10-07"
+    },
+    "npm:electron-log": {
+      "motivo": "Log em arquivo do processo principal (rotação, pasta padrão do app). O pacote de suporte anexa esse log depois de passar pelo filtro de segredos.",
+      "adicionada": "2026-10-07"
+    },
+    "npm:electron-updater": {
+      "motivo": "Atualização automática do app pelas releases do GitHub (baixa, confere e instala).",
+      "adicionada": "2026-10-08"
+    },
+    "npm:electron-vite": {
+      "motivo": "Build e dev server dos três alvos do Electron (main, preload e renderer) com uma configuração só.",
+      "adicionada": "2026-10-07"
+    },
+    "npm:eslint": {
+      "motivo": "Lint do código TypeScript e React, que roda no npm run check e no CI.",
+      "adicionada": "2026-10-07"
+    },
+    "npm:eslint-plugin-react-hooks": {
+      "motivo": "Confere as regras dos hooks do React (dependências de efeitos, ordem de chamada).",
+      "adicionada": "2026-10-07"
+    },
+    "npm:globals": {
+      "motivo": "Lista de globais por ambiente (node, browser) para a configuração do ESLint.",
+      "adicionada": "2026-10-07"
+    },
+    "npm:jsdom": {
+      "motivo": "DOM simulado para os testes de componentes no Vitest.",
+      "adicionada": "2026-10-07"
+    },
+    "npm:prettier": {
+      "motivo": "Formatação automática e única do código. O CI confere com format:check.",
+      "adicionada": "2026-10-07"
+    },
+    "npm:react": {
+      "motivo": "Biblioteca de interface do renderer. Fica em devDependencies porque o Vite a embute no bundle.",
+      "adicionada": "2026-10-07"
+    },
+    "npm:react-dom": {
+      "motivo": "Renderização do React no DOM do renderer.",
+      "adicionada": "2026-10-07"
+    },
+    "npm:react-router": {
+      "motivo": "Navegação entre as telas do renderer (assistente, lote, histórico, biblioteca, configurações).",
+      "adicionada": "2026-10-07"
+    },
+    "npm:tailwindcss": {
+      "motivo": "CSS utilitário com tokens de tema (claro e escuro) do renderer.",
+      "adicionada": "2026-10-07"
+    },
+    "npm:typescript": {
+      "motivo": "Tipagem estática estrita do app inteiro (main, preload, renderer, shared e testes).",
+      "adicionada": "2026-10-07"
+    },
+    "npm:typescript-eslint": {
+      "motivo": "Regras do ESLint que entendem os tipos do TypeScript.",
+      "adicionada": "2026-10-07"
+    },
+    "npm:vite": {
+      "motivo": "Bundler usado pelo electron-vite e pelo Vitest.",
+      "adicionada": "2026-10-07"
+    },
+    "npm:vitest": {
+      "motivo": "Testes unitários e de integração do app, que reaproveitam a configuração do Vite.",
+      "adicionada": "2026-10-07"
+    },
+    "npm:yaml": {
+      "motivo": "Lê e grava o slskd.yml e a configuração do beets preservando comentários e a formatação que o usuário editou (config-arquivos.ts).",
+      "adicionada": "2026-10-08"
+    },
+    "npm:zustand": {
+      "motivo": "Estado do renderer que continua valendo quando o usuário troca de tela (lote em andamento, biblioteca, estado da stack). É mais leve que Redux.",
+      "adicionada": "2026-10-07"
+    },
+    "pip:beetcamp": {
+      "motivo": "Plugin do beets que busca metadados no Bandcamp, onde está boa parte da música eletrônica independente.",
+      "adicionada": "2026-10-07"
+    },
+    "pip:librosa": {
+      "motivo": "Análise de áudio usada pelo plugin autobpm do beets para calcular o BPM.",
+      "adicionada": "2026-10-07"
+    },
+    "pip:resampy": {
+      "motivo": "Reamostragem de áudio exigida pelo librosa na análise de BPM.",
+      "adicionada": "2026-10-07"
+    },
+    "psgallery:Pester": {
+      "motivo": "Framework de testes do PowerShell (5.5 ou mais novo) para baixar-lista, validar-config e as regras do repositório.",
+      "adicionada": "2026-10-07"
+    },
+    "runtime:node": {
+      "motivo": "Versão do Node.js para desenvolver e rodar o CI. Também roda os dublês dos testes do PowerShell e os scripts de scripts/.",
+      "adicionada": "2026-10-07"
+    }
+  }
+}

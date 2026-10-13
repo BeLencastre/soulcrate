@@ -63,7 +63,20 @@ O histórico segue o [Conventional Commits](https://www.conventionalcommits.org/
 | `refactor` | Mudança de código sem mudar o comportamento |
 | `chore` | Manutenção (dependências, configuração, CI) |
 
-Escopos usados: `lote` (download em lote), `stack` (compose, Dockerfile, configuração), `app`.
+Escopos usados: `lote` (download em lote), `stack` (compose, Dockerfile, configuração), `app`, `deps` (dependências).
+
+Também valem os tipos `perf`, `build`, `ci`, `style` e `revert` do padrão. O hook `commit-msg` (em `.githooks/`) confere o formato. O `npm ci` do app ativa os hooks; para ativar à mão, rode `git config core.hooksPath .githooks`.
+
+## Dependências
+
+Toda dependência fica mapeada em [`docs/dependencias.md`](docs/dependencias.md), com o motivo registrado em [`docs/dependencias.justificativas.json`](docs/dependencias.justificativas.json). A política para adicionar uma está no [`CLAUDE.md`](CLAUDE.md#dependências). Mexeu em um manifesto (`app/package.json`, `docker-compose.yml`, `Dockerfile`, workflows, `#Requires` dos testes)?
+
+```bash
+node scripts/dependencias.mjs          # refaz o mapa; dependência nova ganha motivo PENDENTE
+node scripts/dependencias.mjs --check  # o que o pre-commit e o CI conferem
+```
+
+Preencha o `motivo` e commite o manifesto, o mapa e os motivos juntos. O CI recusa mapa desatualizado, motivo `PENDENTE` e licença de runtime fora da lista permissiva sem `licencaRevisada`.
 
 Mudanças que quebram compatibilidade (parâmetro removido, formato de evento alterado, variável nova obrigatória no `.env`) levam `!` depois do tipo (`feat(lote)!: ...`) e uma linha `BREAKING CHANGE:` no corpo.
 
