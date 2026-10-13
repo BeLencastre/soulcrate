@@ -31,6 +31,9 @@ diagnostico*.bat
 
 # ===================== Sistema / editores =============================
 .claude/settings.local.json
+# memória de trabalho dos hooks (local); a memória curada é .claude/memoria/aprendizados.md
+.claude/memoria/sessoes/
+.claude/memoria/.estado/
 # worktrees do Claude Code (cada uma é uma cópia inteira do repositório)
 .claude/worktrees/
 Thumbs.db

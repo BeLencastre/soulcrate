@@ -1,0 +1,14 @@
+#!/bin/sh
+# Conventional Commits em português (CONTRIBUTING.md#commits): <tipo>(<escopo opcional>)!: <resumo>
+primeira=$(head -n 1 "$1")
+case "$primeira" in
+  Merge\ *|Revert\ *|fixup!\ *|squash!\ *|amend!\ *) exit 0 ;;
+esac
+if echo "$primeira" | grep -Eq '^(feat|fix|docs|test|refactor|chore|perf|build|ci|style|revert)(\([a-z0-9._-]+\))?!?: .+'; then
+  exit 0
+fi
+echo "commit-msg: a primeira linha não segue o Conventional Commits:" >&2
+echo "  $primeira" >&2
+echo "Use <tipo>(<escopo>): <resumo>, com tipo feat, fix, docs, test, refactor, chore, perf, build, ci, style ou revert." >&2
+echo "Exemplo: fix(lote): busca recusada pelo slskd não derruba o lote" >&2
+exit 1

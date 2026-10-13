@@ -44,6 +44,22 @@ jobs:
           path: tests/resultado-pester-*.xml
           if-no-files-found: ignore
 
+  repositorio:
+    name: Repositório (mapa de dependências e hooks)
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: app/.nvmrc
+
+      # toda dependência mapeada em docs/dependencias.md e com motivo em docs/dependencias.justificativas.json
+      - name: Mapa de dependências
+        run: node scripts/dependencias.mjs --check
+
+      - name: Testes do mapa e dos hooks de memória
+        run: node --test "scripts/*.test.mjs" ".claude/hooks/*.test.mjs"
+
   app:
     name: App (lint, tipos, testes e ponta a ponta)
     runs-on: windows-latest
@@ -58,6 +74,8 @@ jobs:
           cache: npm
           cache-dependency-path: app/package-lock.json
       - run: npm ci
+      # dependências que vão no instalador: nenhuma vulnerabilidade alta ou crítica conhecida
+      - run: npm audit --omit=dev --audit-level=high
       - run: npm run lint
       - run: npm run format:check
       - run: npm run typecheck
