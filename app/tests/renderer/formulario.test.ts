@@ -1,8 +1,13 @@
 // @vitest-environment jsdom
+import { render } from '@testing-library/react';
+import { createElement, useLayoutEffect } from 'react';
 import { describe, expect, it, vi } from 'vitest';
+import { entradaVazia, type ConfigEntrada } from '../../src/shared/configuracao';
 
 vi.mock('../../src/renderer/lib/api', () => ({ api: { config: { validate: vi.fn() } } }));
-const { achadosVisiveis, dataDeHoje, gerarSenha, paiDoCaminho } = await import('../../src/renderer/lib/formulario');
+const { api } = await import('../../src/renderer/lib/api');
+const { achadosVisiveis, dataDeHoje, gerarSenha, paiDoCaminho, useValidacao } =
+  await import('../../src/renderer/lib/formulario');
 
 describe('paiDoCaminho', () => {
   it.each([
@@ -57,5 +62,30 @@ describe('achadosVisiveis', () => {
     expect(achadosVisiveis(v, ['tz']).map((a) => a.id)).toEqual(['A', 'B']);
     expect(achadosVisiveis(v, ['tz'], false).map((a) => a.id)).toEqual(['B']);
     expect(achadosVisiveis(null, ['tz'])).toEqual([]);
+  });
+});
+
+describe('useValidacao', () => {
+  /** Chama validarAgora no meio do commit, depois de a entrada chegar à tela e antes dos efeitos passivos. */
+  function Sonda({ entrada }: { entrada: ConfigEntrada | null }) {
+    const { validarAgora } = useValidacao(entrada, false);
+    useLayoutEffect(() => {
+      if (entrada) void validarAgora();
+    });
+    return null;
+  }
+
+  // O Avançar do assistente pode ser clicado assim que o passo aparece, antes de o React rodar os useEffect: sob
+  // carga, ele devolve a vez ao navegador entre o commit e os efeitos passivos. O useLayoutEffect da Sonda roda
+  // sempre nessa janela, então o teste reproduz o clique apressado sem depender da CPU.
+  it('validarAgora usa a entrada que já está na tela, mesmo antes dos efeitos passivos', () => {
+    const entrada = entradaVazia({
+      tz: 'America/Sao_Paulo',
+      pastas: { music: 'C:/m', downloads: 'C:/d', incomplete: 'C:/i' },
+    });
+    const { rerender } = render(createElement(Sonda, { entrada: null }));
+    rerender(createElement(Sonda, { entrada }));
+    expect(api.config.validate).toHaveBeenCalledTimes(1);
+    expect(api.config.validate).toHaveBeenCalledWith(entrada);
   });
 });

@@ -6,7 +6,9 @@ O **app desktop** e a **stack** (Docker Compose, scripts e configuração do bee
 
 ## Não lançado
 
-Nada ainda.
+### Corrigido
+
+- **Assistente: o Avançar podia ignorar um clique feito logo depois de o passo aparecer.** Com o computador ocupado, o clique na hora em que o passo "Pastas das músicas" surgia não fazia nada e não mostrava nenhum aviso. Agora ele sempre avança.
 
 ## App 1.1.1 (2026-10-13)
 

@@ -1,7 +1,7 @@
 // Ajudantes dos formulários de configuração (assistente e Configurações): validação com debounce no main,
 // leitura dos achados por campo e utilitários de caminho e senha. Nada aqui guarda segredo além do valor que o
 // usuário digitou no campo, que sai do renderer uma vez, na gravação.
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import type { AchadoEntrada, CampoForm, ConfigEntrada, ResultadoValidacao } from '@shared/configuracao';
 import { api } from './api';
 
@@ -19,7 +19,10 @@ export function useValidacao(
   const [resultado, setResultado] = useState<ResultadoValidacao | null>(null);
   const ultima = useRef(0);
   const entradaAtual = useRef(entrada);
-  useEffect(() => {
+  // useLayoutEffect, e não useEffect: o passo novo pode receber um clique no Avançar logo depois de aparecer, antes
+  // de o React rodar os efeitos passivos (sob carga ele devolve a vez entre o commit e os useEffect). Com o ref
+  // ainda velho, o validarAgora não via a entrada e o clique se perdia em silêncio.
+  useLayoutEffect(() => {
     entradaAtual.current = entrada;
   });
 
