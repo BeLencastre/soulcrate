@@ -6,7 +6,9 @@ O **app desktop** e a **stack** (Docker Compose, scripts e configuração do bee
 
 ## Não lançado
 
-Nada ainda.
+### Corrigido
+
+- **Lote parava com "slskd não respondeu" sem o slskd ter caído.** Um artista escrito letra por letra (por exemplo `t e s t p r e s s`, comum em playlists importadas) gerava uma busca só pelo artista que o slskd recusa (HTTP 400: nenhum termo com mais de 1 caractere). O lote tratava a recusa como queda do slskd, repetia a busca 20 vezes e abortava. Agora essa busca é ignorada, o lote segue para a próxima etapa da faixa e continua com o resto da lista.
 
 ## App 1.1.0 (2026-10-13)
 

@@ -521,8 +521,15 @@ function Start-Search($it) {
   $stg = $it.Stages[$it.Stage]
   $id = [guid]::NewGuid().ToString()
   $isArtist = ($stg.Kind -eq 'artist')
+  if (-not (Test-SearchQuery $stg.Q)) { Skip-InvalidSearch $it $stg "nenhum termo com mais de 1 caractere"; return }
   $body = New-SearchBody $id $stg.Q $(if ($isArtist) { 25000 } else { 15000 }) $(if ($isArtist) { $ArtistRespLimit } else { 100 }) 10000
-  [void](Invoke-Slskd POST "/searches" $body)
+  try { [void](Invoke-Slskd POST "/searches" $body) }
+  catch {
+    # 400 = o slskd recusou ESTA consulta; ele esta no ar. Nao pode contar como "slskd fora do ar"
+    # (antes, uma faixa com artista "t e s t p r e s s" repetia a mesma busca 20 vezes e abortava o lote).
+    if ((Get-HttpStatus $_) -eq 400) { Skip-InvalidSearch $it $stg "o slskd recusou a busca (HTTP 400)"; return }
+    throw
+  }
   [void]$SearchTimes.Add((Get-Date))
   $it.SearchId = $id; $it.SearchStart = Get-Date; $it.Status = "buscando"; $it.SearchIsArtist = $isArtist; $it.RespCache = $null
   $it.RunAt = $null; $it.StopAt = $null; $it.Refetched = $false
@@ -531,6 +538,16 @@ function Start-Search($it) {
   $script:lastSearch = Get-Date
 }
 $ArtistRespLimit = 300
+
+# Consulta que o slskd nao aceita: pula a etapa (nao gasta o limite de buscas) e segue para a proxima.
+# Se era a busca do artista, deixa o cache "pronto e vazio" para as outras faixas dele nao tentarem de novo.
+function Skip-InvalidSearch($it, $stg, [string]$why) {
+  Write-Host "  -  busca ignorada ('$($stg.Q)'): $why" -ForegroundColor DarkYellow
+  Write-Evento 'warning' ([ordered]@{ code = 'search_invalid'; message = "busca ignorada: $($stg.Q) ($why)" })
+  $it.InvalidQuery = $true
+  if ($stg.Kind -eq 'artist') { $ArtistCache[$it.Req.ArtistKey] = @{ State = 'pronto'; Resp = @(); Titles = $null; Complete = $false } }
+  Process-Responses $it @()
+}
 
 # Escolhe a proxima faixa pendente que pode andar agora. Usa o cache do artista quando ja existe.
 function Next-Pending {
@@ -712,7 +729,7 @@ function Process-Responses($it, $resp) {
   # nenhuma etapa deu certo
   # 0 respostas em TUDO: se outra busca teve respostas depois que esta faixa comecou, o servidor esta ok
   # e ninguem compartilha a faixa. Senao, fica em espera ate a busca de teste dizer se houve bloqueio.
-  if ($it.Responses -eq 0 -and -not $it.Retried -and $it.FirstSearchAt -and $script:lastNonEmptyAt -lt $it.FirstSearchAt) {
+  if ($it.Responses -eq 0 -and -not $it.InvalidQuery -and -not $it.Retried -and $it.FirstSearchAt -and $script:lastNonEmptyAt -lt $it.FirstSearchAt) {
     $it.Status = "verificar"
     if (-not $script:Canary) { Start-Canary }
     return
@@ -722,7 +739,8 @@ function Process-Responses($it, $resp) {
 
 function Finish-NotFound($it) {
   $fmtOnly = @($it.Diag | Where-Object { $_.Score -ge 4 }).Count
-  $why = $(if ($it.Responses -eq 0) { "ninguem tem (0 respostas)" }
+  $why = $(if ($it.Responses -eq 0 -and $it.InvalidQuery) { "0 respostas (o slskd recusou algumas buscas: nome curto demais)" }
+           elseif ($it.Responses -eq 0) { "ninguem tem (0 respostas)" }
            elseif ($fmtOnly -gt 0) { "existe, mas so em formato/qualidade recusados ($fmtOnly arquivo(s)) - veja o diagnostico" }
            else { "$($it.Responses) respostas, nenhuma compativel" })
   if ($it.CatNote) { $why += " | $($it.CatNote)" }
@@ -1033,7 +1051,7 @@ foreach ($l in $raw) {
     Line = $l; Key = $k; Req = (Parse-Line $l); Status = "pendente"; Stage = 0; SearchId = $null; SearchStart = $null
     Responses = 0; Diag = (New-Object System.Collections.ArrayList); Reasons = @{}; Cands = @(); Idx = 0; Cur = $null; Started = $null
     Note = ""; Local = ""; Stages = $null; Retried = $false; NotBefore = $null; Via = ""; SearchIsArtist = $false; PauseReset = $false
-    FirstSearchAt = $null; RespCache = $null; LostOnce = $false; Skipped = 0; Corrected = ""; CatNote = ""; Fora = $false; SearchLine = ""
+    FirstSearchAt = $null; RespCache = $null; LostOnce = $false; InvalidQuery = $false; Skipped = 0; Corrected = ""; CatNote = ""; Fora = $false; SearchLine = ""
     OrigReq = $null; RunAt = $null; StopAt = $null; Refetched = $false; RemoteQueued = $false; ActiveAt = $null; EvSig = ""
   })
   $items[$items.Count - 1].Stages = New-Stages $items[$items.Count - 1].Req
