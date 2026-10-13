@@ -9,7 +9,6 @@
     "src/main",
     "src/preload",
     "src/shared",
-    "tests/*.ts",
     "tests/main",
     "tests/shared",
     "tests/dubles/*.ts",

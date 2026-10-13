@@ -17,7 +17,7 @@ import { servicoDe, servicoSaudavel } from '@shared/stack';
 import { DialogoManutencao } from '../components/biblioteca/DialogoManutencao';
 import { DialogoRemover } from '../components/biblioteca/DialogoRemover';
 import { CartaoErro } from '../components/CartaoErro';
-import { Carregando, SemPasta, useSemPasta } from '../components/historico/estados';
+import { Carregando, SemPasta, useSemPasta } from '../components/estados';
 import { IconeLixeira, IconePasta, IconeRecarregar } from '../components/icones';
 import { TabelaVirtual } from '../components/TabelaVirtual';
 import { Botao, CabecalhoPagina, Cartao, Chip, classeBotao, Rotulo } from '../components/ui';

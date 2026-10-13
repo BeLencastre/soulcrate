@@ -4,8 +4,8 @@ import { criarErro, erroInesperado, type AppError } from '@shared/erros';
 import type { MainEvent, OperacaoIniciada, OperacaoTipo, OperationId } from '@shared/ipc';
 import type { ServicoId } from '@shared/servicos';
 import type { ConfigStatus, OperacaoStack, ProjetoStatus } from '@shared/stack';
-import { classificarFalhaCompose, detectarMarcador } from '../docker-parsers';
-import { redigirSegredos } from '../seguranca';
+import { classificarFalhaCompose, detectarMarcador } from '../infra/docker-parsers';
+import { redigirSegredos } from '../infra/seguranca';
 import type { DockerService } from './docker-service';
 import type { HealthService } from './health-service';
 

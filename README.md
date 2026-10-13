@@ -705,12 +705,16 @@ soulcrate/                      # repositório (código)
 ├── tests/                      # testes (Pester) e o slskd falso usado por eles
 ├── .github/                    # workflows (CI e release do instalador) e modelos de issue
 └── app/                        # app desktop (Electron, React, TypeScript), versão 1.1.1
-    ├── src/main/               # processo principal: serviços (Docker, lote, biblioteca, configuração, atualização…)
+    ├── src/main/               # processo principal: entrada, IPC, janela, bandeja e menu
+    │   ├── services/           #   um serviço por assunto (Docker, lote, biblioteca, configuração, atualização…)
+    │   ├── infra/              #   peças sem regra de negócio: processos, parsers do Docker, segredos, log, .zip
+    │   └── dubles/             #   dublês só para desenvolvimento e testes (Docker, playlists, atualizador)
     ├── src/preload/            # a API mínima e tipada que a interface enxerga
-    ├── src/renderer/           # a interface: as telas e os componentes
+    ├── src/renderer/           # a interface: paginas/ (telas por fluxo), components/ e lib/ (hooks e estado)
     ├── src/shared/             # contrato do IPC, mensagens em português, tipos do protocolo do lote
     ├── resources/              # ícones do app e da bandeja, modelo do instalador
-    └── tests/                  # Vitest, Playwright (e2e e as capturas do README) e dublês do Docker
+    └── tests/                  # espelha o src/: main/ (e main/infra/), shared/, renderer/; mais e2e/ (Playwright),
+                                #   capturas/ (README), dubles/ (Docker falso) e fixtures/
 
 %USERPROFILE%\Soulcrate/        # instalação (configuração, segredos e bancos)
 ├── .env                        # inclui DOWNLOADS_DIR, INCOMPLETE_DIR e MUSIC_DIR

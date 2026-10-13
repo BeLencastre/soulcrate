@@ -1,7 +1,7 @@
 // Executor real, com processos de verdade (o próprio Node): saída, códigos, timeout, ENOENT e encerramento da árvore.
 import { describe, expect, it } from 'vitest';
-import { DivisorDeLinhas, ExecutorReal } from '../../src/main/processos';
-import { ate } from './ajudantes';
+import { DivisorDeLinhas, ExecutorReal } from '../../../src/main/infra/processos';
+import { ate } from '../ajudantes';
 
 const NODE = process.execPath;
 

@@ -1,6 +1,6 @@
 // Ganchos de teste (nunca no app empacotado): trocam o `docker` por um script Node e as sondagens HTTP por "ok",
 // para rodar o app (e2e e `npm run dev`) sem Docker de verdade. Ligados por variáveis de ambiente.
-import type { Executor, OpcoesProcesso, OpcoesStream, ProcessoVivo, ResultadoProcesso } from './processos';
+import type { Executor, OpcoesProcesso, OpcoesStream, ProcessoVivo, ResultadoProcesso } from '../infra/processos';
 
 /** Script que faz o papel do `docker` (veja tests/e2e/dubles/docker-falso.mjs). */
 export const VAR_DOCKER_DUBLE = 'SOULCRATE_DOCKER_DUBLE';

@@ -14,9 +14,9 @@ import { erroInesperado, type AppError } from '@shared/erros';
 import { msg } from '@shared/mensagens';
 import type { AchadoConfig } from '@shared/stack';
 import { CartaoErro } from '../components/CartaoErro';
-import { ErroDeLeitura } from '../components/historico/estados';
+import { ErroDeLeitura } from '../components/estados';
 import { ListaTarefas } from '../components/ListaTarefas';
-import { SecaoAplicativo, SecaoSobre } from '../components/secoes-app';
+import { SecaoAplicativo, SecaoSobre } from '../components/configuracoes/secoes-app';
 import {
   CartaoChave,
   SecaoAjustes,
@@ -25,7 +25,7 @@ import {
   SecaoSoulseek,
   SecaoWebUi,
   type PropsSecao,
-} from '../components/secoes-config';
+} from '../components/configuracoes/secoes-config';
 import { Botao, CabecalhoPagina, Cartao, Chip, Rotulo } from '../components/ui';
 import { seguro } from '../lib/acoes';
 import { api } from '../lib/api';

@@ -45,7 +45,7 @@ const { Biblioteca } = await import('../../src/renderer/paginas/Biblioteca');
 const { Servicos } = await import('../../src/renderer/paginas/Servicos');
 const { WebUi } = await import('../../src/renderer/paginas/WebUi');
 const { Configuracoes } = await import('../../src/renderer/paginas/Configuracoes');
-const { SecaoSobre, SecaoAplicativo } = await import('../../src/renderer/components/secoes-app');
+const { SecaoSobre, SecaoAplicativo } = await import('../../src/renderer/components/configuracoes/secoes-app');
 
 const TELAS: [string, string, () => React.ReactElement, string][] = [
   ['Início', '/', () => <Inicio />, '/'],

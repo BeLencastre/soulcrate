@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
-import { lerLinhaEvento, type EventoLote, type RunEnd, type RunStart } from '../src/shared/eventos-lote';
+import { lerLinhaEvento, type EventoLote, type RunEnd, type RunStart } from '../../src/shared/eventos-lote';
 import {
   contagemDoResumo,
   contarFiltros,
@@ -24,10 +24,10 @@ import {
   type DadosDoResumo,
   type DiagBruto,
   type FaixaBase,
-} from '../src/shared/historico';
-import { msg } from '../src/shared/mensagens';
+} from '../../src/shared/historico';
+import { msg } from '../../src/shared/mensagens';
 
-const fixture = (nome: string) => fileURLToPath(new URL(`./fixtures/lote/${nome}`, import.meta.url));
+const fixture = (nome: string) => fileURLToPath(new URL(`../fixtures/lote/${nome}`, import.meta.url));
 const texto = (nome: string) => readFileSync(fixture(nome), 'utf8');
 const eventos = (nome: string): EventoLote[] =>
   texto(nome)

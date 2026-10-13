@@ -31,6 +31,8 @@ diagnostico*.bat
 
 # ===================== Sistema / editores =============================
 .claude/settings.local.json
+# worktrees do Claude Code (cada uma é uma cópia inteira do repositório)
+.claude/worktrees/
 Thumbs.db
 desktop.ini
 .DS_Store

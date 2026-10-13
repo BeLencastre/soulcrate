@@ -33,7 +33,7 @@ import {
   type OpcoesAnalise,
   type ResultadoAnalise,
 } from '@shared/lote';
-import type { Executor } from '../processos';
+import type { Executor } from '../infra/processos';
 import { POWERSHELL } from './lote-comando';
 
 const MAX_RECENTES = 30;

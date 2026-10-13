@@ -6,7 +6,7 @@ import {
   nomeDeListaValido,
   nomeDoEstado,
   tipoDaLista,
-} from '../src/shared/lote';
+} from '../../src/shared/lote';
 
 describe('nomeDeListaValido', () => {
   it.each(['lista.txt', 'set-sabado.txt', 'Set de Sábado.TXT', 'spotify.csv', 'lista (2).txt', 'a.b.txt'])(

@@ -12,8 +12,8 @@ import { msg } from '@shared/mensagens';
 import type { InfoSobre, ResultadoPacoteSuporte } from '@shared/sobre';
 import type { ConfigStatus, ProjetoStatus, StackStatus } from '@shared/stack';
 import { semBom } from '@shared/texto';
-import { redigirSegredos } from '../seguranca';
-import { criarZip, type EntradaZip } from '../zip';
+import { redigirSegredos } from '../infra/seguranca';
+import { criarZip, type EntradaZip } from '../infra/zip';
 import { lerChaveSlskd, lerEnv } from './config-validacao';
 
 /** Variáveis do `.env` cujo valor nunca sai, pelo nome (cobre as quatro conhecidas e qualquer outra com cara de segredo). */

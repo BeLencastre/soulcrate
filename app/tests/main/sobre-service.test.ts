@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import type { ContainerPs } from '../../src/main/docker-parsers';
+import type { ContainerPs } from '../../src/main/infra/docker-parsers';
 import { SobreService, type DependenciasSobre } from '../../src/main/services/sobre-service';
 import { versaoDaImagem, versaoDoBeets, versaoDoSlskd } from '../../src/shared/sobre';
 import { statusInicial, type ContainerEstado, type StackStatus } from '../../src/shared/stack';

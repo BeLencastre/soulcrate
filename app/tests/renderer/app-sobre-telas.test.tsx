@@ -34,7 +34,7 @@ const api = vi.hoisted(() => ({
 }));
 vi.mock('../../src/renderer/lib/api', () => ({ api }));
 
-const { SecaoAplicativo, SecaoSobre } = await import('../../src/renderer/components/secoes-app');
+const { SecaoAplicativo, SecaoSobre } = await import('../../src/renderer/components/configuracoes/secoes-app');
 const { AvisoDeAtualizacaoDoApp, AvisoDosArquivosDaStack } = await import('../../src/renderer/components/AvisosDoApp');
 const { TelaQuebrou } = await import('../../src/renderer/components/TelaQuebrou');
 const { Inicio } = await import('../../src/renderer/paginas/Inicio');

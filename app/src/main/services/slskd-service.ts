@@ -6,7 +6,7 @@ import { criarErro, type AppError } from '@shared/erros';
 import { lerCompartilhamento, type ResultadoCompartilhamento } from '@shared/biblioteca';
 import { versaoDoSlskd } from '@shared/sobre';
 import type { ProjetoStatus } from '@shared/stack';
-import { redigirSegredos } from '../seguranca';
+import { redigirSegredos } from '../infra/seguranca';
 import { lerChaveSlskd, lerEnv } from './config-validacao';
 
 export interface DependenciasSlskd {

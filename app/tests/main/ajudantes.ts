@@ -1,5 +1,11 @@
 // Dublês compartilhados dos testes dos serviços do main: um Executor falso que responde por "linha de comando".
-import type { Executor, OpcoesProcesso, OpcoesStream, ProcessoVivo, ResultadoProcesso } from '../../src/main/processos';
+import type {
+  Executor,
+  OpcoesProcesso,
+  OpcoesStream,
+  ProcessoVivo,
+  ResultadoProcesso,
+} from '../../src/main/infra/processos';
 
 export type Resposta = Partial<ResultadoProcesso> & { atraso?: number };
 export type Respondedor = (comando: string, args: readonly string[], opcoes: OpcoesProcesso) => Resposta | undefined;

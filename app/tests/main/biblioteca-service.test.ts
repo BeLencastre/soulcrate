@@ -17,7 +17,7 @@ import {
   VALIDADE_DO_TOKEN_MS,
   type DependenciasBiblioteca,
 } from '../../src/main/services/biblioteca-service';
-import type { ResultadoProcesso } from '../../src/main/processos';
+import type { ResultadoProcesso } from '../../src/main/infra/processos';
 
 const LS = readFileSync(join(import.meta.dirname, '..', 'fixtures', 'biblioteca', 'ls.txt'), 'utf8');
 const UPDATE_P = readFileSync(join(import.meta.dirname, '..', 'fixtures', 'biblioteca', 'update-p.txt'), 'utf8');

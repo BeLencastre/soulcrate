@@ -6,7 +6,7 @@ import {
   resumirLinhaDoBeets,
 } from '../../src/main/services/checks-service';
 import type { DockerService } from '../../src/main/services/docker-service';
-import type { ResultadoProcesso } from '../../src/main/processos';
+import type { ResultadoProcesso } from '../../src/main/infra/processos';
 import { statusInicial, type ServicoStatus, type StackStatus } from '../../src/shared/stack';
 
 const rodando = (

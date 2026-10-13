@@ -7,7 +7,7 @@ import {
   particaoDo,
   podeAbrirNoNavegador,
   redigirSegredos,
-} from '../../src/main/seguranca';
+} from '../../../src/main/infra/seguranca';
 
 describe('endereços que o app pode abrir', () => {
   it('Web UIs locais: só http no próprio PC, nas três portas da stack', () => {

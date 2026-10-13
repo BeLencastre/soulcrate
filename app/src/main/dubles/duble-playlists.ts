@@ -3,7 +3,7 @@
 // arquivo é relido a cada pedido: o teste pode mudar a playlist no meio (para "Atualizar da playlist"). Nenhum
 // pedido sai para a internet; o que não está no arquivo responde 404.
 import { readFileSync } from 'node:fs';
-import type { Buscador } from './services/playlists-service';
+import type { Buscador } from '../services/playlists-service';
 
 export const VAR_PLAYLISTS_DUBLE = 'SOULCRATE_DUBLE_PLAYLISTS';
 

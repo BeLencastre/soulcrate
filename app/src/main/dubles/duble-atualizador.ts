@@ -4,7 +4,7 @@
 //   globalThis.__updaterVersao   = '9.9.9'                      (a versão "nova")
 // e lê o que o app pediu em `globalThis.__updaterInstalou` (quitAndInstall nunca fecha o app de teste).
 import { EventEmitter } from 'node:events';
-import type { AutoUpdaterLike } from './services/atualizador-service';
+import type { AutoUpdaterLike } from '../services/atualizador-service';
 
 interface Estado {
   __updater?: DubleDoAtualizador;

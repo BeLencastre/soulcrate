@@ -2,7 +2,7 @@
 // componentes são lidas de quem está rodando: o slskd responde pela API, o beets pelo `beet version` dentro do
 // contêiner do Soulbeet e o Navidrome pelo rótulo da imagem que o contêiner usa (as imagens têm versão fixa no compose).
 // Nada disto exige a stack no ar para a tela abrir: sem ela, cada componente diz por que ficou sem versão.
-import type { ContainerPs } from '../docker-parsers';
+import type { ContainerPs } from '../infra/docker-parsers';
 import { servicoSaudavel, type ServicoStatus, type StackStatus } from '@shared/stack';
 import type { ProjetoStatus } from '@shared/stack';
 import {

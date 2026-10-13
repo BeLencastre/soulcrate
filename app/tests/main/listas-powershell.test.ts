@@ -5,7 +5,7 @@ import { copyFileSync, mkdirSync, mkdtempSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { ExecutorReal } from '../../src/main/processos';
+import { ExecutorReal } from '../../src/main/infra/processos';
 import { ListasService } from '../../src/main/services/listas-service';
 import { removerPasta } from './ajudantes';
 

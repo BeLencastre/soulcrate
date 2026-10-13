@@ -7,9 +7,9 @@ import {
   traduzirMotivo,
   traduzirTentativas,
   type TipoMotivo,
-} from '../src/shared/motivos';
+} from '../../src/shared/motivos';
 
-const REPO = join(import.meta.dirname, '..', '..');
+const REPO = join(import.meta.dirname, '..', '..', '..');
 
 /**
  * Cada linha da tabela "Decida pelo motivo" do README, com o texto exato que o baixar-lista.ps1 escreve em `reasons`

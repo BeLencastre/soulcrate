@@ -20,9 +20,9 @@ import {
   termosDoFiltro,
   type FaixaDaBiblioteca,
   type ParadoEmDownloads,
-} from '../src/shared/biblioteca';
+} from '../../src/shared/biblioteca';
 
-const fixture = (nome: string) => readFileSync(join(import.meta.dirname, 'fixtures', 'biblioteca', nome), 'utf8');
+const fixture = (nome: string) => readFileSync(join(import.meta.dirname, '..', 'fixtures', 'biblioteca', nome), 'utf8');
 
 const faixa = (extra: Partial<FaixaDaBiblioteca> = {}): FaixaDaBiblioteca => ({
   id: 1,

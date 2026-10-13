@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import type { ContainerPs } from '../../src/main/docker-parsers';
+import type { ContainerPs } from '../../src/main/infra/docker-parsers';
 import type { DeteccaoDocker, DockerService } from '../../src/main/services/docker-service';
 import { HealthService, INTERVALO_OCULTO_MS, INTERVALO_VISIVEL_MS } from '../../src/main/services/health-service';
 import { resumirStack, type ConfigStatus, type StackStatus } from '../../src/shared/stack';
