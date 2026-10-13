@@ -7,6 +7,7 @@ import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { entradaVazia } from '../../src/shared/configuracao';
 import { ConfigService } from '../../src/main/services/config-service';
+import { PROCESSO_REAL } from './ajudantes';
 
 const REPO = join(import.meta.dirname, '..', '..', '..');
 const SCRIPT = join(REPO, 'validar-config.ps1');
@@ -47,7 +48,7 @@ const pastas = () => ({
   incomplete: join(dir, 'incomplete').replace(/\\/g, '/'),
 });
 
-describe.skipIf(!temPowerShell)('validar-config.ps1 (o do subir.bat) aceita o que o app gera', () => {
+describe.skipIf(!temPowerShell)('validar-config.ps1 (o do subir.bat) aceita o que o app gera', PROCESSO_REAL, () => {
   it('controle: o .env.example puro é recusado pelo script (o teste enxerga problemas)', () => {
     copyFileSync(join(dir, '.env.example'), join(dir, '.env'));
     copyFileSync(join(dir, 'slskd', 'slskd.example.yml'), join(dir, 'slskd', 'slskd.yml'));

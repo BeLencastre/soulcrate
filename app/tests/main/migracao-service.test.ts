@@ -6,6 +6,7 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { MigracaoService } from '../../src/main/services/migracao-service';
 import { ExecutorReal, type Executor } from '../../src/main/infra/processos';
 import { ARQUIVOS_DA_STACK } from '../../src/shared/stack-arquivos';
+import { PROCESSO_REAL } from './ajudantes';
 
 let raiz: string;
 let origem: string;
@@ -34,7 +35,7 @@ beforeEach(() => {
 });
 afterEach(() => rmSync(raiz, { recursive: true, force: true }));
 
-describe('MigracaoService', () => {
+describe('MigracaoService', PROCESSO_REAL, () => {
   it('uma pasta igual ao que o app traz não tem nada a avisar', async () => {
     const r = await new MigracaoService({ executor: new ExecutorReal(), origemStack: origem }).analisar(dir);
     expect(r).toEqual({ clone: false, alteracoesLocais: [], diferentesDoApp: [], gitIndisponivel: false });

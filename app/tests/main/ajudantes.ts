@@ -89,6 +89,16 @@ export class ExecutorFalso implements Executor {
   }
 }
 
+/**
+ * Opções do Vitest para os testes que abrem processo de verdade (Windows PowerShell, Node, git, taskkill): o limite
+ * de cada teste sobe dos 5 s padrão para 30 s. Esses testes medem a máquina, não o código: com a suíte inteira em
+ * paralelo no Windows (12 núcleos), uma chamada ao PowerShell 5.1 levou de 1 a 7 s, e o teste com duas em sequência
+ * chegou a 8,6 s. O limite existe para um processo travado não prender a suíte, e não é meta de desempenho: 30 s dão
+ * folga de ~3,5x sobre o pior caso medido. Os testes com dublês continuam com os 5 s padrão, que lá apontam
+ * lentidão de verdade.
+ */
+export const PROCESSO_REAL = { timeout: 30_000 };
+
 export const esperar = (ms: number) => new Promise<void>((r) => setTimeout(r, ms));
 
 /** Espera até a condição valer (ou falha), para os eventos assíncronos dos serviços. */
