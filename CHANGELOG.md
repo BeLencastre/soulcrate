@@ -6,9 +6,16 @@ O **app desktop** e a **stack** (Docker Compose, scripts e configuração do bee
 
 ## Não lançado
 
+Nada ainda.
+
+## App 1.1.1 (2026-10-13)
+
+Corrige o download em lote parando com "slskd não respondeu" sem o slskd ter caído. Traz a stack 1.2.1.
+
 ### Corrigido
 
-- **Lote parava com "slskd não respondeu" sem o slskd ter caído.** Um artista escrito letra por letra (por exemplo `t e s t p r e s s`, comum em playlists importadas) gerava uma busca só pelo artista que o slskd recusa (HTTP 400: nenhum termo com mais de 1 caractere). O lote tratava a recusa como queda do slskd, repetia a busca 20 vezes e abortava. Agora essa busca é ignorada, o lote segue para a próxima etapa da faixa e continua com o resto da lista.
+- **Lote parava com "slskd não respondeu" sem o slskd ter caído.** Um artista escrito letra por letra (por exemplo `t e s t p r e s s`, comum em playlists importadas) gerava uma busca só pelo artista que o slskd recusa (HTTP 400: nenhum termo com mais de 1 caractere). O lote tratava a recusa como queda do slskd, repetia a busca 20 vezes e abortava. Agora essa busca é ignorada, o lote segue para a próxima etapa da faixa e continua com o resto da lista. A faixa sem busca válida aparece como "não encontrada".
+- Para quem já teve o lote parado por isso: rode a lista de novo, ela continua de onde parou.
 
 ## App 1.1.0 (2026-10-13)
 
@@ -37,6 +44,14 @@ Muda o que o download em lote aceita por padrão e traz a stack 1.2.0. **Atenç�
 ### Removido
 
 - `-AceitarWav`: o WAV agora é sempre aceito. A opção continua existindo no script, sem efeito, para não quebrar comandos antigos, mas saiu da tela de Opções.
+
+## Stack 1.2.1
+
+Versão da stack que o app 1.1.1 traz. Muda só o `baixar-lista.ps1` (e a biblioteca `baixar-lista.lib.ps1`).
+
+### Corrigido
+
+- Download em lote: uma busca que o slskd recusa com HTTP 400 (por exemplo, a busca só pelo artista de `t e s t p r e s s`) não é mais tratada como slskd fora do ar. A etapa é ignorada, sem gastar o limite de buscas, e o lote segue. Um aviso `search_invalid` é registrado nos eventos.
 
 ## Stack 1.2.0
 

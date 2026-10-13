@@ -187,7 +187,7 @@ export interface Progress extends Base<'progress'> {
 }
 
 export interface Warning extends Base<'warning'> {
-  code: 'slskd_unreachable' | 'musicbrainz_unavailable' | (string & {});
+  code: 'slskd_unreachable' | 'musicbrainz_unavailable' | 'search_invalid' | (string & {});
   message: string;
   streak?: number;
   maxStreak?: number;

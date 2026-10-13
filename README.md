@@ -17,7 +17,7 @@ flowchart LR
     D --> E[Rekordbox, pendrive, CDJ/XDJ]
 ```
 
-> **Status:** o **app desktop para Windows** está na versão `1.1.0` e a stack (Docker Compose, scripts e configuração do beets) na `1.2.0` (veja o [`CHANGELOG.md`](CHANGELOG.md)). O instalador está na página de [Releases](https://github.com/BeLencastre/soulcrate/releases) (veja [Instalação pelo app](#instalação-pelo-app-windows)). Os `.bat` continuam funcionando em qualquer caso.
+> **Status:** o **app desktop para Windows** está na versão `1.1.1` e a stack (Docker Compose, scripts e configuração do beets) na `1.2.1` (veja o [`CHANGELOG.md`](CHANGELOG.md)). O instalador está na página de [Releases](https://github.com/BeLencastre/soulcrate/releases) (veja [Instalação pelo app](#instalação-pelo-app-windows)). Os `.bat` continuam funcionando em qualquer caso.
 
 ![O app do Soulcrate: a tela Baixar lista, com o editor e a pré-visualização do que o lote vai ler](docs/img/03-lista.png)
 
@@ -704,7 +704,7 @@ soulcrate/                      # repositório (código)
 │   │                           #   configuração, spikes e img/ (as capturas de tela do README)
 ├── tests/                      # testes (Pester) e o slskd falso usado por eles
 ├── .github/                    # workflows (CI e release do instalador) e modelos de issue
-└── app/                        # app desktop (Electron, React, TypeScript), versão 1.1.0
+└── app/                        # app desktop (Electron, React, TypeScript), versão 1.1.1
     ├── src/main/               # processo principal: serviços (Docker, lote, biblioteca, configuração, atualização…)
     ├── src/preload/            # a API mínima e tipada que a interface enxerga
     ├── src/renderer/           # a interface: as telas e os componentes
@@ -1075,7 +1075,7 @@ Plugins do beets ativos (`soulbeet/config/config.yaml`): `musicbrainz`, `mbtwopa
 | PowerShell     | `5.1` (Windows) | 5.1 no Windows, ou `pwsh` 7+ no Linux/macOS para o `baixar-lista.ps1` |
 | Node.js        | `24.15`         | Só para desenvolver: testes de integração e o app (`app/.nvmrc`)      |
 | Electron       | `44.x`          | O app (`app/package.json`), com React 19 e TypeScript; já vem no instalador |
-| App Soulcrate  | `1.1.0`         | Versão própria, independente da `VERSION` da stack (`app/package.json`) |
+| App Soulcrate  | `1.1.1`         | Versão própria, independente da `VERSION` da stack (`app/package.json`) |
 
 
 > [!TIP]

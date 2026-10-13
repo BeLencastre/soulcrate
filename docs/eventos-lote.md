@@ -96,7 +96,7 @@ Regras:
 | `search.windowFull` | Mudou o estado do limite de buscas por janela | `full`, `limit`, `windowSeconds` |
 | `beets.batch` | Lote do beets começou ou terminou | `phase` (`start`/`end`), `count`, `keys` (no início), `ok`, `errors`, `log` (no fim) |
 | `progress` | A cada ~5 s durante o laço principal | `done`, `total`, `searching`, `downloading`, `remoteQueued`, `waiting`, `beets`, `ok`, `notFound`, `failed`, `etaMin`, `searchesPausedUntil`, `searchWindowFull` |
-| `warning` | Problema recuperável | `code` (`slskd_unreachable`, `musicbrainz_unavailable`), `message`, e para o slskd `streak`/`maxStreak` |
+| `warning` | Problema recuperável | `code` (`slskd_unreachable`, `musicbrainz_unavailable`, `search_invalid`), `message`, e para o slskd `streak`/`maxStreak` |
 | `run.stopping` | O arquivo de parada apareceu | `reason` (`user`) |
 | `run.end` | Fim, sempre o último | `reason`, `exitCode`, `message`, `summary` (status → quantidade), `files` (os que existem) |
 
