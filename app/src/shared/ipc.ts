@@ -79,6 +79,12 @@ export type TemaPreferido = 'escuro' | 'claro' | 'sistema';
 /** Onde abrir o Soulbeet, o slskd e o Navidrome quando o usuário pede "abrir". */
 export type OndeAbrirWebUi = 'app' | 'navegador';
 
+/**
+ * Modo da interface: o DJ esconde etapas do ambiente, logs, portas e opções do script; o Dev mostra tudo. Muda só o
+ * que aparece na tela, nunca o que o app faz (regras em `shared/modo.ts`).
+ */
+export type ModoInterface = 'dj' | 'dev';
+
 /** Preferências do app (não da stack), guardadas em userData. */
 export interface AppSettings {
   /** fechar a janela esconde o app na bandeja em vez de sair (D7) */
@@ -96,6 +102,11 @@ export interface AppSettings {
   avisarFimDoLote: boolean;
   /** notificação do Windows quando o servidor do Soulseek bloqueia as buscas por alguns minutos */
   avisarBuscasPausadas: boolean;
+  /**
+   * Modo escolhido pela pessoa (assistente, barra lateral ou Configurações). `null`: nunca escolheu, e o app age como
+   * Modo Dev (quem já usava o app antes dos modos continua vendo o mesmo). Leia sempre por `modoEfetivo`.
+   */
+  modo: ModoInterface | null;
 }
 
 export interface EnvironmentStatus {

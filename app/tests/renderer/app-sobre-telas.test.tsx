@@ -55,6 +55,7 @@ const SETTINGS: AppSettings = {
   abrirWebUi: 'app',
   avisarFimDoLote: true,
   avisarBuscasPausadas: true,
+  modo: null,
 };
 
 const INFO: InfoSobre = {

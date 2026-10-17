@@ -1,6 +1,7 @@
 // Etapa 3 do lote (protótipo "Baixar lista · Execução ao vivo"): faixa de aviso, progresso com a barra por faixa,
 // contadores, a tabela de faixas (filtro e busca) e a aba com o log bruto. Tudo vem dos eventos do script; fechar o
 // app não interrompe o lote, e ao reabrir o painel é remontado a partir do arquivo de eventos.
+// No Modo DJ a tela é outra (`DownloadDj.tsx`): três contadores, a situação de cada faixa e o que fazer no fim.
 import { useEffect, useMemo, useRef, useState } from 'react';
 import * as Tabs from '@radix-ui/react-tabs';
 import { Link } from 'react-router';
@@ -31,9 +32,11 @@ import {
   erroDoFim,
   faixaDoPainel,
   formatarDuracao,
-  type TomFaixa,
 } from '../../lib/lote-painel';
 import { useExecucao } from '../../lib/lote-store';
+import { FaixaDeAviso } from '../../components/lote/FaixaDeAviso';
+import { useModoDj } from '../../lib/modo';
+import { DownloadDj } from './DownloadDj';
 
 const COR_SEGMENTO: Record<CorSegmento, string> = {
   verde: 'var(--color-led-verde)',
@@ -42,13 +45,6 @@ const COR_SEGMENTO: Record<CorSegmento, string> = {
   azul: 'var(--color-barra-azul)',
   roxo: 'var(--color-barra-roxo)',
   vazio: 'var(--color-borda-fraca)',
-};
-
-const TOM_DA_FAIXA: Record<TomFaixa, { fundo: string; borda: string; cor: string }> = {
-  azul: { fundo: 'var(--color-azul-fundo)', borda: 'var(--color-azul-borda)', cor: 'var(--color-led-azul)' },
-  laranja: { fundo: 'var(--color-aviso-fundo)', borda: 'var(--color-aviso-borda)', cor: 'var(--color-led-laranja)' },
-  ambar: { fundo: 'var(--color-ambar-fundo)', borda: 'var(--color-ambar-borda)', cor: 'var(--color-ambar)' },
-  verde: { fundo: 'var(--color-verde-fundo)', borda: 'var(--color-verde-borda)', cor: 'var(--color-led-verde)' },
 };
 
 const COLUNAS_FAIXAS = '44px minmax(220px,2.2fr) minmax(196px,1.2fr) 80px minmax(110px,0.9fr) 56px minmax(200px,1.6fr)';
@@ -66,38 +62,6 @@ const COR_DOS_CONTADORES = {
 } as const;
 
 // ---------------------------------------------------------------- Peças
-
-function FaixaDeAviso({
-  id,
-  tom,
-  titulo,
-  texto,
-  pulsa,
-}: {
-  id: string;
-  tom: TomFaixa;
-  titulo: string;
-  texto: string;
-  pulsa: boolean;
-}) {
-  const c = TOM_DA_FAIXA[tom];
-  return (
-    <div
-      role="status"
-      data-faixa={id}
-      className="flex flex-wrap items-center gap-3 rounded-lg border px-4 py-3"
-      style={{ background: c.fundo, borderColor: c.borda }}
-    >
-      <span
-        aria-hidden="true"
-        className={`size-[9px] rounded-[2px] ${pulsa ? 'pulsa' : ''}`}
-        style={{ background: c.cor }}
-      />
-      <span className="text-sm font-bold">{titulo}</span>
-      <span className="text-[13px] text-texto-medio">{texto}</span>
-    </div>
-  );
-}
 
 function LinhaDoLog({ texto }: { texto: string }) {
   let cor = 'var(--color-texto-claro)';
@@ -230,7 +194,7 @@ function TabelaDeFaixas({ faixas }: { faixas: readonly FaixaLote[] }) {
 
 // ---------------------------------------------------------------- Tela
 
-export function Execucao() {
+function ExecucaoDev() {
   const runId = useExecucao((s) => s.runId);
   const anexado = useExecucao((s) => s.anexado);
   const estado = useExecucao((s) => s.estado);
@@ -419,4 +383,8 @@ export function Execucao() {
       </Cartao>
     </div>
   );
+}
+
+export function Execucao() {
+  return useModoDj() ? <DownloadDj /> : <ExecucaoDev />;
 }

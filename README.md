@@ -42,6 +42,7 @@ flowchart LR
 **Usando no dia a dia**
 
 - [O app desktop](#o-app-desktop)
+  - [Modo DJ e Modo Dev](#modo-dj-e-modo-dev)
   - [As telas](#as-telas)
   - [Bandeja, preferências e suporte](#bandeja-preferências-e-suporte)
   - [Atualização e desinstalação](#atualização-e-desinstalação)
@@ -317,9 +318,22 @@ Confira se está tudo de pé com `status.bat` (ou `docker compose ps`). Cada ser
 
 O app (Windows, feito em Electron) é uma camada de orquestração e visualização sobre a mesma stack: a busca, os filtros e a escolha do arquivo continuam no `baixar-lista.ps1`, e a organização das faixas continua no beets. Por isso dá para **alternar entre o app e os `.bat`** na mesma pasta, sem perder nada: usam o mesmo `.env`, os mesmos `lotes/` e o mesmo estado das listas. A mesma lista não roda duas vezes ao mesmo tempo, nem entre o app e o `.bat`.
 
+### Modo DJ e Modo Dev
+
+O app tem dois modos, que mudam **só o que aparece na tela** (nada é apagado, e um download em andamento continua):
+
+- **Modo DJ:** só o que importa para baixar, organizar e ouvir. O Início diz numa frase o que está acontecendo e mostra o único botão que resolve; Serviços tem um cartão por coisa que você usa; os ajustes do download falam o que fazem ("Organizar depois de baixar") em vez de mostrar os flags do script; a Biblioteca mostra o tom na roda de Camelot (7A · Dm).
+- **Modo Dev:** tudo o que a stack faz, como nas capturas da próxima seção: as etapas do ambiente, os logs dos contêineres, as portas, as opções do script e a configuração completa.
+
+Troque pelo alternador no rodapé da barra lateral, pelo atalho **Ctrl+Shift+D** ou em Configurações → Aplicativo. Numa instalação nova, o assistente pergunta o modo no fim (o Modo DJ vem marcado); quem já usava o app continua no Modo Dev. Onde o Modo DJ esconde algo útil para resolver um problema, **Mostrar detalhes técnicos** leva à mesma tela no Modo Dev.
+
+![Início no Modo DJ: "Tudo pronto", os atalhos para baixar, buscar, ouvir e ver transferências, e o último download](docs/img/10-modo-dj-inicio.png)
+
+![Seus downloads no Modo DJ: a nova tentativa aparece com o nome da lista original](docs/img/10-modo-dj-historico.png)
+
 ### As telas
 
-A barra lateral tem seis telas e o estado da stack; quando há um lote rodando, um cartão com o progresso fica sempre à mão. O app abre no tema escuro (há também o claro).
+A barra lateral tem seis telas, o estado da stack e o alternador de modo; quando há um lote rodando, um cartão com o progresso fica sempre à mão. O app abre no tema escuro (há também o claro). As capturas desta seção são do Modo Dev.
 
 > As capturas abaixo usam **dados de demonstração** (uma biblioteca e um slskd de mentira), não uma instalação real. Elas são geradas por `npm run capturas`, em `app/`.
 
@@ -382,7 +396,7 @@ As mesmas seções do assistente em abas (Pastas, Conta Soulseek, Web UI do slsk
 ### Bandeja, preferências e suporte
 
 - **Bandeja do sistema:** o ícone muda de cor conforme o estado da stack e tem Abrir, Ligar, Desligar, atalhos para as interfaces e Sair. Fechar a janela pode apenas minimizá-la para a bandeja (a stack e o lote seguem rodando); para sair de vez, use **Sair** no ícone.
-- **Preferências** (Configurações → Aplicativo): tema escuro (padrão), claro ou igual ao Windows (a tela Início no tema claro está em [`docs/img/01-inicio-claro.png`](docs/img/01-inicio-claro.png)); iniciar com o Windows direto na bandeja; abrir as interfaces web dentro do app ou no navegador; avisos do Windows quando um lote termina ou as buscas são pausadas.
+- **Preferências** (Configurações → Aplicativo): o [modo da interface](#modo-dj-e-modo-dev) (DJ ou Dev); tema escuro (padrão), claro ou igual ao Windows (a tela Início no tema claro está em [`docs/img/01-inicio-claro.png`](docs/img/01-inicio-claro.png)); iniciar com o Windows direto na bandeja; abrir as interfaces web dentro do app ou no navegador; avisos do Windows quando um lote termina ou as buscas são pausadas.
 - **Sobre** mostra as versões do app, da stack e dos componentes (lidas dos contêineres), os créditos e a licença.
 - **Pacote de suporte** (Sobre, ou Ajuda → Gerar pacote de suporte): um `.zip` com os logs do app, os últimos `execucao-*.log`, o `docker compose ps` e as versões, **com senhas e chaves removidas**. O `.env` e o `slskd.yml` nunca entram.
 - **Acessibilidade:** navegação completa por teclado ("Pular para o conteúdo", foco visível), contraste AA nos dois temas, e uma tela que trava não derruba a janela inteira.

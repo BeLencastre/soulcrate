@@ -1,5 +1,6 @@
 // Etapa 2 do lote (protótipo "Baixar lista · Opções"): receitas de um clique, as opções do script agrupadas, as
 // avançadas recolhidas e o resumo com o comando equivalente. Os padrões são os do script; o app mostra o que difere.
+// No Modo DJ a tela é outra (`AjustesDj.tsx`): situações comuns, interruptores em palavras e o resumo sem o comando.
 import * as Collapsible from '@radix-ui/react-collapsible';
 import { Link } from 'react-router';
 import { msg } from '@shared/mensagens';
@@ -26,6 +27,8 @@ import { EtapasDoLote } from '../../components/lote/Etapas';
 import { useIniciarLote } from '../../components/lote/IniciarLote';
 import { Botao, Cartao, classeBotao, Rotulo } from '../../components/ui';
 import { useRascunho } from '../../lib/lote-store';
+import { useModoDj } from '../../lib/modo';
+import { AjustesDj } from './AjustesDj';
 
 function LinhaLigaDesliga({
   id,
@@ -116,7 +119,7 @@ function LinhaNumero({
   );
 }
 
-export function Opcoes() {
+function OpcoesDev() {
   const lista = useRascunho((s) => s.lista);
   const opcoes = useRascunho((s) => s.opcoes);
   const definir = useRascunho((s) => s.definirOpcoes);
@@ -253,4 +256,8 @@ export function Opcoes() {
       {iniciarLote.dialogo}
     </div>
   );
+}
+
+export function Opcoes() {
+  return useModoDj() ? <AjustesDj /> : <OpcoesDev />;
 }

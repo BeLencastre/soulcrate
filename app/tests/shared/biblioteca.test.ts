@@ -5,6 +5,7 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import {
+  tomCamelot,
   contarIndicadores,
   ehTarefaDeManutencao,
   filtrarFaixas,
@@ -341,5 +342,34 @@ describe('lerCompartilhamento (GET /api/v0/application do slskd)', () => {
     expect(lerCompartilhamento({})).toEqual({ arquivos: null, escaneando: false });
     expect(lerCompartilhamento(null)).toEqual({ arquivos: null, escaneando: false });
     expect(lerCompartilhamento({ shares: { files: '10' } })).toEqual({ arquivos: null, escaneando: false });
+  });
+});
+
+describe('tomCamelot (o tom como DJ lê, Modo DJ)', () => {
+  it('menores viram A e maiores viram B, com sustenido ou bemol', () => {
+    expect(['Am', 'Em', 'Bm', 'Dm', 'Gm', 'F#m', 'Dbm', 'C#m', 'Bbm', 'G#m'].map(tomCamelot)).toEqual([
+      '8A',
+      '9A',
+      '10A',
+      '7A',
+      '6A',
+      '11A',
+      '12A',
+      '12A',
+      '3A',
+      '1A',
+    ]);
+    expect(['C', 'G', 'F#', 'Gb', 'Eb', 'B', 'Ab'].map(tomCamelot)).toEqual(['8B', '9B', '2B', '2B', '5B', '1B', '4B']);
+  });
+
+  it('aceita "min", "minor", minúsculas e o que já vem em Camelot; o resto é null', () => {
+    expect(tomCamelot('A minor')).toBe('8A');
+    expect(tomCamelot('dmin')).toBe('7A');
+    expect(tomCamelot('C maj')).toBe('8B');
+    expect(tomCamelot('8a')).toBe('8A');
+    expect(tomCamelot(' 12B ')).toBe('12B');
+    expect(tomCamelot('13A')).toBeNull();
+    expect(tomCamelot('H')).toBeNull();
+    expect(tomCamelot('')).toBeNull();
   });
 });

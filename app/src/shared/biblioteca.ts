@@ -195,6 +195,31 @@ export function filtrarFaixas(
   });
 }
 
+// ---------------------------------------------------------------- Tom na roda de Camelot (Modo DJ)
+
+const SEMITOM: Record<string, number> = { C: 0, D: 2, E: 4, F: 5, G: 7, A: 9, B: 11 };
+/** O número da roda de Camelot de cada tônica (0 = C), nos tons menores (A) e maiores (B). */
+const CAMELOT_MENOR = [5, 12, 7, 2, 9, 4, 11, 6, 1, 8, 3, 10] as const;
+const CAMELOT_MAIOR = [8, 3, 10, 5, 12, 7, 2, 9, 4, 11, 6, 1] as const;
+
+/**
+ * O tom como DJ lê (protótipo "DJ · Biblioteca"): `Am` → `8A`, `F#` → `2B`, `Dbm` → `12A`. Aceita sustenido e bemol
+ * (`#`, `b`, `♯`, `♭`), "m", "min" e "minor", e um tom que já vem em Camelot. `null` se não reconhecer.
+ */
+export function tomCamelot(tom: string): string | null {
+  const t = tom.trim();
+  const jaCamelot = /^(1[0-2]|[1-9])\s*([AB])$/i.exec(t);
+  if (jaCamelot) return `${jaCamelot[1]}${(jaCamelot[2] ?? '').toUpperCase()}`;
+  const m = /^([A-Ga-g])\s*([#b♯♭]?)\s*(m|min|minor|maj|major)?$/.exec(t);
+  if (!m) return null;
+  const nota = SEMITOM[(m[1] ?? '').toUpperCase()];
+  if (nota === undefined) return null;
+  const acidente = m[2] === '#' || m[2] === '♯' ? 1 : m[2] === 'b' || m[2] === '♭' ? -1 : 0;
+  const indice = (nota + acidente + 12) % 12;
+  const menor = m[3] === 'm' || m[3] === 'min' || m[3] === 'minor';
+  return menor ? `${CAMELOT_MENOR[indice]}A` : `${CAMELOT_MAIOR[indice]}B`;
+}
+
 // ---------------------------------------------------------------- Filtro do beets (remoção)
 
 const MAX_TERMOS = 20;

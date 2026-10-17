@@ -8,6 +8,7 @@ Formato: `- AAAA-MM-DD · o aprendizado. **Por quê:** o motivo ou a consequênc
 
 - 2026-10-13 · A memória do repositório tem duas camadas: este arquivo (versionado e curado) e os resumos de sessão em `.claude/memoria/sessoes/` (locais, fora do git). **Por quê:** o que é compartilhado precisa de curadoria; o diário automático gera ruído e muda a cada sessão. Veja o [ADR 0001](../../docs/adr/0001-memoria-do-repositorio-e-mapa-de-dependencias.md).
 - 2026-10-13 · O mapa de dependências é gerado, mas o motivo de cada uma é escrito à mão (`docs/dependencias.justificativas.json`). **Por quê:** a versão sai do manifesto, o porquê não; o CI recusa motivo `PENDENTE`.
+- 2026-10-17 · O Modo DJ/Dev é só apresentação: `AppSettings.modo` (`null` = nunca escolheu = Dev) e o renderer escolhe o que desenhar; main, IPC e eventos não conhecem o modo. Tela nova ou mudada precisa responder "e no Modo DJ?" e usar `shared/mensagens-dj.ts` para o texto. **Por quê:** [ADR 0002](../../docs/adr/0002-modo-dj-e-modo-dev.md); quem já usava o app não pode ver nada mudar sem escolher.
 
 ## Armadilhas
 
@@ -16,12 +17,14 @@ Formato: `- AAAA-MM-DD · o aprendizado. **Por quê:** o motivo ou a consequênc
 - 2026-10-07 · A base do Soulbeet traz `httpx2`/`httpcore2` sem metadados de pacote, e o `lastgenre` não carrega sem eles. **Por quê:** o `soulbeet/fix-metadata.py` cria um dist-info mínimo; não remova sem testar o `lastgenre`.
 - 2026-10-07 · No Git Bash, `docker exec <container> ls /music` vira um caminho do Windows (conversão do MSYS). **Por quê:** use `MSYS_NO_PATHCONV=1` antes dos comandos que passam caminhos Linux para o Docker.
 - 2026-10-07 · `wsl.exe -l -v` sai em UTF-16LE. **Por quê:** sem converter (`iconv -f utf-16le -t utf-8`, ou ler como Unicode no app), a saída parece vazia ou com caracteres nulos.
+- 2026-10-17 · Em teste do renderer que troca uma preferência, deixe `api.app.getSettings` pendente (`new Promise(() => {})`) e semeie `chaveSettings` no QueryClient. **Por quê:** a releitura ao montar responde depois do clique e sobrescreve a troca otimista, e o teste fica intermitente.
 
 ## Comandos
 
 - 2026-10-13 · Para regenerar e conferir o mapa de dependências: `node scripts/dependencias.mjs`, depois `--check`. Os testes dos scripts e dos hooks rodam com `node --test "scripts/*.test.mjs" ".claude/hooks/*.test.mjs"`.
 - 2026-10-13 · Para simular um hook à mão: `printf '%s' '{"session_id":"x","tool_name":"Write","tool_input":{"file_path":"C:/caminho/arquivo"}}' | node .claude/hooks/memoria.mjs post-tool-use`. **Por quê:** no Git Bash, a barra invertida de caminho do Windows dentro do JSON chega estragada ao stdin, e o hook recebe um JSON inválido. Use barras normais.
 - 2026-10-13 · Os hooks de `.claude/settings.json` passaram a valer na própria sessão em que foram criados, e o estado local mostra o que eles registraram (`.claude/memoria/.estado/<sessão>.json`). **Por quê:** ao mexer em `memoria.mjs`, um erro aparece já na sessão atual; confira o estado e rode os testes antes de commitar.
+- 2026-10-17 · Script Python que edita arquivo no Windows: abra com `newline=''` (senão grava CRLF) e passe caminhos do Windows, não `/tmp/...` dentro do script (o Python não enxerga o `/tmp` do Git Bash; só o argumento da linha de comando é convertido). **Por quê:** parte dos arquivos da cópia de trabalho está em CRLF (os `.md`) e parte em LF (os `.ts`); misturar gera diff de fim de linha.
 
 ## Produto
 

@@ -6,6 +6,19 @@ O **app desktop** e a **stack** (Docker Compose, scripts e configuração do bee
 
 ## Não lançado
 
+### Adicionado
+
+- **Modo DJ e Modo Dev.** O Modo DJ mostra só o que importa para baixar, organizar e ouvir, sem termos técnicos; o Modo Dev é o app de sempre, com as etapas do ambiente, os logs, as portas, as opções do script e a configuração completa da stack. Troque pelo alternador no rodapé da barra lateral, pelo atalho **Ctrl+Shift+D** ou em Configurações → Aplicativo. A troca muda só o que aparece: a tela atual fica onde está, nada é apagado e um download em andamento continua. Depois de trocar pela barra lateral, um aviso de 6 s oferece **Desfazer**.
+- Numa instalação nova, a tela final do assistente pergunta como você vai usar o Soulcrate, com o Modo DJ marcado. **Quem já usa o app continua no Modo Dev** até escolher outro.
+- No Modo DJ:
+  - o **Início** diz numa frase o que está acontecendo, com o único botão que resolve ("O player não está respondendo → Reiniciar o player"), e traz atalhos para baixar, buscar, ouvir e ver transferências, o último download e a biblioteca;
+  - **Serviços** mostra um cartão por coisa que você usa (organização, busca e download, player, compartilhamento, pastas);
+  - **Baixar lista** vira *Lista · Ajustes · Download*: os ajustes falam o que fazem ("Organizar depois de baixar") e o download conta o que chegou e o que faltou;
+  - **Histórico** vira "Seus downloads", e a nova tentativa aparece com o nome da lista original;
+  - a **Biblioteca** mostra o tom na roda de Camelot (7A · Dm);
+  - **Configurações** fica com Pastas, Conta Soulseek, **Compartilhamento** (músicas compartilhadas, ouvir no celular e o teste da porta) e as preferências do app.
+  - Onde o Modo DJ esconde algo útil para resolver um problema, "Mostrar detalhes técnicos" leva à mesma tela no Modo Dev.
+
 ### Corrigido
 
 - **Assistente: o Avançar podia ignorar um clique feito logo depois de o passo aparecer.** Com o computador ocupado, o clique na hora em que o passo "Pastas das músicas" surgia não fazia nada e não mostrava nenhum aviso. Agora ele sempre avança.

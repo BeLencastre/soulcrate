@@ -46,6 +46,7 @@ const { Servicos } = await import('../../src/renderer/paginas/Servicos');
 const { WebUi } = await import('../../src/renderer/paginas/WebUi');
 const { Configuracoes } = await import('../../src/renderer/paginas/Configuracoes');
 const { SecaoSobre, SecaoAplicativo } = await import('../../src/renderer/components/configuracoes/secoes-app');
+const { chaveSettings } = await import('../../src/renderer/lib/preferencias');
 
 const TELAS: [string, string, () => React.ReactElement, string][] = [
   ['Início', '/', () => <Inicio />, '/'],
@@ -68,8 +69,10 @@ const TELAS: [string, string, () => React.ReactElement, string][] = [
   ['Configurações · Sobre', '/x', () => <SecaoSobre />, '/x'],
 ];
 
-function montar(entrada: string, ui: () => React.ReactElement, caminho: string) {
+function montar(entrada: string, ui: () => React.ReactElement, caminho: string, modoDj = false) {
   const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+  // a preferência já lida (o App espera por ela); a releitura falha ou não responde, e o modo continua o semeado
+  if (modoDj) qc.setQueryData(chaveSettings, { modo: 'dj' });
   return render(
     <QueryClientProvider client={qc}>
       <MemoryRouter initialEntries={[entrada]}>
@@ -106,13 +109,16 @@ function algoNaTela(container: HTMLElement, tela = true): boolean {
   return texto.length >= 12 && (!tela || temTitulo);
 }
 
-describe('estados em todas as telas', () => {
+describe.each([
+  ['estados em todas as telas', false],
+  ['estados em todas as telas, no Modo DJ', true],
+] as const)('%s', (_titulo, modoDj) => {
   describe.each(TELAS)('%s', (nome, entrada, ui, caminho) => {
     // as seções de Configurações são só um pedaço da tela (o título é da página que as contém)
     const ehSecao = nome.startsWith('Configurações ·');
     it('quando tudo falha, explica o que houve (nada em branco, nada de pilha crua)', async () => {
       estado.modo = 'rejeita';
-      const { container } = montar(entrada, ui, caminho);
+      const { container } = montar(entrada, ui, caminho, modoDj);
       await waitFor(() => expect(algoNaTela(container)).toBe(true));
       // dá tempo de as consultas falharem e a tela reagir
       await new Promise((r) => setTimeout(r, 60));
@@ -123,12 +129,14 @@ describe('estados em todas as telas', () => {
 
     it('enquanto nada responde, mostra que está carregando ou o estado atual (nada em branco)', async () => {
       estado.modo = 'pendente';
-      const { container } = montar(entrada, ui, caminho);
+      const { container } = montar(entrada, ui, caminho, modoDj);
       await new Promise((r) => setTimeout(r, 60));
       expect(algoNaTela(container, !ehSecao)).toBe(true);
     });
   });
+});
 
+describe('estados: ações', () => {
   describe('ações que acompanham cada erro de leitura', () => {
     it('Configurações: sem conseguir ler a configuração, oferece "Tentar de novo"', async () => {
       estado.modo = 'rejeita';

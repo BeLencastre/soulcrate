@@ -1,4 +1,5 @@
 // Tela Início (protótipo "Início"): cinco etapas do ambiente, Ligar/Desligar/Reconstruir, interfaces web e log da stack.
+// No Modo DJ a tela é outra (`inicio/InicioDj.tsx`): uma frase com o botão que resolve, atalhos e o último download.
 import * as Collapsible from '@radix-ui/react-collapsible';
 import { useNavigate } from 'react-router';
 import { msg } from '@shared/mensagens';
@@ -23,6 +24,8 @@ import { resumirFim } from '@shared/lote-estado';
 import { useAgora, useStackStatus, useUi } from '../lib/estado';
 import { useAbrirServico } from '../lib/preferencias';
 import { execucaoRodando, useExecucao } from '../lib/lote-store';
+import { useModoDj } from '../lib/modo';
+import { InicioDj } from './inicio/InicioDj';
 
 const COR_DO_ESTADO: Record<EtapaEstado, CorChip> = {
   ok: 'verde',
@@ -215,7 +218,7 @@ function CartaoDoLote() {
   );
 }
 
-export function Inicio() {
+function InicioDev() {
   const status = useStackStatus();
   const operacao = useUi((s) => s.operacao);
   const dispensarOperacao = useUi((s) => s.dispensarOperacao);
@@ -306,4 +309,8 @@ export function Inicio() {
       <PainelLog status={status} />
     </div>
   );
+}
+
+export function Inicio() {
+  return useModoDj() ? <InicioDj /> : <InicioDev />;
 }

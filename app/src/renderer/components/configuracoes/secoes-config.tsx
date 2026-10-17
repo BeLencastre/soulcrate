@@ -13,9 +13,11 @@ import {
   type ResultadoValidacao,
 } from '@shared/configuracao';
 import { msg } from '@shared/mensagens';
+import { msgDj } from '@shared/mensagens-dj';
 import { seguro } from '../../lib/acoes';
 import { api } from '../../lib/api';
 import { achadosVisiveis, gerarSenha, paiDoCaminho } from '../../lib/formulario';
+import { CartaoCompartilhamento } from '../biblioteca/CartaoCompartilhamento';
 import { AchadosDoCampo, CaixaAviso, Campo, CampoSenha, Interruptor } from '../campos';
 import { Botao, Cartao, Chip } from '../ui';
 
@@ -348,16 +350,24 @@ export function SecaoAjustes({ entrada, aoMudar, validacao, mostrarErros = true 
 
 // ---------------------------------------------------------------- Rede (só nas Configurações)
 
+type TextosDaPorta = Pick<
+  typeof msg.configuracoes.rede,
+  'porta' | 'testar' | 'testarDeNovo' | 'testando' | 'estado' | 'explicacao' | 'livre' | 'ocupada'
+>;
+
 export function CartaoPorta({
   porta,
   testando,
   aoTestar,
+  textos = msg.configuracoes.rede,
 }: {
   porta: PortaStatus | null;
   testando: boolean;
   aoTestar(): void;
+  /** o Modo DJ troca as palavras (`msgDj.configuracoes.porta`) */
+  textos?: TextosDaPorta;
 }) {
-  const r = msg.configuracoes.rede;
+  const r = textos;
   const cor = !porta ? 'neutro' : porta.estado === 'escutando' ? 'verde' : 'laranja';
   const texto = !porta ? r.estado.desconhecido : r.estado[porta.estado];
   return (
@@ -378,10 +388,9 @@ export function CartaoPorta({
   );
 }
 
-export function SecaoRede({ entrada, aoMudar }: Pick<PropsSecao, 'entrada' | 'aoMudar'>) {
+function useTesteDaPorta() {
   const [porta, setPorta] = useState<PortaStatus | null>(null);
   const [testando, setTestando] = useState(false);
-
   async function testar() {
     setTestando(true);
     try {
@@ -390,7 +399,11 @@ export function SecaoRede({ entrada, aoMudar }: Pick<PropsSecao, 'entrada' | 'ao
       setTestando(false);
     }
   }
+  return { porta, testando, testar: () => seguro(testar()) };
+}
 
+export function SecaoRede({ entrada, aoMudar }: Pick<PropsSecao, 'entrada' | 'aoMudar'>) {
+  const { porta, testando, testar } = useTesteDaPorta();
   return (
     <div className="flex flex-col gap-6">
       <Interruptor
@@ -399,7 +412,32 @@ export function SecaoRede({ entrada, aoMudar }: Pick<PropsSecao, 'entrada' | 'ao
         titulo={msg.configuracoes.rede.abrir}
         descricao={msg.configuracoes.rede.abrirDica}
       />
-      <CartaoPorta porta={porta} testando={testando} aoTestar={() => seguro(testar())} />
+      <CartaoPorta porta={porta} testando={testando} aoTestar={testar} />
+    </div>
+  );
+}
+
+/**
+ * Modo DJ: o que decide quem baixa de você e quem ouve suas músicas, no lugar de Rede. O número de músicas
+ * compartilhadas, ouvir no celular (BIND_ADDR, gravado com o resto da configuração) e o teste da porta 2234.
+ */
+export function SecaoCompartilhamento({
+  entrada,
+  aoMudar,
+  slskdNoAr,
+}: Pick<PropsSecao, 'entrada' | 'aoMudar'> & { slskdNoAr: boolean }) {
+  const { porta, testando, testar } = useTesteDaPorta();
+  const t = msgDj.configuracoes;
+  return (
+    <div className="flex flex-col gap-6">
+      <CartaoCompartilhamento slskdNoAr={slskdNoAr} />
+      <Interruptor
+        marcado={entrada.abrirParaRede}
+        aoMudar={(v) => aoMudar({ abrirParaRede: v })}
+        titulo={t.rede.abrir}
+        descricao={t.rede.abrirDica}
+      />
+      <CartaoPorta porta={porta} testando={testando} aoTestar={testar} textos={t.porta} />
     </div>
   );
 }

@@ -14,9 +14,16 @@ export interface InfoStatus {
   grupo: GrupoFaixa;
 }
 
+/** Os rótulos dos status (o Modo DJ passa os seus, com as mesmas chaves). */
+export type TextosDoStatus = Record<keyof typeof msg.lote.status, string>;
+
 /** Apêndice B da especificação: status do script → rótulo, grupo e cor. */
-export function infoDoStatus(status: string, naFilaDoUsuario = false): InfoStatus {
-  const s = msg.lote.status;
+export function infoDoStatus(
+  status: string,
+  naFilaDoUsuario = false,
+  textos: TextosDoStatus = msg.lote.status,
+): InfoStatus {
+  const s = textos;
   switch (status) {
     case 'pendente':
       return { rotulo: s.aguardando, cor: 'neutro', grupo: 'andamento' };

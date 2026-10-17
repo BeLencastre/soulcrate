@@ -207,6 +207,14 @@ test('capturas: lista, opções, execução, histórico e diagnóstico', async (
   await menu(janela, 'Histórico').click();
   await expect(janela.getByTestId('linha-execucao')).toHaveCount(2);
   await foto(janela, '06-historico');
+
+  // 6. as mesmas telas no Modo DJ: o Início com o último download e "Seus downloads", com a nova tentativa
+  await janela.getByRole('group', { name: 'Modo da interface' }).getByRole('button', { name: /DJ/ }).click();
+  await expect(janela.getByTestId('aviso-de-modo')).toBeHidden({ timeout: 10_000 });
+  await foto(janela, '10-modo-dj-historico');
+  await menu(janela, 'Início').click();
+  await expect(janela.getByTestId('ultimo-download')).toBeVisible();
+  await foto(janela, '10-modo-dj-inicio');
 });
 
 // ---------------------------------------------------------------- Biblioteca

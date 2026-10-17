@@ -39,6 +39,62 @@ export const msg = {
     configuracoes: 'Configurações',
   },
 
+  /** Modo DJ e Modo Dev (protótipos "modos-dev-dj"): o alternador, o aviso depois de trocar e as duas escolhas. */
+  modo: {
+    grupo: 'Modo da interface',
+    rotulo: 'Modo',
+    nome: { dj: 'DJ', dev: 'Dev' },
+    /** o mesmo atalho nos dois sentidos; o título do botão o anuncia */
+    titulo: (nome: string) => `Mudar para o Modo ${nome} (Ctrl+Shift+D)`,
+    tituloAtivo: (nome: string) => `Modo ${nome} ligado (Ctrl+Shift+D alterna)`,
+    aviso: {
+      dj: {
+        titulo: 'Modo DJ ligado',
+        corpo: 'Logs, portas e opções técnicas ficaram escondidos. Nada foi apagado.',
+      },
+      dev: {
+        titulo: 'Modo Dev ligado',
+        corpo: 'Etapas do ambiente, logs, portas e opções do script voltaram.',
+      },
+      desfazer: 'Desfazer',
+    },
+    saida: {
+      rotulo: 'Detalhes técnicos',
+      texto: 'Logs dos contêineres, portas e as verificações completas ficam no Modo Dev.',
+      botao: 'Mostrar detalhes técnicos',
+    },
+    /** tela final do assistente */
+    assistente: {
+      titulo: 'Como você vai usar o Soulcrate?',
+      dica: 'Muda só o que aparece na tela. Dá para trocar a qualquer hora na barra lateral.',
+      recomendado: 'RECOMENDADO',
+      dj: {
+        titulo: 'Sou DJ',
+        descricao: 'Modo DJ: só o que importa para baixar, organizar e ouvir. Termos técnicos ficam escondidos.',
+      },
+      dev: {
+        titulo: 'Quero ver os detalhes técnicos',
+        descricao: 'Modo Dev: etapas do ambiente, logs, portas, opções do script e a configuração completa da stack.',
+      },
+    },
+    /** Configurações → Aplicativo */
+    configuracoes: {
+      legenda: 'Modo da interface',
+      dicaDev:
+        'O Modo DJ esconde etapas do ambiente, logs, portas, opções do script e as seções técnicas desta tela. Nada é apagado; também troca pela barra lateral (Ctrl+Shift+D).',
+      dicaDj: 'Muda só o que aparece na tela. Nada é apagado, e dá para trocar a qualquer hora pela barra lateral.',
+      dj: {
+        titulo: 'Modo DJ',
+        descricao: 'Só o que importa para baixar, organizar e ouvir. Termos técnicos ficam escondidos.',
+      },
+      dev: {
+        titulo: 'Modo Dev',
+        descricao:
+          'Mostra as etapas do ambiente, logs, portas, as opções do script e a configuração completa da stack.',
+      },
+    },
+  },
+
   barraLateral: {
     titulo: 'Stack',
     /** texto da linha de estado (ex.: "No ar · 3/3 saudáveis") */
@@ -326,6 +382,7 @@ export const msg = {
       rede: 'Rede',
       avancado: 'Avançado',
       conferencia: 'Conferência',
+      compartilhamento: 'Compartilhamento',
       app: 'Aplicativo',
       sobre: 'Sobre',
     },

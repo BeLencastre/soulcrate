@@ -1,6 +1,7 @@
 // Tela Biblioteca (protótipo "Biblioteca", Fase 5): o caixote. A tabela das faixas (artista, título, BPM, tom, gênero,
 // formato) lida do beets, os indicadores que filtram o que está faltando, a manutenção, o compartilhamento do slskd e
 // o caminho para o Rekordbox. Remover e as tarefas que mexem nos arquivos passam por diálogos com pré-visualização.
+// No Modo DJ ("Suas músicas"): o tom na roda de Camelot (7A · Dm), sem a coluna de formato, e a manutenção em palavras.
 import { useMemo, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { Link } from 'react-router';
@@ -11,11 +12,14 @@ import {
   type IndicadorId,
   type LeituraBiblioteca,
   type TarefaManutencao,
+  tomCamelot,
 } from '@shared/biblioteca';
 import { msg } from '@shared/mensagens';
+import { msgDj } from '@shared/mensagens-dj';
 import { servicoDe, servicoSaudavel } from '@shared/stack';
 import { DialogoManutencao } from '../components/biblioteca/DialogoManutencao';
 import { DialogoRemover } from '../components/biblioteca/DialogoRemover';
+import { CartaoCompartilhamento } from '../components/biblioteca/CartaoCompartilhamento';
 import { CartaoErro } from '../components/CartaoErro';
 import { Carregando, SemPasta, useSemPasta } from '../components/estados';
 import { IconeLixeira, IconePasta, IconeRecarregar } from '../components/icones';
@@ -27,13 +31,14 @@ import {
   CHAVE_BIBLIOTECA,
   desdeQuandoParado,
   manutencaoRodando,
-  useCompartilhamento,
   useLeituraDaBiblioteca,
   useManutencao,
 } from '../lib/biblioteca';
 import { useAgora, useStackStatus } from '../lib/estado';
+import { useModoDj } from '../lib/modo';
 
 const COLUNAS = 'minmax(150px,1.2fr) minmax(220px,2.2fr) 70px 70px minmax(120px,1.1fr) 96px 84px';
+const COLUNAS_DJ = 'minmax(150px,1.2fr) minmax(220px,2.2fr) 70px 96px minmax(120px,1.1fr) 84px';
 const FALTA = 'font-bold text-chip-laranja';
 
 // ---------------------------------------------------------------- Indicadores
@@ -49,7 +54,9 @@ function Indicadores({
   selecionado: IndicadorId | null;
   aoEscolher(id: IndicadorId | null): void;
 }) {
-  const t = msg.biblioteca.indicadores;
+  const t = useModoDj()
+    ? { ...msg.biblioteca.indicadores, ...msgDj.biblioteca.indicadores }
+    : msg.biblioteca.indicadores;
   const n = contarIndicadores(leitura.faixas, leitura.parados);
   const itens: { id: IndicadorId; nome: string; valor: number }[] = [
     { id: 'bpm', nome: t.bpm, valor: n.semBpm },
@@ -84,6 +91,19 @@ function Indicadores({
 
 // ---------------------------------------------------------------- Tabela
 
+/** O tom no Modo DJ: o número de Camelot em destaque e o tom ao lado ("7A Dm"), para mixar em harmonia. */
+function TomDj({ tom }: { tom: string | null }) {
+  if (tom === null) return <span className={`block font-mono ${FALTA}`}>{msgDj.biblioteca.semTom}</span>;
+  const camelot = tomCamelot(tom);
+  if (!camelot) return <span className="block font-mono">{tom}</span>;
+  return (
+    <span className="flex items-baseline gap-[6px] font-mono">
+      <b>{camelot}</b>
+      <span className="text-xs text-texto-mudo">{tom}</span>
+    </span>
+  );
+}
+
 function TabelaDeFaixas({
   leitura,
   indicador,
@@ -96,6 +116,8 @@ function TabelaDeFaixas({
   aoImportar(): void;
 }) {
   const t = msg.biblioteca;
+  const dj = useModoDj();
+  const tdj = msgDj.biblioteca;
   const [busca, setBusca] = useState('');
   const [aviso, setAviso] = useState<string | null>(null);
   const visiveis = useMemo(() => filtrarFaixas(leitura.faixas, busca, indicador), [leitura.faixas, busca, indicador]);
@@ -123,7 +145,7 @@ function TabelaDeFaixas({
     ) : leitura.faixas.length === 0 ? (
       <span className="flex flex-col items-center gap-3" data-testid="biblioteca-vazia">
         <strong className="text-base text-texto">{t.vazioBiblioteca.titulo}</strong>
-        <span>{t.vazioBiblioteca.corpo}</span>
+        <span>{dj ? tdj.vazioBiblioteca : t.vazioBiblioteca.corpo}</span>
         <Link className={classeBotao('primario', true)} to="/lista">
           {t.vazioBiblioteca.irParaLista}
         </Link>
@@ -149,11 +171,11 @@ function TabelaDeFaixas({
             <circle cx="11" cy="11" r="7" />
             <path d="m20 20-3.5-3.5" />
           </svg>
-          <span className="sr-only">{t.buscar}</span>
+          <span className="sr-only">{dj ? tdj.buscar : t.buscar}</span>
           <input
             value={busca}
             onChange={(e) => setBusca(e.target.value)}
-            placeholder={t.placeholderBusca}
+            placeholder={dj ? tdj.placeholderBusca : t.placeholderBusca}
             className="h-[38px] min-w-0 flex-1 border-0 bg-transparent text-sm outline-none"
             data-testid="busca"
           />
@@ -169,14 +191,14 @@ function TabelaDeFaixas({
       ) : null}
       <TabelaVirtual
         rotulo={t.tabela}
-        colunas={COLUNAS}
+        colunas={dj ? COLUNAS_DJ : COLUNAS}
         cabecalho={[
           t.colunas.artista,
           t.colunas.titulo,
           t.colunas.bpm,
           t.colunas.tom,
           t.colunas.genero,
-          t.colunas.formato,
+          ...(dj ? [] : [t.colunas.formato]),
           t.colunas.acoes,
         ]}
         linhas={visiveis}
@@ -200,19 +222,27 @@ function TabelaDeFaixas({
           <span key="b" className={`block text-right font-mono ${f.bpm === null ? FALTA : ''}`}>
             {f.bpm ?? t.sem}
           </span>,
-          <span key="k" className={`block font-mono ${f.tom === null ? FALTA : ''}`}>
-            {f.tom ?? t.sem}
-          </span>,
+          dj ? (
+            <TomDj key="k" tom={f.tom} />
+          ) : (
+            <span key="k" className={`block font-mono ${f.tom === null ? FALTA : ''}`}>
+              {f.tom ?? t.sem}
+            </span>
+          ),
           <span
             key="g"
             className={`block truncate ${f.semGenero ? 'text-chip-laranja' : 'text-texto-claro'}`}
             title={f.genero ?? t.semGenero}
           >
-            {f.genero ?? t.semGenero}
+            {f.genero ?? (dj ? tdj.semGenero : t.semGenero)}
           </span>,
-          <span key="f" className="block font-mono text-texto-suave">
-            {f.formato}
-          </span>,
+          ...(dj
+            ? []
+            : [
+                <span key="f" className="block font-mono text-texto-suave">
+                  {f.formato}
+                </span>,
+              ]),
           <span key="x" className="flex justify-end gap-[2px] pr-2 whitespace-nowrap">
             <button
               type="button"
@@ -253,23 +283,26 @@ function CartaoManutencao({
   aoEscolher(t: TarefaManutencao): void;
 }) {
   const t = msg.biblioteca.manutencao;
+  const dj = useModoDj();
+  const tdj = msgDj.biblioteca.manutencao;
   const operacao = useManutencao((s) => s.operacao);
   const rodando = useManutencao(manutencaoRodando);
   const desde = desdeQuandoParado(leitura.parados, agora);
+  const textos = dj ? tdj : t;
   const tarefas: { id: TarefaManutencao; titulo: string; descricao: string; desabilitada?: boolean }[] = [
-    { id: 'tomEBpm', ...t.tomEBpm },
+    { id: 'tomEBpm', ...textos.tomEBpm },
     {
       id: 'importLeftovers',
-      titulo: t.importLeftovers.titulo,
-      descricao: t.importLeftovers.descricao(leitura.parados.length, desde),
+      titulo: textos.importLeftovers.titulo,
+      descricao: textos.importLeftovers.descricao(leitura.parados.length, desde),
     },
-    { id: 'update', ...t.update },
-    { id: 'move', ...t.move },
+    { id: 'update', ...textos.update },
+    { id: 'move', ...textos.move },
   ];
   return (
     <Cartao como="section" className="flex flex-col gap-[2px] px-[6px] py-3" data-testid="cartao-manutencao">
       <span className="flex items-center gap-3 px-[14px] pt-1 pb-2">
-        <Rotulo>{t.titulo}</Rotulo>
+        <Rotulo>{textos.titulo}</Rotulo>
         {rodando && operacao ? (
           <button
             type="button"
@@ -297,73 +330,6 @@ function CartaoManutencao({
           </span>
         </button>
       ))}
-    </Cartao>
-  );
-}
-
-function CartaoCompartilhamento({ slskdNoAr }: { slskdNoAr: boolean }) {
-  const t = msg.biblioteca.compartilhamento;
-  const qc = useQueryClient();
-  const q = useCompartilhamento(slskdNoAr);
-  const [pedindo, setPedindo] = useState(false);
-  const [pedido, setPedido] = useState(false);
-  const r = q.data;
-  const c = r?.ok ? r.compartilhamento : null;
-
-  async function reescanear() {
-    setPedindo(true);
-    try {
-      const resposta = await api.library.rescanSharing();
-      qc.setQueriesData({ queryKey: [...CHAVE_BIBLIOTECA, 'compartilhamento'] }, resposta);
-      setPedido(resposta.ok);
-    } finally {
-      setPedindo(false);
-    }
-  }
-
-  return (
-    <Cartao como="section" className="flex flex-col gap-[10px] p-4" data-testid="cartao-compartilhamento">
-      <Rotulo>{t.titulo}</Rotulo>
-      {!slskdNoAr ? (
-        <span className="text-[12.5px] leading-normal text-texto-suave">{t.stackFora}</span>
-      ) : q.isPending ? (
-        <span className="esqueleto h-3 w-[60%]" role="status" aria-label={msg.app.carregando} />
-      ) : r && !r.ok ? (
-        <span className="text-[13px] leading-normal text-chip-laranja" data-testid="compartilhamento-erro">
-          {r.erro.titulo}. {r.erro.mensagem}
-        </span>
-      ) : (
-        <>
-          <span className="text-sm leading-normal" data-testid="compartilhamento-n">
-            {c?.arquivos === null || c === null ? (
-              t.desconhecido
-            ) : (
-              <>
-                <strong className="font-mono">{c.arquivos.toLocaleString('pt-BR')}</strong> {t.anunciados(c.arquivos)}
-              </>
-            )}
-          </span>
-          {c?.escaneando ? (
-            <span role="status" className="text-[12.5px] text-chip-azul">
-              {t.varrendo}
-            </span>
-          ) : c?.arquivos === 0 ? (
-            <span className="text-[12.5px] leading-normal text-chip-laranja">{t.zero}</span>
-          ) : (
-            <span className="text-[12.5px] leading-normal text-texto-suave">{t.dica}</span>
-          )}
-          {pedido ? <span className="text-[12.5px] text-texto-suave">{t.pedido}</span> : null}
-        </>
-      )}
-      <Botao
-        pequeno
-        className="self-start"
-        disabled={!slskdNoAr || pedindo || c?.escaneando === true}
-        onClick={() => void reescanear()}
-        data-testid="reescanear"
-      >
-        {t.reescanear}
-      </Botao>
     </Cartao>
   );
 }
@@ -401,6 +367,7 @@ function CartaoRekordbox({ pasta }: { pasta: string }) {
 
 export function Biblioteca() {
   const t = msg.biblioteca;
+  const dj = useModoDj();
   const qc = useQueryClient();
   const semPasta = useSemPasta();
   const status = useStackStatus();
@@ -424,7 +391,7 @@ export function Biblioteca() {
     <div className="flex flex-col gap-[22px]">
       <CabecalhoPagina
         rotulo={t.rotulo}
-        titulo={t.titulo}
+        titulo={dj ? msgDj.biblioteca.titulo : t.titulo}
         {...(lida ? { subtitulo: t.subtitulo(lida.pastaMusica, lida.faixas.length) } : {})}
         acoes={
           <>
@@ -434,7 +401,7 @@ export function Biblioteca() {
             </Botao>
             <Botao onClick={() => seguro(api.library.openMusicFolder())} disabled={semPasta}>
               <IconePasta />
-              {t.abrirMusic}
+              {dj ? msgDj.biblioteca.abrirMusic : t.abrirMusic}
             </Botao>
           </>
         }

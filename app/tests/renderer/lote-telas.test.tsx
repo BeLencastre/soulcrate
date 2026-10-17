@@ -17,7 +17,14 @@ import { statusInicial, type ContainerEstado, type StackStatus } from '../../src
 const api = vi.hoisted(() => ({
   stack: { up: vi.fn(), down: vi.fn(), openService: vi.fn(), status: vi.fn() },
   env: { startDockerDesktop: vi.fn(), check: vi.fn() },
-  app: { openExternal: vi.fn(), copyText: vi.fn(), openLogsFolder: vi.fn() },
+  app: {
+    openExternal: vi.fn(),
+    copyText: vi.fn(),
+    openLogsFolder: vi.fn(),
+    getSettings: vi.fn(),
+    setSettings: vi.fn(),
+  },
+  library: { openMusicFolder: vi.fn() },
   lists: {
     read: vi.fn(),
     save: vi.fn(),
@@ -39,6 +46,7 @@ const { Opcoes } = await import('../../src/renderer/paginas/lote/Opcoes');
 const { Execucao } = await import('../../src/renderer/paginas/lote/Execucao');
 const { chaveStatus, useUi } = await import('../../src/renderer/lib/estado');
 const { useExecucao, useRascunho } = await import('../../src/renderer/lib/lote-store');
+const { chaveSettings } = await import('../../src/renderer/lib/preferencias');
 const { aplicarEventos, estadoInicialLote } = await import('../../src/shared/lote-estado');
 
 // ---------------------------------------------------------------- Montagem
@@ -70,9 +78,14 @@ function stack(container: ContainerEstado = 'running'): StackStatus {
   };
 }
 
-function montar(inicial: string, s: StackStatus = stack()) {
+function montar(inicial: string, s: StackStatus = stack(), modo: 'dj' | 'dev' | null = null) {
   const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   qc.setQueryData(chaveStatus, s);
+  if (modo) {
+    const preferencias = { modo };
+    qc.setQueryData(chaveSettings, preferencias);
+    api.app.getSettings.mockResolvedValue(preferencias);
+  }
   return render(
     <QueryClientProvider client={qc}>
       <MemoryRouter initialEntries={[inicial]}>
@@ -824,5 +837,69 @@ describe('lote na barra lateral e no Início', () => {
 describe('estado a partir dos eventos', () => {
   it('é o mesmo que a tela mostra', () => {
     expect(aplicarEventos(estadoInicialLote(), COMPLETO).contagem.concluidas).toBe(6);
+  });
+});
+
+// ---------------------------------------------------------------- Modo DJ
+
+describe('as três telas no Modo DJ', () => {
+  it('Lista: o mesmo editor, com "O que vai ser baixado", "Mudar ajustes" e "Baixar 3 faixas"', async () => {
+    await abrirLista(TEXTO_PADRAO, analise({ toProcess: 3 }));
+    montar('/lista', stack(), 'dj');
+    const etapas = screen.getByRole('navigation', { name: 'Etapas do download' });
+    expect(
+      within(etapas)
+        .getAllByRole('link')
+        .map((l) => l.textContent),
+    ).toEqual(['1Lista', '2Ajustes', '3Download']);
+    expect(screen.getByRole('button', { name: 'Minhas listas' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Nova lista' })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /Importar .txt ou .csv/ })).toBeNull();
+    expect(screen.getByText('Uma faixa por linha · Artista - Título')).toBeInTheDocument();
+    await waitFor(() => expect(screen.getByText('O que vai ser baixado')).toBeInTheDocument());
+    expect(screen.getByRole('link', { name: 'Mudar ajustes' })).toHaveAttribute('href', '/lista/opcoes');
+    await waitFor(() => expect(screen.getByTestId('iniciar-lote')).toHaveTextContent('Baixar 3 faixas'));
+  });
+
+  it('Ajustes: interruptores em palavras (invertidos onde o script diz "Sem") e o resumo sem o comando', () => {
+    useRascunho.setState({ lista: conteudo('x'), texto: 'x', textoSalvo: 'x' });
+    montar('/lista/opcoes', stack(), 'dj');
+    expect(screen.getByTestId('ajustes-dj')).toBeInTheDocument();
+    expect(screen.queryByTestId('comando-equivalente')).toBeNull();
+    const organizar = screen.getByRole('switch', { name: /Organizar depois de baixar/ });
+    expect(organizar).toBeChecked();
+    fireEvent.click(organizar);
+    expect(useRascunho.getState().opcoes.SemBeets).toBe(true);
+    expect(screen.getByRole('switch', { name: /Organizar depois de baixar/ })).not.toBeChecked();
+    expect(screen.getByText('MUDOU')).toBeInTheDocument();
+    expect(screen.getByTestId('resumo-linhas')).toHaveTextContent('Organizar');
+    expect(screen.getByTestId('resumo-linhas')).toHaveTextContent('depois, por você');
+    // a qualidade é caixa de marcar, não interruptor
+    fireEvent.click(screen.getByRole('checkbox', { name: /Aceitar MP3 320/ }));
+    expect(useRascunho.getState().opcoes.AceitarMp3320).toBe(true);
+    // a situação comum marca o mesmo ajuste
+    expect(screen.getByRole('button', { name: /Só baixar, organizar depois/ })).toHaveAttribute('aria-pressed', 'true');
+  });
+
+  it('Download: três contadores, sem o log bruto, e no fim o que fazer em seguida', async () => {
+    await carregarExecucao(COMPLETO);
+    montar('/lista/execucao', stack(), 'dj');
+    expect(screen.getByTestId('download-dj')).toBeInTheDocument();
+    expect(screen.queryByRole('tab', { name: 'Log bruto' })).toBeNull();
+    expect(screen.getByTestId('estado-do-lote')).toHaveTextContent('Concluído');
+    const valor = (k: string) => document.querySelector(`[data-valor="${k}"]`)?.textContent;
+    expect([valor('chegaram'), valor('andamento'), valor('naoVieram')]).toEqual(['4', '0', '2']);
+    expect(screen.getByTestId('fim-do-download')).toHaveTextContent('Download concluído');
+    expect(screen.getByRole('link', { name: 'Ver o que faltou' })).toHaveAttribute('href', '/historico/exemplo/faltas');
+    const filtro = (f: string) => document.querySelector(`[data-filtro="${f}"]`) as HTMLElement;
+    expect(filtro('naoVieram')).toHaveTextContent('Não vieram 2');
+    fireEvent.click(screen.getByRole('button', { name: 'Abrir a pasta' }));
+    expect(api.library.openMusicFolder).toHaveBeenCalled();
+  });
+
+  it('a barra lateral chama o lote rodando de "Baixando agora"', async () => {
+    await carregarExecucao(COMPLETO.slice(0, 10));
+    montar('/lista/execucao', stack(), 'dj');
+    expect(screen.getByTestId('cartao-lote')).toHaveTextContent('Baixando agora');
   });
 });

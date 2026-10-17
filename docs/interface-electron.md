@@ -541,6 +541,33 @@ Cada fase termina com algo utilizável e testável. A ordem prioriza o que mais 
 - **Decisão fora da especificação (D17, §10).** A §5 pede que o desinstalador "pergunte, com padrão manter" sobre a pasta do Soulcrate. Ele não oferece apagá-la: a pasta é do usuário, pode ficar em outro disco e o desinstalador não tem como saber o que mais mora ali (a biblioteca costuma ser grande e irrecuperável). A pergunta ficou sendo sobre os dados do app, com o padrão pedido.
 - **Não verificado ainda:** a atualização **contra o GitHub Releases de verdade** (ainda não há release publicada: o `electron-updater` foi testado contra um dublê, e o ciclo de instalação, com os instaladores reais e sem rede); o aviso real do SmartScreen (depende da reputação do arquivo baixado); o instalador num Windows 10 (o CI roda no `windows-latest`); a assinatura de código (não há certificado); e a partida a frio do Docker Desktop, das Fases 1 e 2.
 
+### Depois da v1: Modo DJ e Modo Dev
+
+**Entregas** (protótipos `soulcrate-prototipos/modos-dev-dj`)
+
+- Dois modos da interface: **Modo DJ** (só o que importa para baixar, organizar e ouvir, sem termos técnicos) e **Modo Dev** (o app como era: etapas do ambiente, logs, portas, opções do script e a configuração completa da stack).
+- O alternador no rodapé da barra lateral, em todas as telas, com o atalho **Ctrl+Shift+D**; a mesma escolha em Configurações → Aplicativo.
+- A pergunta na tela final do assistente ("Como você vai usar o Soulcrate?"), com o Modo DJ marcado numa instalação nova. Quem já usa o app continua no Modo Dev.
+- As nove telas no Modo DJ: Início, Serviços, Configurações, Baixar lista (Lista, Ajustes, Download), Histórico, o detalhe de um download, O que faltou e Biblioteca.
+
+**Aceite**
+
+- A troca é instantânea, a tela atual fica onde está e um lote rodando não é interrompido.
+- Telas que só existem no Modo Dev (log bruto, Conferência, Avançado, Web UI do slskd, Rede) voltam para a tela-mãe ao trocar para o Modo DJ.
+- O axe-core não acha violação nas telas do Modo DJ, nos dois temas.
+
+**Como ficou.** Implementado. A decisão de arquitetura está no [ADR 0002](adr/0002-modo-dj-e-modo-dev.md): o modo é uma preferência (`AppSettings.modo`, `null` = nunca escolheu = Modo Dev) e muda só o que o renderer desenha; nenhum serviço, IPC ou evento conhece o modo.
+
+- **Alternador e aviso.** Dois botões com estado pressionado num grupo rotulado ("Modo da interface"); o ativo ganha fundo e ícone âmbar, e o texto diz qual é. Trocar pelo alternador, pelo atalho ou por "Mostrar detalhes técnicos" mostra no canto inferior direito, por 6 s, "Modo DJ ligado" (ou Dev) com **Desfazer**; em Configurações a escolha já está à vista e não há aviso. As telas esperam a preferência antes de desenhar, para o Modo Dev não piscar ao abrir o app de quem usa o DJ.
+- **Barra lateral.** No Modo DJ, o estado vira uma frase ("Ligado · Pronto para baixar e ouvir", "O player não está respondendo") no lugar dos três serviços com porta.
+- **Início.** No lugar das cinco etapas, uma situação com o único botão que resolve: desligado → *Ligar*; Docker fechado → *Abrir o Docker Desktop* e *Detalhes técnicos*; Docker ausente → *Baixar* e *Já instalei, conferir de novo*; configuração incompleta (com a senha do Soulseek nomeada quando é ela) → *Preencher a senha* ou o assistente; um serviço sem resposta → *Reiniciar o player* (ou o organizador, ou a busca). "Ligando…" mostra o passo de agora, de quatro (Docker, preparando, subindo, esperando responder; o passo 3 começa quando o `compose up` cria os contêineres). Atalhos para baixar uma lista, buscar uma faixa, ouvir e ver transferências; o último download (de `lotes/`) e a biblioteca com o que falta de BPM, tom e gênero.
+- **Serviços.** Um cartão por coisa que a pessoa usa (organização, busca e download, player, compartilhamento, pastas), cada um com o estado em palavras ("Lento para responder") e o botão que resolve. As verificações são as mesmas do Modo Dev (a mesma consulta); o usuário do Soulseek vem da configuração e o número de faixas do player só aparece se a Biblioteca já leu o beets (Serviços não dispara essa leitura). No rodapé, a saída para o Modo Dev.
+- **Configurações.** "Suas coisas" (Pastas, Conta Soulseek e **Compartilhamento**, que junta as músicas compartilhadas, ouvir no celular, o `BIND_ADDR`, e o teste da porta 2234) e as do app. Com a configuração inválida, um aviso leva ao assistente.
+- **Baixar lista.** Etapas *1 Lista · 2 Ajustes · 3 Download*. A Lista muda só o vocabulário ("O que vai ser baixado", "Baixar 11 faixas", "Mudar ajustes"). Os Ajustes trocam os flags por frases: as receitas viram "Situações comuns" com o que cada uma faz, a qualidade vira caixas de marcar, e os interruptores não têm "não" nem "sem" no nome ("Organizar depois de baixar" é `-SemBeets` desligado; o mesmo para `-SemCatalogo` e `-SemBuscaArtista`). O resumo diz o que mudou em palavras, sem o comando equivalente. O Download mostra três contadores (chegaram, em andamento, não vieram), a situação de cada faixa e, no fim, *Organizar agora* ou *Abrir a biblioteca* e *Ver o que faltou*; sem log bruto, usuário nem tentativa.
+- **Histórico e O que faltou.** "Seus downloads", com a nova tentativa mostrada pelo nome da lista original (`nao-baixadas-<id>.txt` aponta para a execução `<id>`). O detalhe tira o id, os relatórios e as opções do script e diz *onde* está cada faixa (Biblioteca, ou Downloads com "falta organizar"). O que faltou explica por que não veio e o que fazer, com *Buscar manualmente* e *Editar a linha na lista*, e mostra os arquivos recusados como "Parecidos que encontramos", com o formato.
+- **Biblioteca.** "Suas músicas", o tom na roda de **Camelot** ("7A Dm", `tomCamelot`), sem a coluna de formato, e a manutenção em palavras ("Calcular tom e BPM que faltam").
+- **Não verificado ainda:** nenhum leitor de tela de verdade nas telas do Modo DJ (só o axe e o teclado, como na Fase 6). A bandeja, o menu e as notificações do Windows continuam com o vocabulário do Modo Dev, e os diálogos de manutenção da Biblioteca e de limpeza do Histórico ainda falam do beets nos dois modos.
+
 ### Resumo das fases
 
 | Fase | Resultado para o usuário | Depende de |
@@ -706,6 +733,7 @@ As fases 4 e 5 podem andar em paralelo depois da 3.
 | D19 | O que entra no pacote de suporte e como os segredos saem (Fase 6) | Só filtro de padrões × filtro de padrões e de valores | **Decidido:** os dois. O filtro de padrões (§6.1) não pega uma senha que aparece solta numa mensagem de erro; o de valores troca por `***` as senhas e chaves que estão de fato no `.env` e no `slskd.yml`, onde quer que apareçam. O `.env` e o `slskd.yml` em si nunca entram; entra o `.env` com os segredos mascarados. Os `execucao-*.log` da §5 são os `lotes/execucao-<id>.log` do script (mais o `erro-<id>.log` quando tem conteúdo) |
 | D20 | Como o tema chega à tela (Fase 6) | `data-tema` no HTML por script × `nativeTheme.themeSource` e `prefers-color-scheme` | **Decidido:** `nativeTheme`. O main liga a preferência ao Electron antes de criar a janela e o CSS só olha a media query: nenhum script pinta a página (sem piscar), a janela nasce com o fundo certo e as Web UIs integradas seguem o mesmo tema |
 | D21 | A primeira versão publicada e o beta fechado (§8.1) | Beta `0.x` por duas semanas com DJs × publicar já a `1.0.0` | **Decidido:** a primeira release é a **1.0.0**, sem beta fechado. O que o beta pegaria fica por conta do [roteiro manual](roteiro-manual.md) e do canal de issues (modelos em `.github/ISSUE_TEMPLATE`). O app e a stack têm versões independentes: o app 1.0.0 traz a stack 1.1.0 |
+| D22 | Modo DJ e Modo Dev: quem começa em qual (depois da v1) | Todos no DJ × todos no Dev × perguntar | **Decidido:** perguntar na tela final do assistente, com o Modo DJ marcado; quem já usava o app (sem escolha registrada) continua no Modo Dev. Detalhes no [ADR 0002](adr/0002-modo-dj-e-modo-dev.md). |
 
 ---
 

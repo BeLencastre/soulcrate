@@ -136,6 +136,20 @@ describe('AppSettingsService', () => {
     });
   });
 
+  it('modo da interface: sem escolha fica null (age como Dev), DJ e Dev são gravados, valor estranho cai em null', () => {
+    const arq = novo();
+    const s = new AppSettingsService(arq);
+    // quem já usava o app antes dos modos não tem o campo: continua sem escolha, e o app mostra o Modo Dev
+    expect(s.get().modo).toBeNull();
+    expect(normalizarSettings({ tema: 'claro' }).modo).toBeNull();
+    s.set({ modo: 'dj' });
+    expect(new AppSettingsService(arq).get().modo).toBe('dj');
+    s.set({ modo: 'dev' });
+    expect(new AppSettingsService(arq).get().modo).toBe('dev');
+    expect(normalizarSettings({ modo: 'iniciante' }).modo).toBeNull();
+    expect(normalizarSettings({ modo: 1 }).modo).toBeNull();
+  });
+
   it('get devolve cópia: mexer nela não muda as preferências', () => {
     const s = new AppSettingsService(novo());
     s.get().minimizarParaBandeja = false;

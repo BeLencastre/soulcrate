@@ -327,6 +327,17 @@
     border-color: #d64848;
     color: #fff;
   }
+  /* botão discreto em âmbar, sobre os painéis âmbar (o "Desfazer" do aviso de modo) */
+  .btn-ag {
+    background: transparent;
+    border-color: transparent;
+    color: var(--color-ambar-vivo);
+  }
+  .btn-ag:hover {
+    background: var(--color-ambar-fundo-hover);
+    border-color: transparent;
+    color: var(--color-ambar-vivo);
+  }
   .btn-sm {
     min-height: 32px;
     padding: 0 12px;
@@ -462,6 +473,30 @@
     border-color: var(--color-ambar);
     background: var(--color-ambar-selecionado);
   }
+  /* qualidade aceita, no Modo DJ: caixas de marcar em cartão */
+  .ql {
+    display: flex;
+    gap: 12px;
+    align-items: flex-start;
+    padding: 16px;
+    border-radius: 6px;
+    border: 1px solid var(--color-borda);
+    cursor: pointer;
+  }
+  .ql:hover {
+    border-color: var(--color-borda-hover);
+  }
+  .ql:has(input:checked) {
+    border-color: var(--color-ambar);
+    background: var(--color-ambar-selecionado);
+  }
+  .ql input {
+    flex: none;
+    width: 18px;
+    height: 18px;
+    margin: 1px 0 0;
+    accent-color: var(--color-ambar);
+  }
   .knob {
     display: inline-flex;
     align-items: center;
@@ -554,7 +589,8 @@
     color: var(--color-texto);
   }
   .seg[aria-current='page'],
-  .seg[data-state='active'] {
+  .seg[data-state='active'],
+  .seg[aria-pressed='true'] {
     background: var(--color-borda);
     color: var(--color-texto-forte);
   }
@@ -628,6 +664,39 @@
     background: var(--color-elevado);
   }
 
+  /* atalhos do Início no Modo DJ: um cartão grande por coisa que a pessoa faz */
+  .tile {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    min-height: 150px;
+    padding: 20px;
+    border-radius: 8px;
+    border: 1px solid var(--color-borda);
+    background: var(--color-cartao);
+    color: var(--color-texto);
+    text-align: left;
+    text-decoration: none;
+    cursor: pointer;
+  }
+  .tile:hover:not(:disabled) {
+    border-color: var(--color-borda-hover);
+    background: var(--color-elevado);
+    color: var(--color-texto);
+  }
+  .tile:disabled {
+    cursor: not-allowed;
+    opacity: 0.6;
+  }
+  .tile-p {
+    border-color: var(--color-ambar-borda);
+    background: var(--color-ambar-fundo-2);
+  }
+  .tile-p:hover {
+    border-color: var(--color-ambar-borda-hover);
+    background: var(--color-ambar-fundo);
+  }
+
   /* formulários (protótipos "Assistente de configuração" e "Configurações") */
   .inp {
     width: 100%;
@@ -678,6 +747,31 @@
   }
   .opt:has(:checked) {
     border-color: var(--color-ambar);
+  }
+  /* escolha do modo (tela final do assistente e Configurações → Aplicativo) */
+  .modo {
+    display: flex;
+    gap: 14px;
+    align-items: flex-start;
+    padding: 20px 22px;
+    border-radius: 8px;
+    border: 1px solid var(--color-borda-forte);
+    background: var(--color-cartao);
+    cursor: pointer;
+  }
+  .modo:hover {
+    border-color: var(--color-borda-hover);
+  }
+  .modo:has(input:checked) {
+    border-color: var(--color-ambar);
+    background: var(--color-ambar-selecionado);
+  }
+  .modo input {
+    flex: none;
+    width: 18px;
+    height: 18px;
+    margin: 2px 0 0;
+    accent-color: var(--color-ambar);
   }
   .rad {
     display: inline-flex;

@@ -5,10 +5,12 @@ import * as Dialog from '@radix-ui/react-dialog';
 import { useNavigate } from 'react-router';
 import { criarErro, erroInesperado, type AppError } from '@shared/erros';
 import { msg } from '@shared/mensagens';
+import { msgDj } from '@shared/mensagens-dj';
 import { acoesDisponiveis, resumirStack, servicoDe, servicoSaudavel } from '@shared/stack';
 import { api } from '../../lib/api';
 import { useStackStatus, useUi } from '../../lib/estado';
 import { useExecucao, useRascunho } from '../../lib/lote-store';
+import { useModoDj } from '../../lib/modo';
 import { Botao } from '../ui';
 
 type Fase = 'ocioso' | 'perguntando' | 'ligando' | 'iniciando';
@@ -52,6 +54,7 @@ export interface IniciarLote {
 export function useIniciarLote(): IniciarLote {
   const navegar = useNavigate();
   const status = useStackStatus();
+  const dj = useModoDj();
   const [fase, setFase] = useState<Fase>('ocioso');
   const [erro, setErro] = useState<AppError | null>(null);
   const espera = useRef<SinalDeCancelamento | null>(null);
@@ -129,7 +132,7 @@ export function useIniciarLote(): IniciarLote {
     setFase('ocioso');
   }
 
-  const t = msg.lote.antesDeIniciar;
+  const t = dj ? { ...msg.lote.antesDeIniciar, ...msgDj.lote.antesDeIniciar } : msg.lote.antesDeIniciar;
   const aberto = fase === 'perguntando' || fase === 'ligando';
 
   const dialogo = (
@@ -173,7 +176,7 @@ export function useIniciarLote(): IniciarLote {
                 {t.naoDaTitulo}
               </Dialog.Title>
               <Dialog.Description className="m-0 text-sm leading-[1.55] text-texto-claro">
-                {t.naoDaCorpo(msg.barraLateral.resumo(resumo))}
+                {t.naoDaCorpo(dj ? msgDj.barraLateral.estado(resumo).detalhe : msg.barraLateral.resumo(resumo))}
               </Dialog.Description>
               <div className="flex flex-wrap justify-end gap-2">
                 <Botao onClick={cancelar}>{t.cancelar}</Botao>

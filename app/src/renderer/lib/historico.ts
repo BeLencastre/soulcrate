@@ -3,6 +3,7 @@
 import { useQuery } from '@tanstack/react-query';
 import type { ExecucaoResumo, FimExecucao } from '@shared/historico';
 import { msg } from '@shared/mensagens';
+import { msgDj } from '@shared/mensagens-dj';
 import { argumentosDasOpcoes, type OpcoesLote } from '@shared/opcoes-lote';
 import { api } from './api';
 
@@ -86,6 +87,44 @@ export function fonteDaLinha(r: Pick<ExecucaoResumo, 'fonte' | 'fim'>): string {
   if (r.fonte === 'resultado') return f.resultado;
   if (r.fonte === 'log') return f.log;
   return r.fim === 'rodando' ? f.aoVivo : f.eventos;
+}
+
+// ---------------------------------------------------------------- Modo DJ
+
+/** "set-sexta.txt" → "set-sexta": o Modo DJ mostra a lista pelo nome, sem a extensão do arquivo. */
+export const semExtensao = (nome: string): string => nome.replace(/\.(txt|csv)$/i, '');
+
+/** `nao-baixadas-<id>.txt`: a lista que "Tentar de novo" gera com as faixas que faltaram na execução `<id>`. */
+const LISTA_DE_TENTATIVA = /^nao-baixadas-(.+?)(?:\.txt)?$/;
+
+/**
+ * Esta execução é uma nova tentativa de outra? Devolve a execução de origem (para o Modo DJ mostrar "set-sexta ·
+ * Nova tentativa" em vez de "nao-baixadas-20261007-154809"), ou `null`. Sem a origem na lista, devolve `undefined`.
+ */
+export function origemDaTentativa(
+  r: Pick<ExecucaoResumo, 'lista'>,
+  todas: readonly ExecucaoResumo[],
+): ExecucaoResumo | null | undefined {
+  const id = r.lista ? LISTA_DE_TENTATIVA.exec(r.lista)?.[1] : undefined;
+  if (!id) return null;
+  return todas.find((x) => x.id === id);
+}
+
+/** A frase sob a barra no Modo DJ: "10 chegaram · 1 faltou", ou como terminou quando não há faixas. */
+export function resumoDjDaLinha(r: ExecucaoResumo): string {
+  const t = msgDj.historico;
+  const c = r.contagem;
+  if (r.fim === 'rodando') return r.progresso ? t.baixando(r.progresso.feitas, r.progresso.total) : t.faixas(0);
+  if (c.total === 0) return msgDj.estadoDoDownload[r.fim];
+  return t.resumo({ chegaram: c.ok + c.atencao, naoVieram: c.naoVieram, puladas: c.puladas });
+}
+
+/** `@@user\Music\Vendex - Dark Tower.flac` → nome "Vendex - Dark Tower" e formato "FLAC". */
+export function arquivoParecido(caminho: string): { nome: string; formato: string | null } {
+  const base = caminho.split(/[\\/]/).pop() ?? caminho;
+  const ponto = base.lastIndexOf('.');
+  if (ponto <= 0) return { nome: base, formato: null };
+  return { nome: base.slice(0, ponto), formato: base.slice(ponto + 1).toUpperCase() };
 }
 
 export function formatarBytes(bytes: number): string {
