@@ -12,6 +12,7 @@ import {
   type IndicadorId,
   type LeituraBiblioteca,
   type TarefaManutencao,
+  tomCamelot,
 } from '@shared/biblioteca';
 import { msg } from '@shared/mensagens';
 import { servicoDe, servicoSaudavel } from '@shared/stack';
@@ -35,7 +36,7 @@ import {
 } from '../lib/biblioteca';
 import { useAgora, useStackStatus } from '../lib/estado';
 
-const COLUNAS = 'minmax(150px,1.2fr) minmax(220px,2.2fr) 70px 70px minmax(120px,1.1fr) 96px 84px';
+const COLUNAS = 'minmax(150px,1.2fr) minmax(220px,2.2fr) 70px 96px minmax(120px,1.1fr) 96px 84px';
 const FALTA = 'font-bold text-chip-laranja';
 
 // ---------------------------------------------------------------- Indicadores
@@ -85,6 +86,19 @@ function Indicadores({
 }
 
 // ---------------------------------------------------------------- Tabela
+
+/** O tom na roda de Camelot, em destaque, com o tom como o beets o grava ao lado ("7A Dm"): é o que se usa para mixar. */
+function Tom({ tom }: { tom: string | null }) {
+  if (tom === null) return <span className={`block font-mono ${FALTA}`}>{msg.biblioteca.sem}</span>;
+  const camelot = tomCamelot(tom);
+  if (!camelot) return <span className="block font-mono">{tom}</span>;
+  return (
+    <span className="flex items-baseline gap-[6px] font-mono" title={tom}>
+      <b>{camelot}</b>
+      <span className="text-xs text-texto-mudo">{tom}</span>
+    </span>
+  );
+}
 
 function TabelaDeFaixas({
   leitura,
@@ -202,9 +216,7 @@ function TabelaDeFaixas({
           <span key="b" className={`block text-right font-mono ${f.bpm === null ? FALTA : ''}`}>
             {f.bpm ?? t.sem}
           </span>,
-          <span key="k" className={`block font-mono ${f.tom === null ? FALTA : ''}`}>
-            {f.tom ?? t.sem}
-          </span>,
+          <Tom key="k" tom={f.tom} />,
           <span
             key="g"
             className={`block truncate ${f.semGenero ? 'text-chip-laranja' : 'text-texto-claro'}`}

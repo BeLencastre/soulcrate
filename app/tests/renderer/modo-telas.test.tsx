@@ -294,27 +294,35 @@ describe('Serviços no Modo DJ', () => {
 
 // ---------------------------------------------------------------- Histórico
 
-describe('Histórico no Modo DJ', () => {
-  it('"Seus downloads": a nova tentativa aparece com o nome da lista original, sem a coluna de fonte', async () => {
-    const original = execucao();
-    const tentativa = execucao({
-      id: '20261007-155900',
-      lista: 'nao-baixadas-20261007-154809.txt',
-      contagem: { total: 1, ok: 1, naoVieram: 0, puladas: 0, atencao: 0, naoTerminadas: 0 },
-      temFaltas: false,
-    });
-    api.reports.listRuns.mockResolvedValue([tentativa, original]);
-    montar(<Historico />, noAr(), 'dj');
-    expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('Seus downloads');
-    const linhas = await screen.findAllByTestId('linha-execucao');
-    expect(linhas[0]).toHaveTextContent('set-sexta');
-    expect(linhas[0]).not.toHaveTextContent('nao-baixadas');
-    expect(linhas[0]).toHaveTextContent('Nova tentativa');
-    expect(linhas[0]).toHaveTextContent('Só a faixa que tinha faltado');
-    expect(linhas[0]).toHaveTextContent('1 chegou');
-    expect(linhas[1]).toHaveTextContent('10 chegaram · 1 faltou');
-    expect(screen.queryByText('eventos')).toBeNull();
-    expect(screen.queryByRole('button', { name: /Abrir pasta lotes/ })).toBeNull();
-    expect(within(linhas[1] as HTMLElement).getByRole('link', { name: 'Ver o que faltou' })).toBeInTheDocument();
-  });
+describe('Histórico nos dois modos', () => {
+  it.each(['dj', 'dev'] as const)(
+    'Modo %s: "Seus downloads", com as mesmas colunas e a coluna Lista dizendo quantas faixas',
+    async (modo) => {
+      const original = execucao();
+      const tentativa = execucao({
+        id: '20261007-155900',
+        lista: 'nao-baixadas-20261007-154809.txt',
+        contagem: { total: 1, ok: 1, naoVieram: 0, puladas: 0, atencao: 0, naoTerminadas: 0 },
+        temFaltas: false,
+      });
+      api.reports.listRuns.mockResolvedValue([tentativa, original]);
+      montar(<Historico />, noAr(), modo);
+      expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('Seus downloads');
+      const linhas = await screen.findAllByTestId('linha-execucao');
+      expect(linhas[0]).toHaveTextContent('nao-baixadas-20261007-154809.txt');
+      expect(linhas[0]).toHaveTextContent('1 faixa');
+      expect(linhas[1]).toHaveTextContent('11 faixas');
+      expect(linhas[1]).toHaveTextContent('Concluído');
+      expect(screen.getAllByRole('columnheader').map((c) => c.textContent)).toEqual([
+        'Quando',
+        'Lista',
+        'Duração',
+        'Resultado',
+        'Fim',
+        'Ações',
+      ]);
+      expect(screen.getByRole('button', { name: /Abrir pasta lotes/ })).toBeInTheDocument();
+      expect(within(linhas[1] as HTMLElement).getByRole('link', { name: 'Ver o que faltou' })).toBeInTheDocument();
+    },
+  );
 });

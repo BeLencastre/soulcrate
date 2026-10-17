@@ -3,7 +3,6 @@
 import { useQuery } from '@tanstack/react-query';
 import type { ExecucaoResumo, FimExecucao } from '@shared/historico';
 import { msg } from '@shared/mensagens';
-import { msgDj } from '@shared/mensagens-dj';
 import { argumentosDasOpcoes, type OpcoesLote } from '@shared/opcoes-lote';
 import { api } from './api';
 
@@ -51,7 +50,7 @@ export function destinoDaExecucao(r: Pick<ExecucaoResumo, 'id' | 'fim'>, acompan
 /** As opções como no resumo da tela de Opções: `-Retentar -FilaMaxMin 10`; vazio quando é tudo padrão. */
 export const opcoesComoTexto = (opcoes: OpcoesLote): string => argumentosDasOpcoes(opcoes).join(' ');
 
-/** "Todas", "Com faixas que não vieram" */
+/** "Todos", "Com faixas que faltaram" */
 export type FiltroDoHistorico = 'todas' | 'faltas';
 
 export function filtrarExecucoes(execucoes: readonly ExecucaoResumo[], filtro: FiltroDoHistorico): ExecucaoResumo[] {
@@ -82,13 +81,6 @@ export function resumoDaLinha(r: ExecucaoResumo): string {
   return t.completo(c);
 }
 
-export function fonteDaLinha(r: Pick<ExecucaoResumo, 'fonte' | 'fim'>): string {
-  const f = msg.historico.fonte;
-  if (r.fonte === 'resultado') return f.resultado;
-  if (r.fonte === 'log') return f.log;
-  return r.fim === 'rodando' ? f.aoVivo : f.eventos;
-}
-
 // ---------------------------------------------------------------- Modo DJ
 
 /** "set-sexta.txt" → "set-sexta": o Modo DJ mostra a lista pelo nome, sem a extensão do arquivo. */
@@ -108,15 +100,6 @@ export function origemDaTentativa(
   const id = r.lista ? LISTA_DE_TENTATIVA.exec(r.lista)?.[1] : undefined;
   if (!id) return null;
   return todas.find((x) => x.id === id);
-}
-
-/** A frase sob a barra no Modo DJ: "10 chegaram · 1 faltou", ou como terminou quando não há faixas. */
-export function resumoDjDaLinha(r: ExecucaoResumo): string {
-  const t = msgDj.historico;
-  const c = r.contagem;
-  if (r.fim === 'rodando') return r.progresso ? t.baixando(r.progresso.feitas, r.progresso.total) : t.faixas(0);
-  if (c.total === 0) return msgDj.estadoDoDownload[r.fim];
-  return t.resumo({ chegaram: c.ok + c.atencao, naoVieram: c.naoVieram, puladas: c.puladas });
 }
 
 /** `@@user\Music\Vendex - Dark Tower.flac` → nome "Vendex - Dark Tower" e formato "FLAC". */

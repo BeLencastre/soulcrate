@@ -1,12 +1,11 @@
 // Tela Histórico (protótipo "Histórico"): as execuções de lotes/, as do app e as do .bat, com como terminaram e o que
-// saiu de cada uma. "Ver faltas" leva ao diagnóstico; "Abrir", ao detalhe (ou ao painel ao vivo, se o app a acompanha).
-// No Modo DJ ("Seus downloads"): sem a coluna de fonte nem o id, e a nova tentativa aparece com o nome da lista original.
+// saiu de cada uma. "Ver o que faltou" leva ao diagnóstico; "Abrir", ao detalhe (ou ao painel ao vivo, se o app a
+// acompanha). A tela é a mesma nos dois modos (Modo DJ e Modo Dev).
 import { useMemo, useState } from 'react';
 import { Link } from 'react-router';
 import type { ExecucaoResumo } from '@shared/historico';
 import { rotuloDaHora, rotuloDoDia } from '@shared/historico';
 import { msg } from '@shared/mensagens';
-import { msgDj } from '@shared/mensagens-dj';
 import { Carregando, ErroDeLeitura, SemPasta, useSemPasta } from '../../components/estados';
 import { DialogoLimpeza } from '../../components/historico/DialogoLimpeza';
 import { IconePasta } from '../../components/icones';
@@ -17,11 +16,7 @@ import { useAgora } from '../../lib/estado';
 import {
   destinoDaExecucao,
   filtrarExecucoes,
-  fonteDaLinha,
-  origemDaTentativa,
-  semExtensao,
   resumoDaLinha,
-  resumoDjDaLinha,
   rotuloDoFim,
   segmentosDaLinha,
   useExecucoes,
@@ -29,7 +24,6 @@ import {
 } from '../../lib/historico';
 import { corDoEstado, formatarDuracao } from '../../lib/lote-painel';
 import { useExecucao } from '../../lib/lote-store';
-import { useModoDj } from '../../lib/modo';
 
 const COR_SEGMENTO = {
   ok: 'var(--color-led-verde)',
@@ -39,11 +33,15 @@ const COR_SEGMENTO = {
   resto: 'var(--color-borda-fraca)',
 };
 
-function BarraDeResultado({ r, rotulo }: { r: ExecucaoResumo; rotulo: string }) {
+function BarraDeResultado({ r }: { r: ExecucaoResumo }) {
   const s = segmentosDaLinha(r);
   const partes = (Object.keys(COR_SEGMENTO) as (keyof typeof COR_SEGMENTO)[]).filter((k) => s[k] > 0);
   return (
-    <span role="img" aria-label={rotulo} className="flex h-2 gap-[2px] overflow-hidden rounded-[2px] bg-borda-fraca">
+    <span
+      role="img"
+      aria-label={resumoDaLinha(r)}
+      className="flex h-2 gap-[2px] overflow-hidden rounded-[2px] bg-borda-fraca"
+    >
       {partes.map((k) => (
         <span key={k} style={{ flex: `${s[k]} 0 0`, background: COR_SEGMENTO[k] }} />
       ))}
@@ -71,7 +69,7 @@ function LinhaDaExecucao({ r, agora, acompanhada }: { r: ExecucaoResumo; agora: 
           >
             {r.lista ?? t.semLista}
           </Link>
-          <span className="text-xs text-texto-mudo">{fonteDaLinha(r)}</span>
+          <span className="text-xs text-texto-mudo">{t.faixas(r.contagem.total)}</span>
         </span>
       </td>
       <td className="px-2 py-[14px] font-mono whitespace-nowrap text-texto-claro">
@@ -79,7 +77,7 @@ function LinhaDaExecucao({ r, agora, acompanhada }: { r: ExecucaoResumo; agora: 
       </td>
       <td className="w-[250px] px-2 py-[14px]">
         <span className="flex flex-col gap-[6px]">
-          <BarraDeResultado r={r} rotulo={resumoDaLinha(r)} />
+          <BarraDeResultado r={r} />
           <span className="font-mono text-xs text-texto-suave">{resumoDaLinha(r)}</span>
         </span>
       </td>
@@ -102,75 +100,8 @@ function LinhaDaExecucao({ r, agora, acompanhada }: { r: ExecucaoResumo; agora: 
   );
 }
 
-/** A linha no Modo DJ (protótipo "DJ · Histórico"): quando, lista, resultado, duração e ações. */
-function LinhaDj({
-  r,
-  todas,
-  agora,
-  acompanhada,
-}: {
-  r: ExecucaoResumo;
-  todas: readonly ExecucaoResumo[];
-  agora: number;
-  acompanhada: string | null;
-}) {
-  const t = msgDj.historico;
-  const destino = destinoDaExecucao(r, acompanhada);
-  const origem = origemDaTentativa(r, todas);
-  const resumo = resumoDjDaLinha(r);
-  const nome = semExtensao(origem?.lista ?? r.lista ?? msg.historico.semLista);
-  return (
-    <tr className="row border-t border-linha" data-testid="linha-execucao" data-run={r.id} data-fim={r.fim}>
-      <td className="py-[14px] pr-2 pl-[18px] whitespace-nowrap">
-        <span className="flex flex-col gap-[3px]">
-          <span className="font-semibold">{rotuloDoDia(r.inicio, agora)}</span>
-          <span className="font-mono text-xs text-texto-mudo">{rotuloDaHora(r.inicio)}</span>
-        </span>
-      </td>
-      <td className="px-2 py-[14px]">
-        <span className="flex flex-col gap-[3px]">
-          <span className="flex flex-wrap items-center gap-2">
-            <Link to={destino} className="font-bold text-texto no-underline hover:text-ambar hover:underline">
-              {nome}
-            </Link>
-            {origem !== null ? <Chip cor="neutro">{t.novaTentativa}</Chip> : null}
-          </span>
-          <span className="text-xs text-texto-mudo">
-            {origem !== null ? t.soAsQueFaltaram(r.contagem.total) : t.faixas(r.contagem.total)}
-          </span>
-        </span>
-      </td>
-      <td className="w-[260px] px-2 py-[14px]">
-        <span className="flex flex-col gap-[6px]">
-          <BarraDeResultado r={r} rotulo={resumo} />
-          <span className="flex flex-wrap items-center gap-2 text-xs text-texto-suave">
-            {resumo}
-            {r.fim !== 'completed' ? <Chip cor={corDoEstado(r.fim)}>{msgDj.estadoDoDownload[r.fim]}</Chip> : null}
-          </span>
-        </span>
-      </td>
-      <td className="px-2 py-[14px] font-mono whitespace-nowrap text-texto-claro">
-        {r.duracaoMs === null ? msg.historico.semDuracao : formatarDuracao(r.duracaoMs)}
-      </td>
-      <td className="py-[14px] pr-[18px] pl-2 text-right whitespace-nowrap">
-        <span className="inline-flex gap-1">
-          {r.temFaltas && r.fim !== 'rodando' ? (
-            <Link className={classeBotao('padrao', true)} to={`/historico/${r.id}/faltas`}>
-              {t.verOQueFaltou}
-            </Link>
-          ) : null}
-          <Link className={classeBotao('fantasma', true)} to={destino}>
-            {destino === '/lista/execucao' ? t.acompanhar : t.abrir}
-          </Link>
-        </span>
-      </td>
-    </tr>
-  );
-}
-
 export function Historico() {
-  const dj = useModoDj();
-  const t = dj ? { ...msg.historico, ...msgDj.historico } : msg.historico;
+  const t = msg.historico;
   const semPasta = useSemPasta();
   const execucoes = useExecucoes();
   const acompanhada = useExecucao((s) => s.runId);
@@ -194,12 +125,10 @@ export function Historico() {
             <Botao variante="fantasma" onClick={() => setLimpando(true)} disabled={semPasta}>
               {t.apagarAntigas}
             </Botao>
-            {dj ? null : (
-              <Botao onClick={() => seguro(api.batch.openFolder())} disabled={semPasta}>
-                <IconePasta />
-                {t.abrirPasta}
-              </Botao>
-            )}
+            <Botao onClick={() => seguro(api.batch.openFolder())} disabled={semPasta}>
+              <IconePasta />
+              {t.abrirPasta}
+            </Botao>
           </>
         }
       />
@@ -237,7 +166,7 @@ export function Historico() {
         </Cartao>
       ) : (
         <>
-          <div role="group" aria-label={msgDj.historico.filtrar} className="flex flex-wrap items-center gap-2">
+          <div role="group" aria-label={t.filtrar} className="flex flex-wrap items-center gap-2">
             {(
               [
                 ['todas', t.filtros.todas, todas.length],
@@ -260,55 +189,31 @@ export function Historico() {
           <section className="overflow-x-auto rounded-lg border border-borda bg-cartao">
             <table className="w-full min-w-[900px] border-collapse text-[13.5px]" aria-label={t.tabela}>
               <thead>
-                {dj ? (
-                  <tr className="text-left">
-                    <th scope="col" className="lbl py-3 pr-2 pl-[18px] font-medium">
-                      {t.colunas.quando}
-                    </th>
-                    <th scope="col" className="lbl px-2 py-3 font-medium">
-                      {t.colunas.lista}
-                    </th>
-                    <th scope="col" className="lbl w-[260px] px-2 py-3 font-medium">
-                      {t.colunas.resultado}
-                    </th>
-                    <th scope="col" className="lbl px-2 py-3 font-medium">
-                      {t.colunas.duracao}
-                    </th>
-                    <th scope="col" className="lbl py-3 pr-[18px] pl-2 text-right font-medium">
-                      <span className="sr-only">{t.colunas.acoes}</span>
-                    </th>
-                  </tr>
-                ) : (
-                  <tr className="text-left">
-                    <th scope="col" className="lbl py-3 pr-2 pl-[18px] font-medium">
-                      {t.colunas.quando}
-                    </th>
-                    <th scope="col" className="lbl px-2 py-3 font-medium">
-                      {t.colunas.lista}
-                    </th>
-                    <th scope="col" className="lbl px-2 py-3 font-medium">
-                      {t.colunas.duracao}
-                    </th>
-                    <th scope="col" className="lbl w-[250px] px-2 py-3 font-medium">
-                      {t.colunas.resultado}
-                    </th>
-                    <th scope="col" className="lbl px-2 py-3 font-medium">
-                      {msg.historico.colunas.fim}
-                    </th>
-                    <th scope="col" className="lbl py-3 pr-[18px] pl-2 text-right font-medium">
-                      {t.colunas.acoes}
-                    </th>
-                  </tr>
-                )}
+                <tr className="text-left">
+                  <th scope="col" className="lbl py-3 pr-2 pl-[18px] font-medium">
+                    {t.colunas.quando}
+                  </th>
+                  <th scope="col" className="lbl px-2 py-3 font-medium">
+                    {t.colunas.lista}
+                  </th>
+                  <th scope="col" className="lbl px-2 py-3 font-medium">
+                    {t.colunas.duracao}
+                  </th>
+                  <th scope="col" className="lbl w-[250px] px-2 py-3 font-medium">
+                    {t.colunas.resultado}
+                  </th>
+                  <th scope="col" className="lbl px-2 py-3 font-medium">
+                    {t.colunas.fim}
+                  </th>
+                  <th scope="col" className="lbl py-3 pr-[18px] pl-2 text-right font-medium">
+                    {t.colunas.acoes}
+                  </th>
+                </tr>
               </thead>
               <tbody>
-                {visiveis.map((r) =>
-                  dj ? (
-                    <LinhaDj key={r.id} r={r} todas={todas} agora={agora} acompanhada={acompanhada} />
-                  ) : (
-                    <LinhaDaExecucao key={r.id} r={r} agora={agora} acompanhada={acompanhada} />
-                  ),
-                )}
+                {visiveis.map((r) => (
+                  <LinhaDaExecucao key={r.id} r={r} agora={agora} acompanhada={acompanhada} />
+                ))}
               </tbody>
             </table>
             {visiveis.length === 0 ? (

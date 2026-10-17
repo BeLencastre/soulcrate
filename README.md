@@ -322,14 +322,12 @@ O app (Windows, feito em Electron) é uma camada de orquestração e visualizaç
 
 O app tem dois modos, que mudam **só o que aparece na tela** (nada é apagado, e um download em andamento continua):
 
-- **Modo DJ:** só o que importa para baixar, organizar e ouvir. O Início diz numa frase o que está acontecendo e mostra o único botão que resolve; Serviços tem um cartão por coisa que você usa; os ajustes do download falam o que fazem ("Organizar depois de baixar") em vez de mostrar os flags do script. A Biblioteca é a mesma nos dois modos.
+- **Modo DJ:** só o que importa para baixar, organizar e ouvir. O Início diz numa frase o que está acontecendo e mostra o único botão que resolve; Serviços tem um cartão por coisa que você usa; os ajustes do download falam o que fazem ("Organizar depois de baixar") em vez de mostrar os flags do script. O Histórico e a Biblioteca são os mesmos nos dois modos.
 - **Modo Dev:** tudo o que a stack faz, como nas capturas da próxima seção: as etapas do ambiente, os logs dos contêineres, as portas, as opções do script e a configuração completa.
 
 Troque pelo alternador no rodapé da barra lateral, pelo atalho **Ctrl+Shift+D** ou em Configurações → Aplicativo. Numa instalação nova, o assistente pergunta o modo no fim (o Modo DJ vem marcado); quem já usava o app continua no Modo Dev. Onde o Modo DJ esconde algo útil para resolver um problema, **Mostrar detalhes técnicos** leva à mesma tela no Modo Dev.
 
 ![Início no Modo DJ: "Tudo pronto", os atalhos para baixar, buscar, ouvir e ver transferências, e o último download](docs/img/10-modo-dj-inicio.png)
-
-![Seus downloads no Modo DJ: a nova tentativa aparece com o nome da lista original](docs/img/10-modo-dj-historico.png)
 
 ### As telas
 
@@ -363,7 +361,7 @@ E o **painel ao vivo**: progresso, contadores, tabela por faixa (com filtro e bu
 
 #### Histórico
 
-Tudo o que está em `lotes/`, inclusive o que foi rodado pelos `.bat`, com como cada execução terminou. Execuções antigas podem ser apagadas (vão para a Lixeira, com prévia) e uma lista pode ser reprocessada do zero (com confirmação).
+**Seus downloads**: tudo o que está em `lotes/`, inclusive o que foi rodado pelos `.bat`, com quantas faixas cada lista tinha, o que chegou, o que faltou e como cada download terminou. Execuções antigas podem ser apagadas (vão para a Lixeira, com prévia) e uma lista pode ser reprocessada do zero (com confirmação).
 
 ![Tela Histórico: a lista de execuções, a segunda gerada pelo "Tentar de novo"](docs/img/06-historico.png)
 

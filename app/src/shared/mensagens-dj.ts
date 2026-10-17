@@ -558,32 +558,7 @@ export const msgDj = {
 
   /** Histórico, o detalhe de um download e "O que faltou" (protótipos "DJ · Histórico") */
   historico: {
-    titulo: 'Seus downloads',
-    subtitulo: 'Cada lista que você baixou, com o que chegou e o que faltou.',
-    apagarAntigas: 'Apagar os antigos…',
-    filtrar: 'Filtrar',
-    filtros: { todas: 'Todos', faltas: 'Com faixas que faltaram' },
-    tabela: 'Seus downloads',
-    colunas: { quando: 'Quando', lista: 'Lista', resultado: 'Resultado', duracao: 'Duração', acoes: 'Ações' },
     novaTentativa: 'Nova tentativa',
-    soAsQueFaltaram: (n: number) => (n === 1 ? 'Só a faixa que tinha faltado' : `Só as ${n} faixas que tinham faltado`),
-    faixas: (n: number) => `${n} ${plural(n, 'faixa', 'faixas')}`,
-    resumo: (c: { chegaram: number; naoVieram: number; puladas: number }) =>
-      [
-        `${c.chegaram} ${plural(c.chegaram, 'chegou', 'chegaram')}`,
-        ...(c.naoVieram > 0 ? [`${c.naoVieram} ${plural(c.naoVieram, 'faltou', 'faltaram')}`] : []),
-        ...(c.puladas > 0 ? [`${c.puladas} já ${plural(c.puladas, 'tinha vindo', 'tinham vindo')}`] : []),
-      ].join(' · '),
-    baixando: (feitas: number, total: number) => `baixando · ${feitas} de ${total}`,
-    verOQueFaltou: 'Ver o que faltou',
-    abrir: 'Abrir',
-    acompanhar: 'Acompanhar',
-    vazio: {
-      titulo: 'Nenhum download ainda',
-      corpo: 'Cada lista que você baixar aparece aqui, com o que chegou e o que faltou.',
-      irParaLista: 'Baixar uma lista',
-    },
-    filtroVazio: 'Nenhum download com faixas que faltaram.',
     carregando: 'Lendo seus downloads…',
     avisoEmAndamento: 'Este download ainda está rodando. Os números abaixo acompanham o andamento.',
     verAoVivo: 'Acompanhar',

@@ -11,8 +11,7 @@ const { linhasDoResumoDj, marcadoNoDj, numericosAlterados, opcaoDoDj } =
   await import('../../src/renderer/lib/ajustes-dj');
 const { contarDj, esperandoOrganizar, faixaDoPainelDj, filtrarDj, grupoDj, infoNoDj, notaDj } =
   await import('../../src/renderer/lib/download-dj');
-const { arquivoParecido, origemDaTentativa, resumoDjDaLinha, semExtensao } =
-  await import('../../src/renderer/lib/historico');
+const { arquivoParecido, origemDaTentativa, semExtensao } = await import('../../src/renderer/lib/historico');
 
 describe('atalho Ctrl+Shift+D', () => {
   const tecla = (p: Partial<KeyboardEvent>) => ({
@@ -161,19 +160,6 @@ describe('histórico no Modo DJ', () => {
     expect(origemDaTentativa(original, [tentativa, original])).toBeNull();
     // a de origem já foi apagada: é tentativa, mas sem nome para mostrar
     expect(origemDaTentativa(tentativa, [tentativa])).toBeUndefined();
-  });
-
-  it('a frase da linha: chegaram e faltaram; sem faixas, como terminou', () => {
-    expect(resumoDjDaLinha(r())).toBe('10 chegaram · 1 faltou');
-    expect(
-      resumoDjDaLinha(r({ contagem: { total: 1, ok: 1, naoVieram: 0, puladas: 0, atencao: 0, naoTerminadas: 0 } })),
-    ).toBe('1 chegou');
-    expect(
-      resumoDjDaLinha(
-        r({ fim: 'config', contagem: { total: 0, ok: 0, naoVieram: 0, puladas: 0, atencao: 0, naoTerminadas: 0 } }),
-      ),
-    ).toBe('Faltou configurar');
-    expect(resumoDjDaLinha(r({ fim: 'rodando', progresso: { feitas: 3, total: 11 } }))).toBe('baixando · 3 de 11');
   });
 
   it('a lista pelo nome, sem a extensão do arquivo', () => {

@@ -14,13 +14,13 @@ O **app desktop** e a **stack** (Docker Compose, scripts e configuração do bee
   - o **Início** diz numa frase o que está acontecendo, com o único botão que resolve ("O player não está respondendo → Reiniciar o player"), e traz atalhos para baixar, buscar, ouvir e ver transferências, o último download e a biblioteca;
   - **Serviços** mostra um cartão por coisa que você usa (organização, busca e download, player, compartilhamento, pastas);
   - **Baixar lista** vira *Lista · Ajustes · Download*: os ajustes falam o que fazem ("Organizar depois de baixar") e o download conta o que chegou e o que faltou;
-  - **Histórico** vira "Seus downloads", e a nova tentativa aparece com o nome da lista original;
   - **Configurações** fica com Pastas, Conta Soulseek, **Compartilhamento** (músicas compartilhadas, ouvir no celular e o teste da porta) e as preferências do app.
   - Onde o Modo DJ esconde algo útil para resolver um problema, "Mostrar detalhes técnicos" leva à mesma tela no Modo Dev.
 
 ### Mudado
 
-- **Biblioteca, nos dois modos:** a tela se chama **Suas músicas**; os indicadores viraram "Sem gênero" e "Esperando organizar"; a manutenção virou **Cuidar da biblioteca**, com cada tarefa explicada em palavras ("Calcular tom e BPM que faltam", "Atualizar depois de mexer nos arquivos"); o compartilhamento conta as músicas compartilhadas e o botão virou **Atualizar a lista**. O botão de abrir a pasta diz qual pasta abre ("Abrir DJ/Musics no Explorer").
+- **Biblioteca, nos dois modos:** a tela se chama **Suas músicas**; os indicadores viraram "Sem gênero" e "Esperando organizar"; a manutenção virou **Cuidar da biblioteca**, com cada tarefa explicada em palavras ("Calcular tom e BPM que faltam", "Atualizar depois de mexer nos arquivos"); o compartilhamento conta as músicas compartilhadas e o botão virou **Atualizar a lista**. O botão de abrir a pasta diz qual pasta abre ("Abrir DJ/Musics no Explorer"), e o tom aparece também na roda de Camelot ("8A Am").
+- **Histórico, nos dois modos:** a tela se chama **Seus downloads**, com os textos mais simples ("Ver o que faltou", "Com faixas que faltaram", "Apagar os antigos…"), e a coluna Lista mostra quantas faixas a lista tinha, no lugar de "eventos" ou "antiga · lida do resultado-*.txt".
 
 ### Corrigido
 

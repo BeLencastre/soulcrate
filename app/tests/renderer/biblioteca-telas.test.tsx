@@ -195,7 +195,8 @@ describe('tabela, busca e indicadores', () => {
     expect(linhas()).toHaveLength(5);
     expect(screen.getByTestId('contagem')).toHaveTextContent('5 de 5');
     const primeira = celulas(linhas()[0] as HTMLElement).map((c) => c.textContent);
-    expect(primeira.slice(0, 6)).toEqual(['Azyr', 'No Escape', '150', 'F#m', 'Hard Techno', 'FLAC']);
+    // o tom na roda de Camelot, com o tom como o beets grava ao lado
+    expect(primeira.slice(0, 6)).toEqual(['Azyr', 'No Escape', '150', '11AF#m', 'Hard Techno', 'FLAC']);
   });
 
   it('BPM e tom ausentes aparecem como "sem" e o gênero vazio como _Sem Genero', async () => {

@@ -1042,12 +1042,15 @@ export const msg = {
 
   historico: {
     rotulo: 'Histórico',
-    titulo: 'Execuções',
-    subtitulo: 'Tudo o que está em lotes/, inclusive o que foi rodado pelos .bat.',
-    apagarAntigas: 'Apagar execuções antigas…',
+    titulo: 'Seus downloads',
+    subtitulo: 'Cada lista que você baixou, com o que chegou e o que faltou.',
+    apagarAntigas: 'Apagar os antigos…',
     abrirPasta: 'Abrir pasta lotes',
-    filtros: { todas: 'Todas', faltas: 'Com faixas que não vieram' },
-    tabela: 'Execuções',
+    filtrar: 'Filtrar',
+    filtros: { todas: 'Todos', faltas: 'Com faixas que faltaram' },
+    tabela: 'Seus downloads',
+    /** a linha de baixo da coluna Lista */
+    faixas: (n: number) => `${n.toLocaleString('pt-BR')} ${plural(n, 'faixa', 'faixas')}`,
     colunas: {
       quando: 'Quando',
       lista: 'Lista',
@@ -1060,12 +1063,6 @@ export const msg = {
     ontem: 'Ontem',
     semLista: 'lista não registrada',
     semDuracao: '—',
-    fonte: {
-      eventos: 'eventos',
-      aoVivo: 'eventos ao vivo',
-      resultado: 'antiga · lida do resultado-*.txt',
-      log: 'antiga · só o log da tela',
-    },
     resumo: {
       completo: (c: { ok: number; naoVieram: number; puladas: number; atencao: number }) =>
         [
@@ -1079,19 +1076,19 @@ export const msg = {
       rodando: (feitas: number, total: number) => `${feitas}/${total} concluídas`,
       semFaixas: 'nenhuma faixa registrada',
     },
-    verFaltas: 'Ver faltas',
+    verFaltas: 'Ver o que faltou',
     abrir: 'Abrir',
-    abrirNoPainel: 'Ver ao vivo',
+    abrirNoPainel: 'Acompanhar',
     vazio: {
-      titulo: 'Nenhuma execução ainda',
-      corpo: 'Quando você rodar uma lista, pelo app ou pelo .bat, ela aparece aqui com o resultado de cada faixa.',
+      titulo: 'Nenhum download ainda',
+      corpo: 'Cada lista que você baixar aparece aqui, com o que chegou e o que faltou.',
       irParaLista: 'Baixar uma lista',
     },
-    filtroVazio: 'Nenhuma execução com faixas que não vieram.',
+    filtroVazio: 'Nenhum download com faixas que faltaram.',
     semRelatorio:
       'Esta execução não gravou relatório: só o log da tela sobrou. Provavelmente foi interrompida ou deu erro antes do fim.',
     erroCarregar: 'Não consegui ler a pasta lotes',
-    carregando: 'Lendo a pasta lotes…',
+    carregando: 'Lendo seus downloads…',
     avisoEmAndamento: 'Esta execução ainda está rodando. Os números abaixo acompanham o lote.',
     verAoVivo: 'Ver painel ao vivo',
 
