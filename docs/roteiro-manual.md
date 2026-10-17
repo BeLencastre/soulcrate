@@ -67,7 +67,7 @@
 
 - [ ] Numa **instalação nova**, a tela final do assistente pergunta o modo com o **Modo DJ** marcado; "Ir para o Início" abre o Início do Modo DJ ("Tudo pronto").
 - [ ] Numa máquina que **já usava o app** antes desta versão, o app abre no **Modo Dev**, igual a antes.
-- [ ] O alternador da barra lateral e o **Ctrl+Shift+D** trocam na hora, sem mudar de tela; o aviso "Modo DJ ligado" some em 6 s e **Desfazer** volta.
+- [ ] O alternador da barra lateral e o **Ctrl+Shift+D** trocam na hora, sem mudar de tela e sem aviso.
 - [ ] **Com um lote rodando**, trocar de modo não interrompe nada (o Download no Modo DJ e a Execução no Modo Dev mostram o mesmo lote).
 - [ ] No Modo DJ, Serviços com um serviço parado de verdade (`docker stop navidrome`) mostra "Parado" no Player, e **Reiniciar o player** o traz de volta.
 - [ ] Fechar e abrir o app mantém o modo escolhido.

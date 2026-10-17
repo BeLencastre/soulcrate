@@ -1,9 +1,9 @@
 // @vitest-environment jsdom
 // Modo DJ e Modo Dev renderizados de verdade (React + Testing Library), com o `window.soulcrate` simulado: o
-// alternador da barra lateral, o aviso com "Desfazer", o atalho Ctrl+Shift+D, e o Início, Serviços e Histórico no DJ.
+// alternador da barra lateral, o atalho Ctrl+Shift+D, e o Início, Serviços e Histórico no DJ.
 import './matchers';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import type { ReactElement } from 'react';
 import { MemoryRouter } from 'react-router';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -36,13 +36,12 @@ vi.mock('../../src/renderer/lib/api', () => ({ api }));
 
 // importados depois do mock
 const { BarraLateral } = await import('../../src/renderer/components/BarraLateral');
-const { AvisoDeModo } = await import('../../src/renderer/components/modo');
 const { Inicio } = await import('../../src/renderer/paginas/Inicio');
 const { Servicos } = await import('../../src/renderer/paginas/Servicos');
 const { Historico } = await import('../../src/renderer/paginas/historico/Historico');
 const { chaveStatus } = await import('../../src/renderer/lib/estado');
 const { chaveSettings } = await import('../../src/renderer/lib/preferencias');
-const { DURACAO_DO_AVISO_MS, useAtalhoDoModo, useAvisoDeModo } = await import('../../src/renderer/lib/modo');
+const { useAtalhoDoModo } = await import('../../src/renderer/lib/modo');
 
 const SETTINGS: AppSettings = {
   minimizarParaBandeja: true,
@@ -116,10 +115,7 @@ function montar(ui: ReactElement, s: StackStatus, modo: ModoInterface | null) {
   api.app.getSettings.mockReturnValue(new Promise(() => undefined));
   return render(
     <QueryClientProvider client={qc}>
-      <MemoryRouter>
-        {ui}
-        <AvisoDeModo />
-      </MemoryRouter>
+      <MemoryRouter>{ui}</MemoryRouter>
     </QueryClientProvider>,
   );
 }
@@ -134,12 +130,8 @@ beforeEach(() => {
   api.library.list.mockReturnValue(new Promise(() => undefined));
   api.update.state.mockResolvedValue({ estado: 'ocioso', ultimaChecagemEm: null });
   api.onEvent.mockReset().mockReturnValue(() => undefined);
-  useAvisoDeModo.setState({ aviso: null });
 });
-afterEach(() => {
-  cleanup();
-  vi.useRealTimers();
-});
+afterEach(cleanup);
 
 // ---------------------------------------------------------------- Alternador, aviso e atalho
 
@@ -157,7 +149,7 @@ describe('alternador de modo na barra lateral', () => {
     expect(screen.getByText(':5030')).toBeInTheDocument();
   });
 
-  it('trocar para DJ grava a preferência, esconde as portas e mostra o aviso com Desfazer', async () => {
+  it('trocar para DJ grava a preferência e esconde as portas na hora, sem aviso', async () => {
     montar(<BarraLateral />, noAr(), 'dev');
     fireEvent.click(screen.getByRole('button', { name: /DJ/ }));
     await waitFor(() => expect(api.app.setSettings).toHaveBeenCalledWith({ modo: 'dj' }));
@@ -165,26 +157,11 @@ describe('alternador de modo na barra lateral', () => {
     expect(screen.queryByText(':5030')).toBeNull();
     expect(screen.getByTestId('resumo-stack')).toHaveTextContent('Ligado');
     expect(screen.getByText('Pronto para baixar e ouvir')).toBeInTheDocument();
+    expect(screen.queryByText('Modo DJ ligado')).toBeNull();
 
-    const aviso = screen.getByTestId('aviso-de-modo');
-    expect(aviso).toHaveAttribute('role', 'status');
-    expect(aviso).toHaveTextContent('Modo DJ ligado');
-    expect(aviso).toHaveTextContent('Nada foi apagado.');
-    fireEvent.click(within(aviso).getByRole('button', { name: 'Desfazer' }));
+    fireEvent.click(screen.getByRole('button', { name: /Dev/ }));
     await waitFor(() => expect(api.app.setSettings).toHaveBeenLastCalledWith({ modo: 'dev' }));
-    expect(screen.queryByTestId('aviso-de-modo')).toBeNull();
     expect(screen.getByText(':5030')).toBeInTheDocument();
-  });
-
-  it('o aviso some sozinho depois de 6 s', () => {
-    vi.useFakeTimers();
-    montar(<p>tela</p>, noAr(), 'dj');
-    act(() => useAvisoDeModo.getState().mostrar('dj'));
-    expect(screen.getByTestId('aviso-de-modo')).toBeInTheDocument();
-    act(() => vi.advanceTimersByTime(DURACAO_DO_AVISO_MS - 1));
-    expect(screen.getByTestId('aviso-de-modo')).toBeInTheDocument();
-    act(() => vi.advanceTimersByTime(1));
-    expect(screen.queryByTestId('aviso-de-modo')).toBeNull();
   });
 });
 
@@ -194,11 +171,10 @@ function ComAtalho({ ativo }: { ativo: boolean }) {
 }
 
 describe('atalho Ctrl+Shift+D', () => {
-  it('alterna o modo e mostra o aviso', async () => {
+  it('alterna o modo', async () => {
     montar(<ComAtalho ativo />, noAr(), 'dev');
     fireEvent.keyDown(window, { ctrlKey: true, shiftKey: true, code: 'KeyD', key: 'D' });
     await waitFor(() => expect(api.app.setSettings).toHaveBeenCalledWith({ modo: 'dj' }));
-    expect(screen.getByTestId('aviso-de-modo')).toHaveTextContent('Modo DJ ligado');
   });
 
   it('desligado (no assistente) e outras teclas não fazem nada', () => {
@@ -252,7 +228,6 @@ describe('Início no Modo DJ', () => {
     await waitFor(() => expect(api.app.setSettings).toHaveBeenCalledWith({ modo: 'dev' }));
     // a mesma tela, agora no Modo Dev: as cinco etapas voltaram
     await waitFor(() => expect(document.querySelectorAll('[data-etapa]')).toHaveLength(5));
-    expect(screen.getByTestId('aviso-de-modo')).toHaveTextContent('Modo Dev ligado');
   });
 
   it('o player não responde: reiniciar só ele, e a saída discreta para o Modo Dev', () => {

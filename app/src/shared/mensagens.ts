@@ -47,17 +47,6 @@ export const msg = {
     /** o mesmo atalho nos dois sentidos; o título do botão o anuncia */
     titulo: (nome: string) => `Mudar para o Modo ${nome} (Ctrl+Shift+D)`,
     tituloAtivo: (nome: string) => `Modo ${nome} ligado (Ctrl+Shift+D alterna)`,
-    aviso: {
-      dj: {
-        titulo: 'Modo DJ ligado',
-        corpo: 'Logs, portas e opções técnicas ficaram escondidos. Nada foi apagado.',
-      },
-      dev: {
-        titulo: 'Modo Dev ligado',
-        corpo: 'Etapas do ambiente, logs, portas e opções do script voltaram.',
-      },
-      desfazer: 'Desfazer',
-    },
     saida: {
       rotulo: 'Detalhes técnicos',
       texto: 'Logs dos contêineres, portas e as verificações completas ficam no Modo Dev.',
@@ -1412,10 +1401,11 @@ export const msg = {
 
   biblioteca: {
     rotulo: 'Biblioteca',
-    titulo: 'O caixote',
+    titulo: 'Suas músicas',
     /** `D:\Musica\Soulcrate\music · 1.204 faixas` */
     subtitulo: (pasta: string, n: number) => `${pasta} · ${n.toLocaleString('pt-BR')} ${plural(n, 'faixa', 'faixas')}`,
-    abrirMusic: 'Abrir music no Explorer',
+    /** `Abrir DJ/Musics no Explorer`; sem a pasta lida ainda, só "Abrir no Explorer" */
+    abrirMusic: (pasta: string | null) => (pasta ? `Abrir ${pasta} no Explorer` : 'Abrir no Explorer'),
     atualizar: 'Atualizar',
     carregando: 'Lendo a biblioteca…',
     lendo: 'Lendo a biblioteca com o beets. Com milhares de faixas, leva alguns segundos.',
@@ -1425,8 +1415,8 @@ export const msg = {
       grupo: 'Filtrar por pendência',
       bpm: 'Sem BPM',
       tom: 'Sem tom',
-      gen: 'Em _Sem Genero',
-      dl: 'Parados em downloads/',
+      gen: 'Sem gênero',
+      dl: 'Esperando organizar',
     },
     buscar: 'Buscar na biblioteca',
     placeholderBusca: 'Artista ou título',
@@ -1470,40 +1460,34 @@ export const msg = {
       importarAgora: 'Importar agora',
     },
     manutencao: {
-      titulo: 'Manutenção',
+      titulo: 'Cuidar da biblioteca',
       rodando: 'Rodando agora',
       verProgresso: 'Ver andamento',
-      tomEBpm: {
-        titulo: 'Recalcular tom e BPM',
-        descricao: 'Só das faixas sem · keyfinder e autobpm',
-      },
+      tomEBpm: { titulo: 'Calcular tom e BPM que faltam', descricao: 'Só nas faixas que estão sem.' },
       importLeftovers: {
-        titulo: 'Importar o que sobrou em downloads/',
+        titulo: 'Organizar o que ficou em downloads',
         descricao: (itens: number, desde: string | null) =>
           itens === 0
-            ? 'Nada parado em downloads/'
-            : `${itens} ${plural(itens, 'pasta parada', 'pastas paradas')}${desde ? ` desde ${desde}` : ''}`,
+            ? 'Nada esperando agora.'
+            : `${itens} ${plural(itens, 'pasta esperando', 'pastas esperando')}${desde ? ` desde ${desde}` : ''}.`,
       },
       update: {
-        titulo: 'Sincronizar com o disco',
-        descricao: 'Depois de apagar ou editar arquivos fora do app · update',
+        titulo: 'Atualizar depois de mexer nos arquivos',
+        descricao: 'Se você apagou ou editou músicas fora do app.',
       },
-      move: {
-        titulo: 'Reorganizar pastas',
-        descricao: 'Depois de mudar o padrão de pastas · move',
-      },
+      move: { titulo: 'Reorganizar as pastas', descricao: 'Depois de mudar o jeito de nomear as pastas.' },
     },
     compartilhamento: {
       titulo: 'Compartilhamento',
       /** vem depois do número: `1.204` + `arquivos anunciados no Soulseek` */
-      anunciados: (n: number) => `${plural(n, 'arquivo anunciado', 'arquivos anunciados')} no Soulseek`,
-      desconhecido: 'Não consegui ler quantos arquivos o slskd anuncia.',
-      varrendo: 'O slskd está varrendo a biblioteca…',
-      zero: 'O slskd anuncia 0 arquivos: quem não compartilha nada costuma ser recusado ou ficar no fim da fila. Reescaneie.',
-      dica: 'Compartilhar ajuda sua reputação na rede: quem não compartilha costuma ser despriorizado.',
-      reescanear: 'Reescanear',
-      pedido: 'Pedi a varredura ao slskd. O número sobe conforme ela avança.',
-      stackFora: 'Ligue a stack para ver o compartilhamento.',
+      anunciados: (n: number) => `${plural(n, 'música compartilhada', 'músicas compartilhadas')} no Soulseek`,
+      desconhecido: 'Não consegui ver quantas músicas estão compartilhadas.',
+      varrendo: 'Atualizando a lista de músicas compartilhadas…',
+      zero: 'Nenhuma música compartilhada: quem não compartilha costuma ser recusado ou ir para o fim da fila. Atualize a lista.',
+      dica: 'Compartilhar ajuda sua reputação na rede: quem não compartilha costuma ir para o fim da fila.',
+      reescanear: 'Atualizar a lista',
+      pedido: 'Atualizando. O número sobe conforme a lista é refeita.',
+      stackFora: 'Ligue o Soulcrate para ver o compartilhamento.',
     },
     rekordbox: {
       titulo: 'Rekordbox',

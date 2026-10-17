@@ -3,7 +3,6 @@ import { useEffect, useRef, useState, type ReactNode, type RefObject } from 'rea
 import { Outlet, useLocation, useMatch, useNavigate } from 'react-router';
 import { BarraLateral } from './components/BarraLateral';
 import { DialogoBandeja } from './components/DialogoBandeja';
-import { AvisoDeModo } from './components/modo';
 import { msg } from '@shared/mensagens';
 import { useLigarEventos } from './lib/estado';
 import { useAtalhoDoModo } from './lib/modo';
@@ -129,7 +128,6 @@ export function App() {
         {preferenciasLidas ? <Outlet /> : null}
       </main>
       <DialogoBandeja />
-      <AvisoDeModo />
       {arrastando ? (
         <div
           aria-hidden="true"

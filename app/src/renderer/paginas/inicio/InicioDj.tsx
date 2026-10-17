@@ -55,7 +55,7 @@ function AcoesDaSituacao({ sit, status }: { sit: SituacaoDj; status: StackStatus
           <Botao variante="primario" onClick={() => seguro(api.env.startDockerDesktop())}>
             {t.acoes.abrirDocker}
           </Botao>
-          <Botao variante="fantasma" onClick={() => trocar('dev', { avisar: true })}>
+          <Botao variante="fantasma" onClick={() => trocar('dev')}>
             {t.acoes.detalhesTecnicos}
           </Botao>
         </>

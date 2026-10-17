@@ -104,18 +104,6 @@ export const msgDj = {
       ocupada: 'Outro programa deste PC está usando a mesma porta. Feche-o antes de ligar o Soulcrate.',
     },
   },
-  /** o cartão de compartilhamento (Biblioteca e Configurações → Compartilhamento) */
-  compartilhamento: {
-    anunciados: (n: number) => `${plural(n, 'música compartilhada', 'músicas compartilhadas')} no Soulseek`,
-    desconhecido: 'Não consegui ver quantas músicas estão compartilhadas.',
-    varrendo: 'Atualizando a lista de músicas compartilhadas…',
-    zero: 'Nenhuma música compartilhada: quem não compartilha costuma ser recusado ou ir para o fim da fila. Atualize a lista.',
-    dica: 'Compartilhar ajuda sua reputação na rede: quem não compartilha costuma ir para o fim da fila.',
-    reescanear: 'Atualizar a lista',
-    pedido: 'Atualizando. O número sobe conforme a lista é refeita.',
-    stackFora: 'Ligue o Soulcrate para ver o compartilhamento.',
-  },
-
   inicio: {
     /** título e subtítulo do cabeçalho: o que está acontecendo, numa frase */
     cabecalho(sit: SituacaoDj, ctx: { baixarFunciona: boolean }): { titulo: string; subtitulo: string } {
@@ -637,35 +625,6 @@ export const msgDj = {
         titulo: (n: number) => (n === 1 ? 'Tentar de novo a que faltou' : `Tentar de novo as ${n} que faltaram`),
         corpo: 'O Soulcrate monta uma lista só com elas, já com as correções, e abre os ajustes para você conferir.',
       },
-    },
-  },
-
-  /** Biblioteca (protótipo "DJ · Biblioteca") */
-  biblioteca: {
-    titulo: 'Suas músicas',
-    abrirMusic: 'Abrir no Explorer',
-    indicadores: { bpm: 'Sem BPM', tom: 'Sem tom', gen: 'Sem gênero', dl: 'Esperando organizar' },
-    buscar: 'Buscar na biblioteca',
-    placeholderBusca: 'Artista ou título',
-    semTom: 'sem',
-    semGenero: 'sem gênero',
-    vazioBiblioteca:
-      'Ainda não há músicas aqui. Baixe uma lista (ou uma faixa pela busca) e elas aparecem já com BPM, tom e gênero.',
-    manutencao: {
-      titulo: 'Cuidar da biblioteca',
-      tomEBpm: { titulo: 'Calcular tom e BPM que faltam', descricao: 'Só nas faixas que estão sem.' },
-      importLeftovers: {
-        titulo: 'Organizar o que ficou em downloads',
-        descricao: (n: number, desde: string | null) =>
-          n === 0
-            ? 'Nada esperando agora.'
-            : `${n} ${plural(n, 'pasta esperando', 'pastas esperando')}${desde ? ` desde ${desde}` : ''}.`,
-      },
-      update: {
-        titulo: 'Atualizar depois de mexer nos arquivos',
-        descricao: 'Se você apagou ou editou músicas fora do app.',
-      },
-      move: { titulo: 'Reorganizar as pastas', descricao: 'Depois de mudar o jeito de nomear as pastas.' },
     },
   },
 };

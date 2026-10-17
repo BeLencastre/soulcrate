@@ -322,7 +322,7 @@ O app (Windows, feito em Electron) é uma camada de orquestração e visualizaç
 
 O app tem dois modos, que mudam **só o que aparece na tela** (nada é apagado, e um download em andamento continua):
 
-- **Modo DJ:** só o que importa para baixar, organizar e ouvir. O Início diz numa frase o que está acontecendo e mostra o único botão que resolve; Serviços tem um cartão por coisa que você usa; os ajustes do download falam o que fazem ("Organizar depois de baixar") em vez de mostrar os flags do script; a Biblioteca mostra o tom na roda de Camelot (7A · Dm).
+- **Modo DJ:** só o que importa para baixar, organizar e ouvir. O Início diz numa frase o que está acontecendo e mostra o único botão que resolve; Serviços tem um cartão por coisa que você usa; os ajustes do download falam o que fazem ("Organizar depois de baixar") em vez de mostrar os flags do script. A Biblioteca é a mesma nos dois modos.
 - **Modo Dev:** tudo o que a stack faz, como nas capturas da próxima seção: as etapas do ambiente, os logs dos contêineres, as portas, as opções do script e a configuração completa.
 
 Troque pelo alternador no rodapé da barra lateral, pelo atalho **Ctrl+Shift+D** ou em Configurações → Aplicativo. Numa instalação nova, o assistente pergunta o modo no fim (o Modo DJ vem marcado); quem já usava o app continua no Modo Dev. Onde o Modo DJ esconde algo útil para resolver um problema, **Mostrar detalhes técnicos** leva à mesma tela no Modo Dev.
@@ -377,7 +377,7 @@ O **diagnóstico** explica por que cada faixa não veio, na linguagem da tabela 
 
 #### Biblioteca
 
-O "caixote": as faixas do beets com artista, título, BPM, tom, gênero e formato, com busca e indicadores do que falta (sem BPM, sem tom, em `_Sem Genero`, parados em `downloads/`). **Remover uma faixa nunca é imediato**: o app mostra tudo o que o filtro pega, avisa que o arquivo é apagado de vez (sem Lixeira) e só apaga depois da sua confirmação. Também faz a [manutenção](#manutenção-da-biblioteca) sem linha de comando (recalcular tom e BPM, importar o que sobrou em `downloads/`, sincronizar com o disco e reorganizar pastas, os dois últimos com pré-visualização), mostra quantos arquivos o slskd anuncia no Soulseek (com **Reescanear**) e a pasta para monitorar no Rekordbox. Nada disso roda com a stack desligada nem com um lote em andamento.
+"Suas músicas": as faixas do beets com artista, título, BPM, tom, gênero e formato, com busca e indicadores do que falta (sem BPM, sem tom, sem gênero, esperando organizar em `downloads/`). **Remover uma faixa nunca é imediato**: o app mostra tudo o que o filtro pega, avisa que o arquivo é apagado de vez (sem Lixeira) e só apaga depois da sua confirmação. Em **Cuidar da biblioteca** faz a [manutenção](#manutenção-da-biblioteca) sem linha de comando (calcular tom e BPM que faltam, organizar o que ficou em `downloads/`, atualizar depois de mexer nos arquivos e reorganizar as pastas, os dois últimos com pré-visualização), mostra quantas músicas estão compartilhadas no Soulseek (com **Atualizar a lista**) e a pasta para monitorar no Rekordbox. O botão **Abrir … no Explorer** diz qual pasta abre (por exemplo, "Abrir DJ/Musics no Explorer"). Nada disso roda com a stack desligada nem com um lote em andamento.
 
 ![Tela Biblioteca: as faixas com BPM, tom e gênero, os indicadores e a manutenção](docs/img/09-biblioteca.png)
 

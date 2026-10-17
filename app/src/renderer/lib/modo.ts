@@ -1,14 +1,9 @@
-// Modo DJ e Modo Dev no renderer: qual vale agora, a troca (que grava na preferência do main) e o aviso com "Desfazer"
-// que aparece por 6 s quando a troca vem do alternador da barra lateral, do atalho ou de "Mostrar detalhes técnicos".
+// Modo DJ e Modo Dev no renderer: qual vale agora, a troca (que grava na preferência do main) e o atalho Ctrl+Shift+D.
 import { useCallback, useEffect } from 'react';
-import { create } from 'zustand';
 import type { ModoInterface } from '@shared/ipc';
 import { modoEfetivo, outroModo } from '@shared/modo';
 import { seguro } from './acoes';
 import { useMudarSettings, useSettings } from './preferencias';
-
-/** Por quanto tempo o aviso "Modo DJ ligado" fica na tela. */
-export const DURACAO_DO_AVISO_MS = 6000;
 
 /** O modo que vale agora. Enquanto as preferências não chegam (ou se falharem), vale o Modo Dev, como sem escolha. */
 export function useModo(): ModoInterface {
@@ -18,35 +13,10 @@ export function useModo(): ModoInterface {
 
 export const useModoDj = (): boolean => useModo() === 'dj';
 
-interface EstadoDoAviso {
-  /** o modo que acabou de ser ligado (o aviso some sozinho); null sem aviso */
-  aviso: { modo: ModoInterface; id: number } | null;
-  mostrar(modo: ModoInterface): void;
-  fechar(): void;
-}
-
-export const useAvisoDeModo = create<EstadoDoAviso>((set) => ({
-  aviso: null,
-  mostrar: (modo) => set((s) => ({ aviso: { modo, id: (s.aviso?.id ?? 0) + 1 } })),
-  fechar: () => set({ aviso: null }),
-}));
-
-/**
- * Troca o modo. `avisar`: mostra o aviso com "Desfazer" (troca pelo alternador, pelo atalho ou pela saída para o
- * Modo Dev); em Configurações a escolha está à vista e não precisa de aviso. A tela atual continua onde está.
- */
-export function useTrocarModo(): (modo: ModoInterface, opcoes?: { avisar?: boolean }) => void {
+/** Troca o modo: grava na preferência do main, e a tela atual continua onde está (só muda o que aparece). */
+export function useTrocarModo(): (modo: ModoInterface) => void {
   const mudar = useMudarSettings();
-  const mostrar = useAvisoDeModo((s) => s.mostrar);
-  const fechar = useAvisoDeModo((s) => s.fechar);
-  return useCallback(
-    (modo, opcoes = {}) => {
-      seguro(mudar({ modo }));
-      if (opcoes.avisar) mostrar(modo);
-      else fechar();
-    },
-    [mudar, mostrar, fechar],
-  );
+  return useCallback((modo) => seguro(mudar({ modo })), [mudar]);
 }
 
 /** Ctrl+Shift+D (sem Alt nem Win), em qualquer layout de teclado: compara a tecla física. */
@@ -65,7 +35,7 @@ export function useAtalhoDoModo(ativo: boolean): void {
     const aoTeclar = (e: KeyboardEvent) => {
       if (!ehAtalhoDoModo(e) || e.repeat) return;
       e.preventDefault();
-      trocar(outroModo(modo), { avisar: true });
+      trocar(outroModo(modo));
     };
     window.addEventListener('keydown', aoTeclar);
     return () => window.removeEventListener('keydown', aoTeclar);

@@ -327,17 +327,6 @@
     border-color: #d64848;
     color: #fff;
   }
-  /* botão discreto em âmbar, sobre os painéis âmbar (o "Desfazer" do aviso de modo) */
-  .btn-ag {
-    background: transparent;
-    border-color: transparent;
-    color: var(--color-ambar-vivo);
-  }
-  .btn-ag:hover {
-    background: var(--color-ambar-fundo-hover);
-    border-color: transparent;
-    color: var(--color-ambar-vivo);
-  }
   .btn-sm {
     min-height: 32px;
     padding: 0 12px;

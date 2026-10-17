@@ -1,9 +1,9 @@
 // Componentes do Modo DJ e do Modo Dev (protótipo "Componente · alternador de modo"): o alternador do rodapé da barra
-// lateral, o aviso com "Desfazer" depois de trocar e a saída discreta para o Modo Dev onde o DJ esconde algo útil.
-import { useEffect } from 'react';
+// lateral, a escolha em cartões (assistente e Configurações) e a saída discreta para o Modo Dev onde o DJ esconde algo
+// útil.
 import type { ModoInterface } from '@shared/ipc';
 import { msg } from '@shared/mensagens';
-import { DURACAO_DO_AVISO_MS, useAvisoDeModo, useModo, useTrocarModo } from '../lib/modo';
+import { useModo, useTrocarModo } from '../lib/modo';
 import { IconeCodigo, IconeFones } from './icones';
 import { Botao } from './ui';
 
@@ -34,7 +34,7 @@ export function AlternadorDeModo() {
               title={ativo ? t.tituloAtivo(t.nome[m]) : t.titulo(t.nome[m])}
               data-modo={m}
               onClick={() => {
-                if (!ativo) trocar(m, { avisar: true });
+                if (!ativo) trocar(m);
               }}
             >
               <Icone tamanho={15} style={ativo ? { color: 'var(--color-ambar)' } : undefined} />
@@ -43,37 +43,6 @@ export function AlternadorDeModo() {
           );
         })}
       </div>
-    </div>
-  );
-}
-
-/** "Modo DJ ligado": no canto inferior direito por 6 s, com "Desfazer". Anunciado pelo leitor de tela (status). */
-export function AvisoDeModo() {
-  const aviso = useAvisoDeModo((s) => s.aviso);
-  const fechar = useAvisoDeModo((s) => s.fechar);
-  const trocar = useTrocarModo();
-
-  useEffect(() => {
-    if (!aviso) return;
-    const t = setTimeout(fechar, DURACAO_DO_AVISO_MS);
-    return () => clearTimeout(t);
-  }, [aviso, fechar]);
-
-  if (!aviso) return null;
-  const t = msg.modo.aviso[aviso.modo];
-  const anterior: ModoInterface = aviso.modo === 'dj' ? 'dev' : 'dj';
-  return (
-    <div
-      role="status"
-      data-testid="aviso-de-modo"
-      data-modo={aviso.modo}
-      className="fixed right-6 bottom-6 z-[55] flex w-[min(340px,calc(100vw-48px))] flex-col gap-[10px] rounded-lg border border-ambar-borda bg-ambar-fundo-2 px-4 py-[14px] shadow-[0_12px_32px_rgba(0,0,0,0.4)]"
-    >
-      <span className="text-sm font-bold">{t.titulo}</span>
-      <span className="text-[13px] leading-[1.45] text-ambar-texto-suave">{t.corpo}</span>
-      <button type="button" className="btn btn-ag btn-sm self-start" onClick={() => trocar(anterior)}>
-        {msg.modo.aviso.desfazer}
-      </button>
     </div>
   );
 }
@@ -89,7 +58,7 @@ export function SaidaParaModoDev() {
       data-testid="saida-para-dev"
     >
       <span className="min-w-[240px] flex-1 text-[13.5px] leading-normal text-texto-suave">{t.texto}</span>
-      <Botao variante="fantasma" pequeno onClick={() => trocar('dev', { avisar: true })}>
+      <Botao variante="fantasma" pequeno onClick={() => trocar('dev')}>
         <IconeCodigo tamanho={15} />
         {t.botao}
       </Botao>

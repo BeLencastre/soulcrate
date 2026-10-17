@@ -1,5 +1,5 @@
-// Modo DJ e Modo Dev, ponta a ponta (protótipos "modos-dev-dj"): o alternador da barra lateral, o aviso com
-// "Desfazer", o atalho Ctrl+Shift+D, a escolha guardada entre aberturas do app, a volta das telas só do Modo Dev
+// Modo DJ e Modo Dev, ponta a ponta (protótipos "modos-dev-dj"): o alternador da barra lateral, o atalho
+// Ctrl+Shift+D, a escolha guardada entre aberturas do app, a volta das telas só do Modo Dev
 // para a tela-mãe, e o axe (WCAG 2.1 AA) nas telas do Modo DJ, nos dois temas.
 import { writeFileSync } from 'node:fs';
 import { join } from 'node:path';
@@ -30,7 +30,7 @@ const irPara = async (janela: Page, rota: string) => {
   await janela.waitForTimeout(700);
 };
 
-test('o alternador troca o modo na hora, o aviso permite desfazer e a escolha fica para a próxima abertura', async () => {
+test('o alternador troca o modo na hora, sem aviso, e a escolha fica para a próxima abertura', async () => {
   test.setTimeout(120_000);
   amb = criarAmbiente({ mundo: { containers: TODOS_NO_AR } });
   aberto = await abrirApp(amb, BASE);
@@ -45,11 +45,9 @@ test('o alternador troca o modo na hora, o aviso permite desfazer e a escolha fi
   await modo.getByRole('button', { name: /DJ/ }).click();
   await expect(janela.getByRole('heading', { level: 1 })).toHaveText('Tudo pronto');
   await expect(janela.getByTestId('resumo-stack')).toHaveText('Ligado');
-  const aviso = janela.getByTestId('aviso-de-modo');
-  await expect(aviso).toContainText('Modo DJ ligado');
-
-  // Desfazer volta ao Dev; trocar de novo pelo alternador deixa o DJ gravado
-  await aviso.getByRole('button', { name: 'Desfazer' }).click();
+  // a troca não abre aviso nenhum; voltar é pelo próprio alternador
+  await expect(janela.getByText('Modo DJ ligado')).toHaveCount(0);
+  await modo.getByRole('button', { name: /Dev/ }).click();
   await expect(janela.getByRole('heading', { level: 1 })).toHaveText('Stack no ar');
   await modo.getByRole('button', { name: /DJ/ }).click();
   await expect(janela.getByRole('heading', { level: 1 })).toHaveText('Tudo pronto');
@@ -83,7 +81,6 @@ test('Ctrl+Shift+D alterna em qualquer tela, e a seção só do Modo Dev volta p
   await expect(janela.getByTestId('servicos-dj')).toBeVisible();
   await janela.keyboard.press('Control+Shift+D');
   await expect(janela.getByRole('tablist', { name: 'Contêiner' })).toBeVisible();
-  await expect(janela.getByTestId('aviso-de-modo')).toContainText('Modo Dev ligado');
 });
 
 // ---------------------------------------------------------------- acessibilidade do Modo DJ
@@ -133,10 +130,6 @@ for (const tema of ['dark', 'light'] as const) {
       await janela.waitForTimeout(500);
       for (const v of await violacoes(janela)) achados.push(`/configuracoes (${nome})\n  ${v}`);
     }
-    // o aviso de troca de modo também passa no axe
-    await janela.keyboard.press('Control+Shift+D');
-    await expect(janela.getByTestId('aviso-de-modo')).toBeVisible();
-    for (const v of await violacoes(janela)) achados.push(`aviso de modo\n  ${v}`);
 
     expect(achados.join('\n'), 'violações de acessibilidade').toBe('');
   });
