@@ -42,6 +42,7 @@ flowchart LR
 **Usando no dia a dia**
 
 - [O app desktop](#o-app-desktop)
+  - [Modo DJ e Modo Dev](#modo-dj-e-modo-dev)
   - [As telas](#as-telas)
   - [Bandeja, preferências e suporte](#bandeja-preferências-e-suporte)
   - [Atualização e desinstalação](#atualização-e-desinstalação)
@@ -317,21 +318,32 @@ Confira se está tudo de pé com `status.bat` (ou `docker compose ps`). Cada ser
 
 O app (Windows, feito em Electron) é uma camada de orquestração e visualização sobre a mesma stack: a busca, os filtros e a escolha do arquivo continuam no `baixar-lista.ps1`, e a organização das faixas continua no beets. Por isso dá para **alternar entre o app e os `.bat`** na mesma pasta, sem perder nada: usam o mesmo `.env`, os mesmos `lotes/` e o mesmo estado das listas. A mesma lista não roda duas vezes ao mesmo tempo, nem entre o app e o `.bat`.
 
+### Modo DJ e Modo Dev
+
+O app tem dois modos, que mudam **só o que aparece na tela** (nada é apagado, e um download em andamento continua):
+
+- **Modo DJ:** só o que importa para baixar, organizar e ouvir. O Início diz numa frase o que está acontecendo e mostra o único botão que resolve; Serviços tem um cartão por coisa que você usa; os ajustes do download falam o que fazem ("Organizar depois de baixar") em vez de mostrar os flags do script. O Histórico e a Biblioteca são os mesmos nos dois modos.
+- **Modo Dev:** tudo o que a stack faz, como nas capturas da próxima seção: as etapas do ambiente, os logs dos contêineres, as portas, as opções do script e a configuração completa.
+
+Troque pelo alternador no rodapé da barra lateral, ou pelo atalho **Ctrl+Shift+D**. Numa instalação nova, o assistente pergunta o modo no fim (o Modo DJ vem marcado); quem já usava o app continua no Modo Dev. Onde o Modo DJ esconde algo útil para resolver um problema, **Mostrar detalhes técnicos** leva à mesma tela no Modo Dev.
+
+![Início no Modo DJ: "Tudo pronto", os atalhos para baixar, buscar, ouvir e ver transferências, e o último download](docs/img/10-modo-dj-inicio.png)
+
 ### As telas
 
-A barra lateral tem seis telas e o estado da stack; quando há um lote rodando, um cartão com o progresso fica sempre à mão. O app abre no tema escuro (há também o claro).
+A barra lateral tem seis telas, o estado da stack e o alternador de modo; quando há um lote rodando, um cartão com o progresso fica sempre à mão. O app abre no tema escuro (há também o claro). As capturas desta seção são do Modo Dev.
 
 > As capturas abaixo usam **dados de demonstração** (uma biblioteca e um slskd de mentira), não uma instalação real. Elas são geradas por `npm run capturas`, em `app/`.
 
 #### Início
 
-As cinco etapas do ambiente (Docker, Docker Desktop, configuração, stack e serviços) e **Ligar**, **Desligar** e **Reconstruir**, com o log ao vivo. Se o Docker Desktop está fechado, o app o abre. Também avisa quando há versão nova do app ou dos arquivos da stack.
+As cinco etapas do ambiente (Docker, Docker Desktop, configuração, stack e serviços) e dois botões: **Ligar**, que vira **Desligar** quando a stack está de pé, e **Reiniciar**, que refaz a imagem e recria os contêineres (os mesmos dois botões aparecem no Modo DJ). O log aparece ao vivo. Se o Docker Desktop está fechado, o app o abre. Também avisa quando há versão nova do app ou dos arquivos da stack.
 
 ![Tela Início: a stack no ar, com as cinco etapas do ambiente e as interfaces web](docs/img/01-inicio.png)
 
 #### Baixar lista
 
-Editor da lista com pré-visualização feita pelo próprio script (repetidas, "já na biblioteca", "já feita", linhas com problema). Importa `.txt`/`.csv` pelo botão ou arrastando para a janela e cria a lista a partir do exemplo.
+Três etapas: **01 Lista**, **02 Ajustes** e **03 Download**. A Lista tem o editor com a pré-visualização feita pelo próprio script (o que vai ser baixado, repetidas, "já na biblioteca", "baixada antes", linhas com problema). Importa `.txt`/`.csv` pelo botão ou arrastando para a janela e cria a lista a partir do exemplo.
 
 ![Tela Baixar lista: o editor à esquerda e a pré-visualização do que o lote vai ler à direita](docs/img/03-lista.png)
 
@@ -339,17 +351,17 @@ Editor da lista com pré-visualização feita pelo próprio script (repetidas, "
 
 ![Diálogo Importar playlist: a revisão de uma playlist do Deezer, com as faixas, a repetida marcada e o nome da lista](docs/img/03-importar-playlist.png)
 
-Depois vêm as **opções** do lote: as receitas da tabela de [Opções](#opções), com o que difere do padrão destacado e o comando equivalente.
+Depois vêm os **ajustes** do lote: as receitas da tabela de [Opções](#opções) (um clique liga, outro desliga), a qualidade em caixas de marcar, os outros ajustes em interruptores e as avançadas, com o que difere do padrão destacado. No Modo Dev, cada ajuste mostra o parâmetro do script e o resumo traz o comando equivalente; no Modo DJ, cada um diz o que faz.
 
-![Tela de opções do lote, com as receitas e os interruptores, e o que difere do padrão destacado](docs/img/04-opcoes.png)
+![Tela de ajustes do lote, com as receitas, a qualidade e os interruptores, e o que difere do padrão destacado](docs/img/04-opcoes.png)
 
-E o **painel ao vivo**: progresso, contadores, tabela por faixa (com filtro e busca), log bruto, parada segura e notificação do Windows ao terminar. **Fechar o app não interrompe o lote**: ao reabrir, o painel volta de onde estava.
+E o **Download**, ao vivo: progresso, contadores, tabela por faixa (com filtro e busca), log bruto, parada segura e notificação do Windows ao terminar. A Lista e o Download são iguais nos dois modos. **Fechar o app não interrompe o lote**: ao reabrir, o painel volta de onde estava.
 
 ![Painel de execução do lote concluído: 10 baixadas e 1 não encontrada, com a tabela por faixa](docs/img/05-execucao.png)
 
 #### Histórico
 
-Tudo o que está em `lotes/`, inclusive o que foi rodado pelos `.bat`, com como cada execução terminou. Execuções antigas podem ser apagadas (vão para a Lixeira, com prévia) e uma lista pode ser reprocessada do zero (com confirmação).
+**Seus downloads**: tudo o que está em `lotes/`, inclusive o que foi rodado pelos `.bat`, com quantas faixas cada lista tinha, o que chegou, o que faltou e como cada download terminou. Execuções antigas podem ser apagadas (vão para a Lixeira, com prévia) e uma lista pode ser reprocessada do zero (com confirmação).
 
 ![Tela Histórico: a lista de execuções, a segunda gerada pelo "Tentar de novo"](docs/img/06-historico.png)
 
@@ -363,7 +375,7 @@ O **diagnóstico** explica por que cada faixa não veio, na linguagem da tabela 
 
 #### Biblioteca
 
-O "caixote": as faixas do beets com artista, título, BPM, tom, gênero e formato, com busca e indicadores do que falta (sem BPM, sem tom, em `_Sem Genero`, parados em `downloads/`). **Remover uma faixa nunca é imediato**: o app mostra tudo o que o filtro pega, avisa que o arquivo é apagado de vez (sem Lixeira) e só apaga depois da sua confirmação. Também faz a [manutenção](#manutenção-da-biblioteca) sem linha de comando (recalcular tom e BPM, importar o que sobrou em `downloads/`, sincronizar com o disco e reorganizar pastas, os dois últimos com pré-visualização), mostra quantos arquivos o slskd anuncia no Soulseek (com **Reescanear**) e a pasta para monitorar no Rekordbox. Nada disso roda com a stack desligada nem com um lote em andamento.
+"Suas músicas": as faixas do beets com artista, título, BPM, tom, gênero e formato, com busca e indicadores do que falta (sem BPM, sem tom, sem gênero, esperando organizar em `downloads/`). **Remover uma faixa nunca é imediato**: o app mostra tudo o que o filtro pega, avisa que o arquivo é apagado de vez (sem Lixeira) e só apaga depois da sua confirmação. Em **Cuidar da biblioteca** faz a [manutenção](#manutenção-da-biblioteca) sem linha de comando (calcular tom e BPM que faltam, organizar o que ficou em `downloads/`, atualizar depois de mexer nos arquivos e reorganizar as pastas, os dois últimos com pré-visualização), mostra quantas músicas estão compartilhadas no Soulseek (com **Atualizar a lista**) e a pasta para monitorar no Rekordbox. O botão **Abrir … no Explorer** diz qual pasta abre (por exemplo, "Abrir DJ/Musics no Explorer"). Nada disso roda com a stack desligada nem com um lote em andamento.
 
 ![Tela Biblioteca: as faixas com BPM, tom e gênero, os indicadores e a manutenção](docs/img/09-biblioteca.png)
 
@@ -382,7 +394,7 @@ As mesmas seções do assistente em abas (Pastas, Conta Soulseek, Web UI do slsk
 ### Bandeja, preferências e suporte
 
 - **Bandeja do sistema:** o ícone muda de cor conforme o estado da stack e tem Abrir, Ligar, Desligar, atalhos para as interfaces e Sair. Fechar a janela pode apenas minimizá-la para a bandeja (a stack e o lote seguem rodando); para sair de vez, use **Sair** no ícone.
-- **Preferências** (Configurações → Aplicativo): tema escuro (padrão), claro ou igual ao Windows (a tela Início no tema claro está em [`docs/img/01-inicio-claro.png`](docs/img/01-inicio-claro.png)); iniciar com o Windows direto na bandeja; abrir as interfaces web dentro do app ou no navegador; avisos do Windows quando um lote termina ou as buscas são pausadas.
+- **Preferências** (Configurações → Aplicativo, iguais nos dois modos): tema escuro (padrão), claro ou igual ao Windows (a tela Início no tema claro está em [`docs/img/01-inicio-claro.png`](docs/img/01-inicio-claro.png)); iniciar com o Windows direto na bandeja; abrir as interfaces web dentro do app ou no navegador; avisos do Windows quando um download termina ou as buscas são pausadas.
 - **Sobre** mostra as versões do app, da stack e dos componentes (lidas dos contêineres), os créditos e a licença.
 - **Pacote de suporte** (Sobre, ou Ajuda → Gerar pacote de suporte): um `.zip` com os logs do app, os últimos `execucao-*.log`, o `docker compose ps` e as versões, **com senhas e chaves removidas**. O `.env` e o `slskd.yml` nunca entram.
 - **Acessibilidade:** navegação completa por teclado ("Pular para o conteúdo", foco visível), contraste AA nos dois temas, e uma tela que trava não derruba a janela inteira.
@@ -395,7 +407,7 @@ As mesmas seções do assistente em abas (Pastas, Conta Soulseek, Web UI do slsk
 - **Os arquivos da stack** (`docker-compose.yml`, scripts, `Dockerfile` do Soulbeet, config do beets) vêm junto com o app. Numa versão nova, ele troca o que você não editou e, para o que você editou, **mantém o seu e grava o novo ao lado como `.novo`**. Nunca toca no `.env`, no `slskd.yml`, nas listas, em `lotes/` nem na biblioteca.
 - **Desinstalar nunca apaga a pasta do Soulcrate**. O desinstalador só pergunta (padrão: manter) se remove as preferências e os logs do app.
 
-Mais detalhes em [`docs/distribuicao.md`](docs/distribuicao.md) (instalar, atualizar, desinstalar e publicar), [`docs/interface-electron.md`](docs/interface-electron.md) (especificação) e [`app/README.md`](app/README.md) (desenvolvimento).
+Mais detalhes em [`docs/distribuicao.md`](docs/distribuicao.md) (instalar, atualizar, desinstalar e publicar), [`app/README.md`](app/README.md) (desenvolvimento do app). As decisões de arquitetura estão em [`docs/adr/`](docs/adr/README.md).
 
 ## Uso no dia a dia
 
@@ -501,7 +513,7 @@ Cloudy - Yeah (Cloudy Remix)
   ```bat
   baixar-lista.bat minhas.txt -Paralelo 8 -AceitarAacAiff
   ```
-- **No app:** tela **Baixar lista** → escolha ou cole a lista → **Opções** → iniciar.
+- **No app:** tela **Baixar lista** → escolha ou cole a lista → **Ajustes** → iniciar.
 - **Linux/macOS:** `pwsh ./baixar-lista.ps1 -Lista lista.txt`.
 
 O Docker precisa estar no ar (o `.bat` avisa se não estiver). Pode **fechar a janela no meio**: ao rodar de novo a mesma lista, ele continua de onde parou. Downloads já enfileirados no slskd continuam por lá. Enquanto roda, o PC não entra em suspensão.
@@ -700,8 +712,8 @@ soulcrate/                      # repositório (código)
 │   ├── fix-metadata.py         # corrige metadados de pacotes da imagem base (lastgenre)
 │   ├── config/config.yaml      # configuração do beets (perfil DJ)
 │   └── beets-plugins/keepmix.py
-├── docs/                       # especificação do app, distribuição, roteiro de teste manual, protocolo do lote, validação da
-│   │                           #   configuração, spikes e img/ (as capturas de tela do README)
+├── docs/                       # distribuição, roteiro de teste manual, protocolo do lote, validação da configuração,
+│   │                           #   rotas do Navidrome e do Soulbeet, ADRs e img/ (as capturas de tela do README)
 ├── tests/                      # testes (Pester) e o slskd falso usado por eles
 ├── .github/                    # workflows (CI e release do instalador) e modelos de issue
 └── app/                        # app desktop (Electron, React, TypeScript), versão 1.1.1
@@ -1138,7 +1150,7 @@ O Soulseek é uma rede de compartilhamento P2P. Baixe apenas o que você tem dir
 
 ## Contribuindo
 
-Como rodar os testes, convenções de commit e de codificação dos arquivos: [`CONTRIBUTING.md`](CONTRIBUTING.md). O app desktop tem a especificação em [`docs/interface-electron.md`](docs/interface-electron.md) e o guia de desenvolvimento em [`app/README.md`](app/README.md). Antes de cada release, rode o [roteiro de teste manual](docs/roteiro-manual.md); o passo a passo de publicar está em [`docs/distribuicao.md`](docs/distribuicao.md#7-publicar-uma-versão). Problemas e ideias: [abra uma issue](https://github.com/BeLencastre/soulcrate/issues/new/choose).
+Como rodar os testes, convenções de commit e de codificação dos arquivos: [`CONTRIBUTING.md`](CONTRIBUTING.md). O guia de desenvolvimento do app desktop está em [`app/README.md`](app/README.md), e as decisões de arquitetura, em [`docs/adr/`](docs/adr/README.md). Antes de cada release, rode o [roteiro de teste manual](docs/roteiro-manual.md); o passo a passo de publicar está em [`docs/distribuicao.md`](docs/distribuicao.md#7-publicar-uma-versão). Problemas e ideias: [abra uma issue](https://github.com/BeLencastre/soulcrate/issues/new/choose).
 
 ## Licença
 

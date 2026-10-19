@@ -70,7 +70,7 @@ describe('AppSettingsService', () => {
     return join(d, 'dados', 'settings.json');
   };
 
-  it('sem arquivo: o padrão (minimizar para a bandeja, D7; tema escuro; avisos ligados; nada ao iniciar o PC)', () => {
+  it('sem arquivo: o padrão (minimizar para a bandeja; tema escuro; avisos ligados; nada ao iniciar o PC)', () => {
     const s = new AppSettingsService(novo());
     expect(s.get()).toEqual(SETTINGS_PADRAO);
     expect(s.get()).toMatchObject({
@@ -134,6 +134,20 @@ describe('AppSettingsService', () => {
       ...SETTINGS_PADRAO,
       minimizarParaBandeja: false,
     });
+  });
+
+  it('modo da interface: sem escolha fica null (age como Dev), DJ e Dev são gravados, valor estranho cai em null', () => {
+    const arq = novo();
+    const s = new AppSettingsService(arq);
+    // quem já usava o app antes dos modos não tem o campo: continua sem escolha, e o app mostra o Modo Dev
+    expect(s.get().modo).toBeNull();
+    expect(normalizarSettings({ tema: 'claro' }).modo).toBeNull();
+    s.set({ modo: 'dj' });
+    expect(new AppSettingsService(arq).get().modo).toBe('dj');
+    s.set({ modo: 'dev' });
+    expect(new AppSettingsService(arq).get().modo).toBe('dev');
+    expect(normalizarSettings({ modo: 'iniciante' }).modo).toBeNull();
+    expect(normalizarSettings({ modo: 1 }).modo).toBeNull();
   });
 
   it('get devolve cópia: mexer nela não muda as preferências', () => {

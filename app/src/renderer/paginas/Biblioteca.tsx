@@ -1,6 +1,7 @@
 // Tela Biblioteca (protótipo "Biblioteca", Fase 5): o caixote. A tabela das faixas (artista, título, BPM, tom, gênero,
 // formato) lida do beets, os indicadores que filtram o que está faltando, a manutenção, o compartilhamento do slskd e
 // o caminho para o Rekordbox. Remover e as tarefas que mexem nos arquivos passam por diálogos com pré-visualização.
+// A tela é a mesma nos dois modos (Modo DJ e Modo Dev).
 import { useMemo, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { Link } from 'react-router';
@@ -11,10 +12,12 @@ import {
   type IndicadorId,
   type LeituraBiblioteca,
   type TarefaManutencao,
+  tomCamelot,
 } from '@shared/biblioteca';
 import { msg } from '@shared/mensagens';
 import { servicoDe, servicoSaudavel } from '@shared/stack';
 import { DialogoManutencao } from '../components/biblioteca/DialogoManutencao';
+import { CartaoCompartilhamento } from '../components/biblioteca/CartaoCompartilhamento';
 import { DialogoRemover } from '../components/biblioteca/DialogoRemover';
 import { CartaoErro } from '../components/CartaoErro';
 import { Carregando, SemPasta, useSemPasta } from '../components/estados';
@@ -27,13 +30,13 @@ import {
   CHAVE_BIBLIOTECA,
   desdeQuandoParado,
   manutencaoRodando,
-  useCompartilhamento,
+  nomeCurtoDaPasta,
   useLeituraDaBiblioteca,
   useManutencao,
 } from '../lib/biblioteca';
 import { useAgora, useStackStatus } from '../lib/estado';
 
-const COLUNAS = 'minmax(150px,1.2fr) minmax(220px,2.2fr) 70px 70px minmax(120px,1.1fr) 96px 84px';
+const COLUNAS = 'minmax(150px,1.2fr) minmax(220px,2.2fr) 70px 96px minmax(120px,1.1fr) 96px 84px';
 const FALTA = 'font-bold text-chip-laranja';
 
 // ---------------------------------------------------------------- Indicadores
@@ -83,6 +86,19 @@ function Indicadores({
 }
 
 // ---------------------------------------------------------------- Tabela
+
+/** O tom na roda de Camelot, em destaque, com o tom como o beets o grava ao lado ("7A Dm"): é o que se usa para mixar. */
+function Tom({ tom }: { tom: string | null }) {
+  if (tom === null) return <span className={`block font-mono ${FALTA}`}>{msg.biblioteca.sem}</span>;
+  const camelot = tomCamelot(tom);
+  if (!camelot) return <span className="block font-mono">{tom}</span>;
+  return (
+    <span className="flex items-baseline gap-[6px] font-mono" title={tom}>
+      <b>{camelot}</b>
+      <span className="text-xs text-texto-mudo">{tom}</span>
+    </span>
+  );
+}
 
 function TabelaDeFaixas({
   leitura,
@@ -200,9 +216,7 @@ function TabelaDeFaixas({
           <span key="b" className={`block text-right font-mono ${f.bpm === null ? FALTA : ''}`}>
             {f.bpm ?? t.sem}
           </span>,
-          <span key="k" className={`block font-mono ${f.tom === null ? FALTA : ''}`}>
-            {f.tom ?? t.sem}
-          </span>,
+          <Tom key="k" tom={f.tom} />,
           <span
             key="g"
             className={`block truncate ${f.semGenero ? 'text-chip-laranja' : 'text-texto-claro'}`}
@@ -301,73 +315,6 @@ function CartaoManutencao({
   );
 }
 
-function CartaoCompartilhamento({ slskdNoAr }: { slskdNoAr: boolean }) {
-  const t = msg.biblioteca.compartilhamento;
-  const qc = useQueryClient();
-  const q = useCompartilhamento(slskdNoAr);
-  const [pedindo, setPedindo] = useState(false);
-  const [pedido, setPedido] = useState(false);
-  const r = q.data;
-  const c = r?.ok ? r.compartilhamento : null;
-
-  async function reescanear() {
-    setPedindo(true);
-    try {
-      const resposta = await api.library.rescanSharing();
-      qc.setQueriesData({ queryKey: [...CHAVE_BIBLIOTECA, 'compartilhamento'] }, resposta);
-      setPedido(resposta.ok);
-    } finally {
-      setPedindo(false);
-    }
-  }
-
-  return (
-    <Cartao como="section" className="flex flex-col gap-[10px] p-4" data-testid="cartao-compartilhamento">
-      <Rotulo>{t.titulo}</Rotulo>
-      {!slskdNoAr ? (
-        <span className="text-[12.5px] leading-normal text-texto-suave">{t.stackFora}</span>
-      ) : q.isPending ? (
-        <span className="esqueleto h-3 w-[60%]" role="status" aria-label={msg.app.carregando} />
-      ) : r && !r.ok ? (
-        <span className="text-[13px] leading-normal text-chip-laranja" data-testid="compartilhamento-erro">
-          {r.erro.titulo}. {r.erro.mensagem}
-        </span>
-      ) : (
-        <>
-          <span className="text-sm leading-normal" data-testid="compartilhamento-n">
-            {c?.arquivos === null || c === null ? (
-              t.desconhecido
-            ) : (
-              <>
-                <strong className="font-mono">{c.arquivos.toLocaleString('pt-BR')}</strong> {t.anunciados(c.arquivos)}
-              </>
-            )}
-          </span>
-          {c?.escaneando ? (
-            <span role="status" className="text-[12.5px] text-chip-azul">
-              {t.varrendo}
-            </span>
-          ) : c?.arquivos === 0 ? (
-            <span className="text-[12.5px] leading-normal text-chip-laranja">{t.zero}</span>
-          ) : (
-            <span className="text-[12.5px] leading-normal text-texto-suave">{t.dica}</span>
-          )}
-          {pedido ? <span className="text-[12.5px] text-texto-suave">{t.pedido}</span> : null}
-        </>
-      )}
-      <Botao
-        pequeno
-        className="self-start"
-        disabled={!slskdNoAr || pedindo || c?.escaneando === true}
-        onClick={() => void reescanear()}
-        data-testid="reescanear"
-      >
-        {t.reescanear}
-      </Botao>
-    </Cartao>
-  );
-}
-
 function CartaoRekordbox({ pasta }: { pasta: string }) {
   const t = msg.biblioteca.rekordbox;
   const [copiado, setCopiado] = useState(false);
@@ -434,7 +381,7 @@ export function Biblioteca() {
             </Botao>
             <Botao onClick={() => seguro(api.library.openMusicFolder())} disabled={semPasta}>
               <IconePasta />
-              {t.abrirMusic}
+              {t.abrirMusic(lida ? nomeCurtoDaPasta(lida.pastaMusica) : null)}
             </Botao>
           </>
         }

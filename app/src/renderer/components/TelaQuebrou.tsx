@@ -1,4 +1,4 @@
-// Rede de segurança do renderer (Fase 6, §6.3: "erros inesperados mostram Copiar detalhes e Abrir log, nunca uma pilha
+// Rede de segurança do renderer (Fase 6: "erros inesperados mostram Copiar detalhes e Abrir log, nunca uma pilha
 // crua como única informação"): se uma tela lança no meio do desenho, só ela cai. A barra lateral, a bandeja e o lote
 // em andamento continuam de pé, e a pessoa tem como voltar.
 import { useNavigate, useRouteError } from 'react-router';

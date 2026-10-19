@@ -6,7 +6,7 @@ export interface ServicoInfo {
   nome: string;
   /** porta da Web UI no host (a mesma do docker-compose.yml) */
   porta: number;
-  /** caminho HTTP usado para sondar a saúde (D4 da especificação) */
+  /** caminho HTTP usado para sondar a saúde */
   caminhoSaude: string;
 }
 

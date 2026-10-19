@@ -1,5 +1,5 @@
 // SuporteService (Fase 6): o "pacote de suporte", um .zip com o que o suporte precisa para entender um problema, SEM
-// segredos (§6.1): os logs do app, os últimos `execucao-*.log` dos lotes, o `docker compose ps`, as versões e o resultado
+// segredos: os logs do app, os últimos `execucao-*.log` dos lotes, o `docker compose ps`, as versões e o resultado
 // da conferência da configuração. Todo texto passa por dois filtros antes de entrar no zip: o de padrões (`redigirSegredos`:
 // variáveis conhecidas, `X-API-Key`, campos JSON) e o de VALORES (as senhas e chaves que estão de fato no `.env` e no
 // `slskd.yml` desta máquina, onde quer que apareçam). O pacote nunca inclui o `.env` nem o `slskd.yml` em si.

@@ -1,4 +1,4 @@
-// Estado do download em lote no renderer (Zustand, §3.1): o rascunho (a lista aberta, o texto, as opções) e a execução
+// Estado do download em lote no renderer (Zustand): o rascunho (a lista aberta, o texto, as opções) e a execução
 // que o painel acompanha. O main é a fonte da verdade da execução: aqui só se aplicam os eventos que ele empurra.
 import { create } from 'zustand';
 import type { EventoLote } from '@shared/eventos-lote';

@@ -1,4 +1,4 @@
-// ConfigService (§3.2, Fase 2): lê, valida e grava o `.env` e o `slskd/slskd.yml` a partir do que o assistente
+// ConfigService: lê, valida e grava o `.env` e o `slskd/slskd.yml` a partir do que o assistente
 // (e a tela Configurações) coletou. Gera as chaves, grava a MESMA nos dois arquivos, faz backup antes de sobrescrever
 // e confere o resultado com a mesma validação (S4) que o subir.bat usa.
 // Segredos: lê o .env só dentro do main. O que sai (`ConfigPublica`) traz o estado de cada campo, nunca o valor de

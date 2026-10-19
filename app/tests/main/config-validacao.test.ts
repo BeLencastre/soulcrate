@@ -116,7 +116,7 @@ describe('validarConfiguracao: regras que dependem da máquina (fora dos casos c
     ).toBe(true);
   });
 
-  it('espaço e acento no caminho funcionam (SP8)', () => {
+  it('espaço e acento no caminho funcionam', () => {
     const raiz = criarRaiz({});
     const pasta = join(raiz, 'Música DJ', 'Faixas novas');
     mkdirSync(pasta, { recursive: true });

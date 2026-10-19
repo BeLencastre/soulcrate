@@ -1,4 +1,4 @@
-// ProjectService (§3.2 e §3.3): acha a pasta do Soulcrate, a que tem o docker-compose.yml.
+// ProjectService: acha a pasta do Soulcrate, a que tem o docker-compose.yml.
 // Na Fase 1 o app só localiza e valida a pasta; copiar os recursos para uma pasta nova é do assistente (Fase 2).
 import { join } from 'node:path';
 import type { OrigemProjeto, ProjetoStatus } from '@shared/stack';

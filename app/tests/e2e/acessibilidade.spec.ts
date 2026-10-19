@@ -1,4 +1,4 @@
-// Fase 6, acessibilidade, ponta a ponta (§5 e Apêndice D: "navegável por teclado", contraste AA, rótulos em todos os
+// Fase 6, acessibilidade, ponta a ponta ("navegável por teclado", contraste AA, rótulos em todos os
 // controles). O axe-core (WCAG 2.1 A e AA, inclusive contraste de cor) roda em TODAS as telas, nos dois temas, e o teclado
 // é exercitado de verdade: o primeiro Tab leva ao "Pular para o conteúdo", e trocar de tela leva o foco ao conteúdo.
 import { mkdirSync } from 'node:fs';

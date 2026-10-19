@@ -239,7 +239,7 @@ describe('tela Histórico', () => {
     expect(rodando).toHaveTextContent('set-sabado.txt');
     expect(rodando).toHaveTextContent('Rodando');
     expect(rodando).toHaveTextContent('14/30 concluídas');
-    expect(rodando).toHaveTextContent('eventos ao vivo');
+    expect(rodando).toHaveTextContent('30 faixas');
     expect(rodando).toHaveTextContent('18 min');
 
     expect(concluida).toHaveTextContent('Concluído');
@@ -253,15 +253,17 @@ describe('tela Histórico', () => {
     expect(config).toHaveTextContent('API key do slskd diferente nos dois arquivos');
 
     expect(antiga).toHaveTextContent('lista não registrada');
-    expect(antiga).toHaveTextContent('antiga · lida do resultado-*.txt');
+    expect(antiga).toHaveTextContent('29 faixas');
+    // a coluna Lista diz quantas faixas tinha, não de onde a leitura veio
+    expect(antiga).not.toHaveTextContent('resultado-*.txt');
     expect(antiga).toHaveTextContent('—');
   });
 
-  it('"Ver faltas" só aparece nas que têm faixa que não veio e já terminaram; "Abrir" leva ao detalhe', async () => {
+  it('"Ver o que faltou" só aparece nas que têm faixa que não veio e já terminaram; "Abrir" leva ao detalhe', async () => {
     api.reports.listRuns.mockResolvedValue(RUNS);
     montar('/historico');
     const linhas = await screen.findAllByTestId('linha-execucao');
-    const faltas = (l: HTMLElement) => within(l).queryByRole('link', { name: 'Ver faltas' });
+    const faltas = (l: HTMLElement) => within(l).queryByRole('link', { name: 'Ver o que faltou' });
     expect(faltas(linhas[0] as HTMLElement)).toBeNull(); // rodando
     expect(faltas(linhas[1] as HTMLElement)).toHaveAttribute('href', '/historico/20261007-210200/faltas');
     expect(faltas(linhas[2] as HTMLElement)).toBeNull();
@@ -276,18 +278,18 @@ describe('tela Histórico', () => {
     useExecucao.setState({ runId: '20261008-221400' });
     montar('/historico');
     const linhas = await screen.findAllByTestId('linha-execucao');
-    fireEvent.click(within(linhas[0] as HTMLElement).getByRole('link', { name: 'Ver ao vivo' }));
+    fireEvent.click(within(linhas[0] as HTMLElement).getByRole('link', { name: 'Acompanhar' }));
     expect(await screen.findByTestId('local')).toHaveTextContent('/lista/execucao');
   });
 
-  it('filtra "Com faixas que não vieram" e mostra as contagens', async () => {
+  it('filtra "Com faixas que faltaram" e mostra as contagens', async () => {
     api.reports.listRuns.mockResolvedValue(RUNS);
     montar('/historico');
     await screen.findAllByTestId('linha-execucao');
     const todas = document.querySelector('[data-filtro="todas"]') as HTMLElement;
     const faltas = document.querySelector('[data-filtro="faltas"]') as HTMLElement;
-    expect(todas).toHaveTextContent('Todas 5');
-    expect(faltas).toHaveTextContent('Com faixas que não vieram 3'); // a que está rodando já tem 2 que não vieram
+    expect(todas).toHaveTextContent('Todos 5');
+    expect(faltas).toHaveTextContent('Com faixas que faltaram 3'); // a que está rodando já tem 2 que não vieram
     fireEvent.click(faltas);
     expect(screen.getAllByTestId('linha-execucao')).toHaveLength(3);
     expect(faltas).toHaveAttribute('aria-pressed', 'true');
@@ -304,7 +306,7 @@ describe('tela Histórico', () => {
 
   it('sem execuções: estado vazio com o caminho para baixar uma lista', async () => {
     montar('/historico');
-    expect(await screen.findByTestId('historico-vazio')).toHaveTextContent('Nenhuma execução ainda');
+    expect(await screen.findByTestId('historico-vazio')).toHaveTextContent('Nenhum download ainda');
     expect(screen.getByRole('link', { name: 'Baixar uma lista' })).toHaveAttribute('href', '/lista');
   });
 
@@ -347,7 +349,7 @@ describe('tela Histórico', () => {
       montar('/historico');
       await screen.findAllByTestId('linha-execucao');
 
-      fireEvent.click(screen.getByRole('button', { name: 'Apagar execuções antigas…' }));
+      fireEvent.click(screen.getByRole('button', { name: 'Apagar os antigos…' }));
       const dialogo = await screen.findByTestId('dialogo-limpeza');
       await waitFor(() =>
         expect(screen.getByTestId('previa-limpeza')).toHaveTextContent('3 execuções · 14 arquivos · 2,4 MB'),
@@ -372,7 +374,7 @@ describe('tela Histórico', () => {
       api.reports.previewCleanup.mockResolvedValue({ execucoes: 0, arquivos: 0, bytes: 0 });
       montar('/historico');
       await screen.findAllByTestId('linha-execucao');
-      fireEvent.click(screen.getByRole('button', { name: 'Apagar execuções antigas…' }));
+      fireEvent.click(screen.getByRole('button', { name: 'Apagar os antigos…' }));
       await waitFor(() =>
         expect(screen.getByTestId('previa-limpeza')).toHaveTextContent('Nenhuma execução se encaixa'),
       );
@@ -385,7 +387,7 @@ describe('tela Histórico', () => {
       api.reports.cleanup.mockResolvedValue({ execucoes: 1, arquivos: 4, bytes: 90, falhas: 1 });
       montar('/historico');
       await screen.findAllByTestId('linha-execucao');
-      fireEvent.click(screen.getByRole('button', { name: 'Apagar execuções antigas…' }));
+      fireEvent.click(screen.getByRole('button', { name: 'Apagar os antigos…' }));
       await waitFor(() => expect(screen.getByTestId('confirmar-limpeza')).toBeEnabled());
       fireEvent.click(screen.getByTestId('confirmar-limpeza'));
       expect(await screen.findByTestId('aviso-historico')).toHaveTextContent('1 arquivo não pôde ser apagado');

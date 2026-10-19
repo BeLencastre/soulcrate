@@ -1,8 +1,8 @@
 // SetupService (Fase 2): a pós-configuração automática, com a stack no ar. Depois que o assistente grava o .env e o
 // slskd.yml, termina sozinho o que antes se fazia à mão nas interfaces web:
 //   1. liga a stack e espera os três serviços ficarem saudáveis;
-//   2. cria o administrador do Navidrome (SP5: POST /auth/createAdmin);
-//   3. configura o Soulbeet pela API dele: URL do slskd, API key e a pasta /music (SP6);
+//   2. cria o administrador do Navidrome (POST /auth/createAdmin; rotas em docs/apis-da-stack.md);
+//   3. configura o Soulbeet pela API dele: URL do slskd, API key e a pasta /music;
 //   4. confere a porta 2234 deste PC (sem UPnP na v1).
 // Cada tarefa é idempotente: rodar de novo (depois de trocar a chave, por exemplo) não duplica nada.
 // Usuário e senha do Navidrome/Soulbeet são os da Web UI do slskd (passo 4 do assistente), lidos do .env aqui no

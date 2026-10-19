@@ -2,32 +2,38 @@
 .env
 .env.*
 !.env.example
-env-gerado.txt
 slskd/slskd.yml
 # o modelo publicado e slskd/slskd.example.yml
+# certificado de assinatura do instalador (CSC_LINK, docs/distribuicao.md): vai como secret do repositorio, nunca como arquivo
+*.pfx
+*.p12
 
 # ===================== Biblioteca e downloads =========================
 # Ficam fora do repositório (na instalação, MUSIC_DIR / DOWNLOADS_DIR / INCOMPLETE_DIR).
-music/
-downloads/
-incomplete/
+# Com a barra no começo valem só na raiz: uma pasta de código chamada music/ ou downloads/ não some em silêncio.
+/music/
+/downloads/
+/incomplete/
 lista.txt
 *.csv
 
 # ===================== Dados dos servicos =============================
-navidrome/
+/navidrome/
 slskd/*
 !slskd/slskd.example.yml
 soulbeet/data/
 
 # ===================== Relatorios e logs ==============================
-lotes/
+/lotes/
 *.log
 diagnostico*.txt
-diagnostico*.bat
 # fixtures reais do script (o diagnostico-exemplo.txt cai na regra acima)
 !app/tests/fixtures/**
 *.bak
+# o que o app deixa na pasta do Soulcrate: .novo ao lado de arquivo da stack editado (stack-atualizacao-service) e .tmp
+# da gravação atômica das listas (listas-service); quem roda o app apontando para o clone vê isso no git status
+*.novo
+*.tmp
 
 # ===================== Sistema / editores =============================
 .claude/settings.local.json

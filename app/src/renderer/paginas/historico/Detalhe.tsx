@@ -1,15 +1,19 @@
 // Detalhe da execução (protótipo "Detalhe da execução"): o resultado de cada faixa com o arquivo na biblioteca, os
 // relatórios de lotes/, as opções usadas e os atalhos para entender e refazer o que não veio.
+// No Modo DJ: sem o id da execução, sem os relatórios e as opções do script, e "Onde" no lugar do caminho do arquivo.
 import { useMemo, useState } from 'react';
 import { Link, useParams } from 'react-router';
 import {
   filtrarFaixasHistorico,
+  rotuloDaHora,
+  rotuloDoDia,
   rotuloDoMomento,
   type ExecucaoDetalhe,
   type FaixaHistorico,
   type FiltroDetalhe,
 } from '@shared/historico';
 import { msg } from '@shared/mensagens';
+import { msgDj } from '@shared/mensagens-dj';
 import { CartaoErro } from '../../components/CartaoErro';
 import { Carregando, ErroDeLeitura, SemPasta, useSemPasta } from '../../components/estados';
 import { DialogoReprocessar } from '../../components/historico/DialogoReprocessar';
@@ -18,18 +22,20 @@ import { TabelaVirtual } from '../../components/TabelaVirtual';
 import { Botao, Cartao, Chip, classeBotao, Rotulo } from '../../components/ui';
 import { api } from '../../lib/api';
 import { useAgora } from '../../lib/estado';
-import { opcoesComoTexto, rotuloDoFim, useDetalheDaExecucao } from '../../lib/historico';
+import { opcoesComoTexto, rotuloDoFim, semExtensao, useDetalheDaExecucao } from '../../lib/historico';
 import { corDoEstado, erroDoMotivo, formatarDuracao } from '../../lib/lote-painel';
 import { useExecucao } from '../../lib/lote-store';
+import { useModoDj } from '../../lib/modo';
 
 const COLUNAS = 'minmax(215px,1fr) minmax(200px,1.8fr) minmax(230px,2fr) 140px';
 const STATUS_COM_ARQUIVO = new Set(['importada', 'baixada', 'ja na biblioteca', 'ja feita']);
 
-function Cartoes({ d }: { d: ExecucaoDetalhe }) {
+function Cartoes({ d, dj }: { d: ExecucaoDetalhe; dj: boolean }) {
   const t = msg.historico.detalhe.cartoes;
+  const tdj = msgDj.historico.detalhe.cartoes;
   const contagem = (status: string) => d.faixas.filter((f) => f.status === status).length;
-  const itens: { id: string; rotulo: string; valor: number; cor: string }[] = [
-    { id: 'bib', rotulo: t.naBiblioteca, valor: d.filtros.bib, cor: 'var(--color-chip-verde)' },
+  const itens: { id: string; rotulo: string; valor: number; cor: string; dica?: string }[] = [
+    { id: 'bib', rotulo: dj ? tdj.baixadas : t.naBiblioteca, valor: d.filtros.bib, cor: 'var(--color-chip-verde)' },
     {
       id: 'nao-encontradas',
       rotulo: t.naoEncontradas,
@@ -37,10 +43,21 @@ function Cartoes({ d }: { d: ExecucaoDetalhe }) {
       cor: 'var(--color-chip-vermelho)',
     },
     { id: 'falharam', rotulo: t.falharam, valor: contagem('falhou'), cor: 'var(--color-chip-vermelho)' },
-    { id: 'conferir', rotulo: t.paraConferir, valor: d.filtros.conf, cor: 'var(--color-ambar)' },
+    {
+      id: 'conferir',
+      rotulo: t.paraConferir,
+      valor: d.filtros.conf,
+      cor: 'var(--color-ambar)',
+      ...(dj && d.filtros.conf > 0 ? { dica: tdj.paraConferirDica } : {}),
+    },
   ];
   if (d.filtros.inc > 0)
-    itens.push({ id: 'incompletas', rotulo: t.naoTerminadas, valor: d.filtros.inc, cor: 'var(--color-texto-claro)' });
+    itens.push({
+      id: 'incompletas',
+      rotulo: dj ? tdj.naoTerminadas : t.naoTerminadas,
+      valor: d.filtros.inc,
+      cor: 'var(--color-texto-claro)',
+    });
   return (
     <div className="grid grid-cols-[repeat(auto-fit,minmax(150px,1fr))] gap-[10px]">
       {itens.map((i) => (
@@ -49,6 +66,7 @@ function Cartoes({ d }: { d: ExecucaoDetalhe }) {
           <span className="font-mono text-[30px] font-bold" style={{ color: i.cor }} data-valor={i.id}>
             {i.valor}
           </span>
+          {i.dica ? <span className="text-xs leading-[1.4] text-texto-suave">{i.dica}</span> : null}
         </Cartao>
       ))}
     </div>
@@ -67,6 +85,8 @@ function TabelaDasFaixas({
   aoFalhar(texto: string): void;
 }) {
   const t = msg.historico.detalhe;
+  const dj = useModoDj();
+  const tdj = msgDj.historico.detalhe;
   const [filtro, setFiltro] = useState<FiltroDetalhe>('todas');
   const [busca, setBusca] = useState('');
   const visiveis = useMemo(() => filtrarFaixasHistorico(faixas, filtro, busca), [faixas, filtro, busca]);
@@ -85,7 +105,7 @@ function TabelaDasFaixas({
             onClick={() => setFiltro(f)}
             data-filtro={f}
           >
-            {t.filtros[f]} <span className="font-mono text-texto-mudo">{filtros[f]}</span>
+            {(dj ? tdj : t).filtros[f]} <span className="font-mono text-texto-mudo">{filtros[f]}</span>
           </button>
         ))}
         <label className="relative ml-auto min-w-[180px] flex-[0_1_240px]">
@@ -102,7 +122,11 @@ function TabelaDasFaixas({
       <TabelaVirtual
         rotulo={t.tabela}
         colunas={COLUNAS}
-        cabecalho={[c.status, c.faixa, c.arquivo, c.acoes]}
+        cabecalho={
+          dj
+            ? [tdj.colunas.status, tdj.colunas.faixa, tdj.colunas.onde, tdj.colunas.acoes]
+            : [c.status, c.faixa, c.arquivo, c.acoes]
+        }
         linhas={visiveis}
         alturaLinha={56}
         alturaMax={560}
@@ -131,24 +155,41 @@ function TabelaDasFaixas({
               </span>
             ) : null}
           </span>,
-          <span key="a" className="flex min-w-0 flex-col gap-[2px] font-mono text-xs text-texto-suave">
-            {f.arquivo ? (
-              <>
-                <span className="truncate" title={f.arquivo.caminho}>
-                  {f.arquivo.caminho}
+          dj ? (
+            <span key="a" className="flex min-w-0 flex-col gap-[2px] text-[13px] text-texto-claro">
+              {f.arquivo ? (
+                <>
+                  <span>{f.arquivo.onde === 'downloads' ? tdj.onde.downloads : tdj.onde.biblioteca}</span>
+                  {f.arquivo.onde === 'downloads' ? (
+                    <span className="text-[11px] text-texto-mudo">{tdj.onde.faltaOrganizar}</span>
+                  ) : null}
+                </>
+              ) : STATUS_COM_ARQUIVO.has(f.status) ? (
+                tdj.onde.biblioteca
+              ) : (
+                '—'
+              )}
+            </span>
+          ) : (
+            <span key="a" className="flex min-w-0 flex-col gap-[2px] font-mono text-xs text-texto-suave">
+              {f.arquivo ? (
+                <>
+                  <span className="truncate" title={f.arquivo.caminho}>
+                    {f.arquivo.caminho}
+                  </span>
+                  {f.arquivo.onde === 'downloads' ? (
+                    <span className="truncate font-sans text-[11px] text-texto-mudo">{t.emDownloads}</span>
+                  ) : null}
+                </>
+              ) : STATUS_COM_ARQUIVO.has(f.status) ? (
+                <span className="truncate font-sans text-texto-mudo" title={t.arquivoNaoAchadoDica}>
+                  {t.arquivoNaoAchado}
                 </span>
-                {f.arquivo.onde === 'downloads' ? (
-                  <span className="truncate font-sans text-[11px] text-texto-mudo">{t.emDownloads}</span>
-                ) : null}
-              </>
-            ) : STATUS_COM_ARQUIVO.has(f.status) ? (
-              <span className="truncate font-sans text-texto-mudo" title={t.arquivoNaoAchadoDica}>
-                {t.arquivoNaoAchado}
-              </span>
-            ) : (
-              '—'
-            )}
-          </span>,
+              ) : (
+                '—'
+              )}
+            </span>
+          ),
           <span key="x" className="flex items-center justify-end gap-1 pr-4">
             {f.arquivo ? (
               <button
@@ -184,6 +225,8 @@ function TabelaDasFaixas({
 
 function Corpo({ d }: { d: ExecucaoDetalhe }) {
   const t = msg.historico.detalhe;
+  const dj = useModoDj();
+  const tdj = msgDj.historico.detalhe;
   const acompanhada = useExecucao((s) => s.runId);
   const agora = useAgora(d.resumo.fim === 'rodando', 1000);
   const [reprocessando, setReprocessando] = useState(false);
@@ -201,18 +244,22 @@ function Corpo({ d }: { d: ExecucaoDetalhe }) {
         className="inline-flex items-center gap-[6px] self-start text-[13px] font-semibold text-texto-suave no-underline hover:text-texto"
       >
         <IconeVoltarPagina tamanho={14} />
-        {t.voltar}
+        {dj ? tdj.voltar : t.voltar}
       </Link>
 
       <header className="flex flex-wrap items-end justify-between gap-4">
         <div className="flex flex-col gap-2">
-          <Rotulo data-testid="rotulo-execucao">{t.rotulo(r.id, rotuloDoMomento(r.inicio, agora), duracao)}</Rotulo>
+          <Rotulo data-testid="rotulo-execucao">
+            {dj
+              ? tdj.rotulo(`${rotuloDoDia(r.inicio, agora)}, ${rotuloDaHora(r.inicio)}`, duracao)
+              : t.rotulo(r.id, rotuloDoMomento(r.inicio, agora), duracao)}
+          </Rotulo>
           <div className="flex flex-wrap items-center gap-3">
-            <h1 className="m-0 font-mono text-[28px] font-bold" data-testid="nome-da-lista">
-              {r.lista ?? t.listaDesconhecida}
+            <h1 className={`m-0 text-[28px] font-bold ${dj ? '' : 'font-mono'}`} data-testid="nome-da-lista">
+              {r.lista ? (dj ? semExtensao(r.lista) : r.lista) : t.listaDesconhecida}
             </h1>
             <span data-testid="fim-da-execucao" data-fim={r.fim}>
-              <Chip cor={corDoEstado(r.fim)}>{rotuloDoFim(r.fim)}</Chip>
+              <Chip cor={corDoEstado(r.fim)}>{dj ? msgDj.estadoDoDownload[r.fim] : rotuloDoFim(r.fim)}</Chip>
             </span>
           </div>
         </div>
@@ -223,11 +270,11 @@ function Corpo({ d }: { d: ExecucaoDetalhe }) {
             onClick={() => setReprocessando(true)}
             data-testid="reprocessar"
           >
-            {t.reprocessar}
+            {dj ? tdj.reprocessar : t.reprocessar}
           </Botao>
           {d.retentativa && !rodando ? (
             <Link className={classeBotao('primario')} to={`/historico/${r.id}/faltas`} data-testid="tentar-de-novo">
-              {t.tentarDeNovo(nTentar)}
+              {(dj ? tdj : t).tentarDeNovo(nTentar)}
             </Link>
           ) : null}
         </div>
@@ -253,82 +300,84 @@ function Corpo({ d }: { d: ExecucaoDetalhe }) {
           className="flex flex-wrap items-center gap-3 bg-azul-fundo px-4 py-3 text-sm"
           data-testid="aviso-rodando"
         >
-          <span className="min-w-0 flex-1">{msg.historico.avisoEmAndamento}</span>
+          <span className="min-w-0 flex-1">{(dj ? msgDj.historico : msg.historico).avisoEmAndamento}</span>
           {acompanhada === r.id ? (
             <Link className={classeBotao('padrao', true)} to="/lista/execucao">
-              {msg.historico.verAoVivo}
+              {(dj ? msgDj.historico : msg.historico).verAoVivo}
             </Link>
           ) : null}
         </Cartao>
       ) : null}
       {erro ? <CartaoErro erro={erro} /> : null}
 
-      <Cartoes d={d} />
+      <Cartoes d={d} dj={dj} />
 
       <div className="flex flex-wrap items-start gap-5">
         <Cartao como="section" className="min-w-0 flex-[999_1_640px] overflow-hidden">
           {d.faixas.length === 0 ? (
             <p className="m-0 px-4 py-8 text-center text-sm text-texto-suave" data-testid="sem-faixas">
-              {t.semFaixas}
+              {dj ? tdj.semFaixas : t.semFaixas}
             </p>
           ) : (
             <TabelaDasFaixas runId={r.id} faixas={d.faixas} filtros={d.filtros} aoFalhar={setAviso} />
           )}
         </Cartao>
 
-        <aside className="flex flex-[1_1_280px] flex-col gap-4">
-          <Cartao como="section" className="flex flex-col gap-1 px-2 py-[14px]" data-testid="relatorios">
-            <Rotulo className="px-3 pb-2">{t.relatorios}</Rotulo>
-            {d.arquivos.length === 0 ? (
-              <p className="m-0 px-3 text-[13px] text-texto-suave">{t.relatoriosVazio}</p>
-            ) : (
-              d.arquivos.map((a) => {
-                const desc = msg.historico.arquivos[a.tipo];
-                return (
-                  <button
-                    key={a.tipo}
-                    type="button"
-                    className="flex w-full cursor-pointer items-center gap-[10px] rounded-md border-0 bg-transparent px-3 py-[10px] text-left text-texto hover:bg-campo hover:text-white"
-                    aria-label={t.abrirArquivo(a.nome)}
-                    data-arquivo={a.tipo}
-                    onClick={() =>
-                      void api.reports
-                        .openFile(r.id, a.tipo)
-                        .then((ok) => (ok ? undefined : setAviso(t.naoAbriu)))
-                        .catch(() => setAviso(t.naoAbriu))
-                    }
-                  >
-                    <span className="text-texto-mudo">
-                      <IconeArquivo />
-                    </span>
-                    <span className="flex min-w-0 flex-col gap-[2px]">
-                      <span className="truncate font-mono text-[12.5px]">{a.nome}</span>
-                      <span className="text-xs text-texto-mudo">
-                        {typeof desc === 'function' ? desc(a.tipo === 'nao-baixadas' ? nTentar || null : null) : desc}
+        {dj ? null : (
+          <aside className="flex flex-[1_1_280px] flex-col gap-4">
+            <Cartao como="section" className="flex flex-col gap-1 px-2 py-[14px]" data-testid="relatorios">
+              <Rotulo className="px-3 pb-2">{t.relatorios}</Rotulo>
+              {d.arquivos.length === 0 ? (
+                <p className="m-0 px-3 text-[13px] text-texto-suave">{t.relatoriosVazio}</p>
+              ) : (
+                d.arquivos.map((a) => {
+                  const desc = msg.historico.arquivos[a.tipo];
+                  return (
+                    <button
+                      key={a.tipo}
+                      type="button"
+                      className="flex w-full cursor-pointer items-center gap-[10px] rounded-md border-0 bg-transparent px-3 py-[10px] text-left text-texto hover:bg-campo hover:text-white"
+                      aria-label={t.abrirArquivo(a.nome)}
+                      data-arquivo={a.tipo}
+                      onClick={() =>
+                        void api.reports
+                          .openFile(r.id, a.tipo)
+                          .then((ok) => (ok ? undefined : setAviso(t.naoAbriu)))
+                          .catch(() => setAviso(t.naoAbriu))
+                      }
+                    >
+                      <span className="text-texto-mudo">
+                        <IconeArquivo />
                       </span>
-                    </span>
-                  </button>
-                );
-              })
-            )}
-          </Cartao>
-          <Cartao como="section" className="flex flex-col gap-[10px] p-4">
-            <Rotulo>{t.opcoesUsadas}</Rotulo>
-            {d.opcoes === null ? (
-              <span className="text-[13px] text-texto-suave" data-testid="opcoes-usadas">
-                {t.opcoesNaoRegistradas}
-              </span>
-            ) : opcoesComoTexto(d.opcoes) ? (
-              <code className="font-mono text-xs leading-[1.6] text-texto-codigo" data-testid="opcoes-usadas">
-                {opcoesComoTexto(d.opcoes)}
-              </code>
-            ) : (
-              <span className="text-[13px] text-texto-suave" data-testid="opcoes-usadas">
-                {t.opcoesPadrao}
-              </span>
-            )}
-          </Cartao>
-        </aside>
+                      <span className="flex min-w-0 flex-col gap-[2px]">
+                        <span className="truncate font-mono text-[12.5px]">{a.nome}</span>
+                        <span className="text-xs text-texto-mudo">
+                          {typeof desc === 'function' ? desc(a.tipo === 'nao-baixadas' ? nTentar || null : null) : desc}
+                        </span>
+                      </span>
+                    </button>
+                  );
+                })
+              )}
+            </Cartao>
+            <Cartao como="section" className="flex flex-col gap-[10px] p-4">
+              <Rotulo>{t.opcoesUsadas}</Rotulo>
+              {d.opcoes === null ? (
+                <span className="text-[13px] text-texto-suave" data-testid="opcoes-usadas">
+                  {t.opcoesNaoRegistradas}
+                </span>
+              ) : opcoesComoTexto(d.opcoes) ? (
+                <code className="font-mono text-xs leading-[1.6] text-texto-codigo" data-testid="opcoes-usadas">
+                  {opcoesComoTexto(d.opcoes)}
+                </code>
+              ) : (
+                <span className="text-[13px] text-texto-suave" data-testid="opcoes-usadas">
+                  {t.opcoesPadrao}
+                </span>
+              )}
+            </Cartao>
+          </aside>
+        )}
       </div>
 
       <DialogoReprocessar
@@ -343,19 +392,20 @@ function Corpo({ d }: { d: ExecucaoDetalhe }) {
 
 export function DetalheDaExecucao() {
   const { runId } = useParams();
+  const dj = useModoDj();
   const semPasta = useSemPasta();
   const q = useDetalheDaExecucao(runId);
 
   if (semPasta) return <SemPasta />;
   if (q.isError) return <ErroDeLeitura causa={q.error} aoTentarDeNovo={() => void q.refetch()} />;
-  if (q.isPending || !runId) return <Carregando rotulo={msg.historico.carregando} />;
+  if (q.isPending || !runId) return <Carregando rotulo={dj ? msgDj.historico.carregando : msg.historico.carregando} />;
   if (q.data === null) {
     const t = msg.historico.detalhe.naoExiste;
     return (
       <div className="flex flex-col gap-5">
         <Link to="/historico" className="inline-flex items-center gap-[6px] self-start text-[13px] font-semibold">
           <IconeVoltarPagina tamanho={14} />
-          {msg.historico.detalhe.voltar}
+          {dj ? msgDj.historico.detalhe.voltar : msg.historico.detalhe.voltar}
         </Link>
         <Cartao
           borda="vazio"

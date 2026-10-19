@@ -1,6 +1,6 @@
 // Fase 4, ponta a ponta: o histórico e o diagnóstico no app de verdade (Electron), com o baixar-lista.ps1 de verdade e o
 // PowerShell de verdade, contra um slskd falso (o mesmo da suíte Pester) e o dublê do docker. Nada aqui toca em Docker,
-// na rede, na Lixeira ou nos dados do usuário. Critérios de aceite (§5, Fase 4):
+// na rede, na Lixeira ou nos dados do usuário. Critérios de aceite (Fase 4):
 //   - para cada motivo da tabela do README, o app mostra a ação correspondente (conferido por tabela em
 //     tests/shared/motivos.test.ts; aqui, o motivo real de um lote real);
 //   - corrigir um título pela sugestão e tentar de novo baixa a faixa sem editar arquivo à mão.
@@ -106,12 +106,12 @@ test('corrigir o título pela sugestão e tentar de novo baixa a faixa, sem edit
 
   // sem nenhuma execução, o histórico é um convite para baixar uma lista
   await menu(janela, 'Histórico').click();
-  await expect(janela.getByTestId('historico-vazio')).toContainText('Nenhuma execução ainda');
+  await expect(janela.getByTestId('historico-vazio')).toContainText('Nenhum download ainda');
   await capturar(janela, 'f4-01-historico-vazio');
 
   // 1. o lote de verdade: uma faixa vem, a outra não (o título da lista está errado)
   await abrirListaDosRecentes(janela, 'set.txt');
-  await expect(janela.getByRole('region', { name: 'Pré-visualização' })).toContainText('2 para baixar', {
+  await expect(janela.getByRole('region', { name: 'Pré-visualização' })).toContainText('2 faixas', {
     timeout: 60_000,
   });
   await opcoesDeTeste(janela);
@@ -195,7 +195,7 @@ test('corrigir o título pela sugestão e tentar de novo baixa a faixa, sem edit
   await expect(janela.getByTestId('linha-execucao')).toHaveCount(2);
   const nova = linhaDe(janela, nomeDaRetentativa);
   await expect(nova).toContainText('1 na biblioteca · 0 não vieram · 0 puladas');
-  await expect(nova.getByRole('link', { name: 'Ver faltas' })).toHaveCount(0);
+  await expect(nova.getByRole('link', { name: 'Ver o que faltou' })).toHaveCount(0);
   await janela.locator('[data-filtro="faltas"]').click();
   await expect(janela.getByTestId('linha-execucao')).toHaveCount(1);
   await capturar(janela, 'f4-07-historico-duas');
@@ -241,14 +241,14 @@ test('as execuções do .bat aparecem (lidas do resultado-*.txt), e apagar as an
   await menu(janela, 'Histórico').click();
   await expect(janela.getByTestId('linha-execucao')).toHaveCount(3);
   const doBat = janela.getByTestId('linha-execucao').first(); // a mais recente: a que acabou de rodar
-  await expect(doBat).toContainText('antiga · lida do resultado-*.txt');
+  await expect(doBat).toContainText(/\d+ faixas?/);
   await expect(doBat).toContainText('Concluído');
   await expect(doBat).toContainText('1 na biblioteca · 1 não veio · 0 puladas');
   await expect(doBat).toContainText('lista não registrada');
   await capturar(janela, 'f4-09-historico-bat');
 
   // o detalhe e o diagnóstico vêm do resultado e do diagnostico-*.txt
-  await doBat.getByRole('link', { name: 'Ver faltas' }).click();
+  await doBat.getByRole('link', { name: 'Ver o que faltou' }).click();
   await expect(janela.getByRole('heading', { level: 1 })).toHaveText('1 faixa não veio');
   await expect(janela.getByTestId('titulo-da-faixa')).toContainText('Fulano – Inexistente');
   await expect(janela.getByTestId('motivos')).toContainText('0 respostas');
@@ -261,7 +261,7 @@ test('as execuções do .bat aparecem (lidas do resultado-*.txt), e apagar as an
 
   // apagar as antigas: a prévia diz o que vai sair e nada sai antes de confirmar
   await menu(janela, 'Histórico').click();
-  await janela.getByRole('button', { name: 'Apagar execuções antigas…' }).click();
+  await janela.getByRole('button', { name: 'Apagar os antigos…' }).click();
   await janela.getByLabel('Mais antigas que 30 dias').check();
   await expect(janela.getByTestId('previa-limpeza')).toHaveText(/^2 execuções · 4 arquivos · \d+ B$/);
   await capturar(janela, 'f4-10-apagar-antigas');

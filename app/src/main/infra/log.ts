@@ -1,4 +1,4 @@
-// Log do app (§3.1): electron-log, arquivo rotativo em %APPDATA%\Soulcrate\logs. Tudo passa pelo filtro de segredos (§6.1).
+// Log do app: electron-log, arquivo rotativo em %APPDATA%\Soulcrate\logs. Tudo passa pelo filtro de segredos.
 import { dirname } from 'node:path';
 import log from 'electron-log/main';
 import { redigirSegredos } from './seguranca';

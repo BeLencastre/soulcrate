@@ -1,4 +1,4 @@
-// Os arquivos da stack: o que o assistente copia para a pasta do Soulcrate de um usuário novo (§3.3).
+// Os arquivos da stack: o que o assistente copia para a pasta do Soulcrate de um usuário novo.
 // Fica sem imports de propósito: o script `scripts/preparar-stack.mjs` (build do instalador) lê este mesmo arquivo.
 // Nunca entra aqui nada do usuário (.env, slskd.yml, listas, lotes/, music/, navidrome/, soulbeet/data/, slskd/data/).
 
@@ -10,7 +10,7 @@ export const ARQUIVOS_DA_STACK: readonly string[] = [
   'README.md',
   'CHANGELOG.md',
   'lista.exemplo.txt',
-  // scripts (os .bat continuam funcionando na pasta, §2.3)
+  // scripts (os .bat continuam funcionando na pasta)
   'subir.bat',
   'parar.bat',
   'status.bat',
@@ -30,7 +30,7 @@ export const ARQUIVOS_DA_STACK: readonly string[] = [
 /** Pastas vazias que o compose espera encontrar (o Docker cria só as de sintaxe curta, mas ficam à vista). */
 export const PASTAS_DA_STACK: readonly string[] = ['slskd', 'navidrome', 'soulbeet/data'];
 
-/** Onde o app guarda o hash dos arquivos que instalou (para a atualização da §3.3, Fase 7). */
+/** Onde o app guarda o hash dos arquivos que instalou (para a atualização da Fase 7). */
 export const ARQUIVO_MANIFESTO = '.soulcrate/manifesto.json';
 
 /** O resultado da última atualização, enquanto o aviso não foi dispensado (mesma pasta `.soulcrate/`). */

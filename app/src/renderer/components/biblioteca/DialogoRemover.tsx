@@ -1,4 +1,4 @@
-// "Remover da biblioteca e do disco" (protótipo "Remover faixa (confirmação)", §5 da Fase 5): o filtro do beets, a lista
+// "Remover da biblioteca e do disco" (protótipo "Remover faixa (confirmação)", Fase 5): o filtro do beets, a lista
 // do que ele pega (o mesmo `ls` que antecede o `remove -d`), o aviso de que não há Lixeira e a confirmação explícita.
 // Nada é apagado sem a pré-visualização: o botão só liga com o token da prévia deste filtro e com o "conferi".
 import { useEffect, useRef, useState } from 'react';

@@ -1,4 +1,4 @@
-// Atualização dos arquivos da stack que o app instalou na pasta do Soulcrate (§3.3, Fase 7) e a migração de uma
+// Atualização dos arquivos da stack que o app instalou na pasta do Soulcrate (Fase 7) e a migração de uma
 // pasta que já existia (clone do Git). Só tipos e as regras puras; o main lê e grava o disco.
 
 /** O que fazer com um arquivo da stack, comparando o da pasta, o que o app instalou e o que o app traz agora. */
@@ -30,7 +30,7 @@ export interface HashesDoArquivo {
 }
 
 /**
- * A regra da §3.3: "se o hash atual bate com o instalado, substitui; se não bate (o usuário editou), mantém o arquivo,
+ * A regra: "se o hash atual bate com o instalado, substitui; se não bate (o usuário editou), mantém o arquivo,
  * grava o novo como `.novo` e avisa". Um arquivo que o manifesto não conhece (o usuário já tinha uma versão diferente
  * quando o app instalou) conta como editado: o app nunca sobrescreve o que não sabe de onde veio.
  */

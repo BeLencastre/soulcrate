@@ -13,7 +13,7 @@ import { acoesDisponiveis } from '@shared/stack';
 import { CartaoErro } from './CartaoErro';
 import { Botao, Cartao, Rotulo } from './ui';
 
-/** "A versão 1.2.0 está pronta": reiniciar aplica; com um lote rodando o botão espera (a §5 manda nunca atualizar no meio). */
+/** "A versão 1.2.0 está pronta": reiniciar aplica; com um lote rodando o botão espera (nunca se atualiza no meio de um lote). */
 export function AvisoDeAtualizacaoDoApp() {
   const estado = useEstadoAtualizacao();
   const loteRodando = useExecucao(execucaoRodando);

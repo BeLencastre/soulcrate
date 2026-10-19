@@ -1,7 +1,7 @@
-// AppSettings (§3.2): preferências do app (não da stack), em um JSON na pasta userData.
+// AppSettings: preferências do app (não da stack), em um JSON na pasta userData.
 import { mkdirSync, readFileSync, renameSync, writeFileSync } from 'node:fs';
 import { dirname } from 'node:path';
-import type { AppSettings, OndeAbrirWebUi, TemaPreferido } from '@shared/ipc';
+import type { AppSettings, ModoInterface, OndeAbrirWebUi, TemaPreferido } from '@shared/ipc';
 
 export const SETTINGS_PADRAO: AppSettings = {
   minimizarParaBandeja: true,
@@ -12,10 +12,13 @@ export const SETTINGS_PADRAO: AppSettings = {
   abrirWebUi: 'app',
   avisarFimDoLote: true,
   avisarBuscasPausadas: true,
+  // sem escolha registrada o app age como Modo Dev: quem já usava continua igual; o assistente pergunta aos novos
+  modo: null,
 };
 
 const TEMAS: readonly TemaPreferido[] = ['escuro', 'claro', 'sistema'];
 const ONDE_ABRIR: readonly OndeAbrirWebUi[] = ['app', 'navegador'];
+const MODOS: readonly ModoInterface[] = ['dj', 'dev'];
 
 function booleano(valor: unknown, padrao: boolean): boolean {
   return typeof valor === 'boolean' ? valor : padrao;
@@ -38,6 +41,7 @@ export function normalizarSettings(bruto: unknown): AppSettings {
     abrirWebUi: umDe(o.abrirWebUi, ONDE_ABRIR, p.abrirWebUi),
     avisarFimDoLote: booleano(o.avisarFimDoLote, p.avisarFimDoLote),
     avisarBuscasPausadas: booleano(o.avisarBuscasPausadas, p.avisarBuscasPausadas),
+    modo: MODOS.find((m) => m === o.modo) ?? p.modo,
   };
 }
 

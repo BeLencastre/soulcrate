@@ -1,6 +1,6 @@
 // Fase 2, ponta a ponta: o assistente de configuração e a tela Configurações no app de verdade (Electron), contra o
-// dublê do docker e um Navidrome e um Soulbeet falsos (as rotas dos spikes SP5 e SP6). Nada toca na stack real.
-// Critérios de aceite (§5, Fase 2): da instalação à stack no ar sem abrir arquivo; um .env com valores de exemplo mostra
+// dublê do docker e um Navidrome e um Soulbeet falsos (as rotas de docs/apis-da-stack.md). Nada toca na stack real.
+// Critérios de aceite (Fase 2): da instalação à stack no ar sem abrir arquivo; um .env com valores de exemplo mostra
 // exatamente o que falta; os arquivos gerados passam na conferência do subir.bat (essa parte está em
 // tests/main/config-powershell.test.ts).
 import { existsSync, readFileSync } from 'node:fs';
@@ -150,8 +150,11 @@ test('instalação limpa até a stack no ar, sem abrir nenhum arquivo', async ()
   expect(soulbeet.pastas.map((p) => p.path)).toEqual(['/music']);
   expect(amb.chamadas().some((c) => c.includes('up -d --build'))).toBe(true);
 
+  // instalação nova: a tela final pergunta o modo, com o Modo DJ marcado
+  await expect(janela.getByRole('radio', { name: /Sou DJ/ })).toBeChecked();
   await janela.getByRole('button', { name: 'Ir para o Início' }).click();
-  await expect(janela.getByTestId('resumo-stack')).toHaveText('No ar · 3/3 saudáveis', { timeout: 30_000 });
+  await expect(janela.getByTestId('resumo-stack')).toHaveText('Ligado', { timeout: 30_000 });
+  await expect(janela.getByRole('heading', { level: 1 })).toHaveText('Tudo pronto');
 });
 
 test('um .env com valores de exemplo mostra exatamente o que falta', async () => {

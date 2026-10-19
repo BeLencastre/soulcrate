@@ -45,7 +45,11 @@ async function foto(janela: Page, nome: string): Promise<void> {
   await janela.mouse.move(0, 0);
   await janela.waitForTimeout(900);
   await janela.evaluate(() => {
-    const troca = (s: string) => s.replace(/[A-Za-z]:\\[^\s"']*?sc-e2e-[A-Za-z0-9]+\\projeto/g, 'C:\\DJ\\Soulcrate');
+    const troca = (s: string) =>
+      s
+        .replace(/[A-Za-z]:\\[^\s"']*?sc-e2e-[A-Za-z0-9]+\\projeto/g, 'C:\\DJ\\Soulcrate')
+        // o botão "Abrir … no Explorer" mostra só as duas últimas partes da pasta
+        .replace(/\bprojeto\/music\b/g, 'Soulcrate/music');
     const andador = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
     for (let n = andador.nextNode(); n; n = andador.nextNode()) n.nodeValue = troca(n.nodeValue ?? '');
     for (const el of document.querySelectorAll<HTMLInputElement | HTMLTextAreaElement>('input, textarea')) {
@@ -167,7 +171,7 @@ test('capturas: lista, opções, execução, histórico e diagnóstico', async (
 
   // 1. a lista, com a pré-visualização feita pelo próprio script
   await abrirListaDosRecentes(janela, 'set-sexta.txt');
-  await expect(janela.getByRole('region', { name: 'Pré-visualização' })).toContainText('11 para baixar', {
+  await expect(janela.getByRole('region', { name: 'Pré-visualização' })).toContainText('11 faixas', {
     timeout: 60_000,
   });
   await foto(janela, '03-lista');
@@ -207,6 +211,12 @@ test('capturas: lista, opções, execução, histórico e diagnóstico', async (
   await menu(janela, 'Histórico').click();
   await expect(janela.getByTestId('linha-execucao')).toHaveCount(2);
   await foto(janela, '06-historico');
+
+  // 6. o Início no Modo DJ, com o último download (o Histórico é o mesmo nos dois modos)
+  await janela.getByRole('group', { name: 'Modo da interface' }).getByRole('button', { name: /DJ/ }).click();
+  await menu(janela, 'Início').click();
+  await expect(janela.getByTestId('ultimo-download')).toBeVisible();
+  await foto(janela, '10-modo-dj-inicio');
 });
 
 // ---------------------------------------------------------------- Biblioteca

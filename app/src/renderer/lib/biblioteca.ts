@@ -39,6 +39,18 @@ export function useCompartilhamento(slskdNoAr: boolean) {
   });
 }
 
+/**
+ * O nome da pasta como aparece no botão: as duas últimas partes do caminho (`C:\DJ\Musics` → `DJ/Musics`), que bastam
+ * para reconhecer a pasta sem ocupar a linha toda; com uma parte só (`D:\Musics`), só ela.
+ */
+export function nomeCurtoDaPasta(caminho: string): string {
+  const partes = caminho
+    .split(/[\\/]+/)
+    .filter(Boolean)
+    .filter((p) => !/^[A-Za-z]:$/.test(p));
+  return partes.slice(-2).join('/') || caminho;
+}
+
 /** "ontem, 21:02": desde quando há coisa parada em `downloads/` (a mais antiga). */
 export function desdeQuandoParado(parados: readonly ParadoEmDownloads[], agora: number): string | null {
   if (parados.length === 0) return null;
