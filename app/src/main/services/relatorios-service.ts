@@ -1,4 +1,4 @@
-// RelatoriosService (ReportService, §3.2): lê e interpreta `lotes/` (Fase 4). O histórico lista as execuções que estão
+// RelatoriosService (ReportService): lê e interpreta `lotes/` (Fase 4). O histórico lista as execuções que estão
 // lá, as do app (arquivo de eventos, P3) e as do `.bat` (só o `resultado-*.txt`); o detalhe e o diagnóstico vêm da mesma
 // leitura. Também cuida do que muda arquivo: corrigir uma linha pela sugestão, gerar a lista do "tentar de novo",
 // apagar execuções antigas (para a Lixeira) e reprocessar uma lista do zero. O renderer só fala em id de execução e

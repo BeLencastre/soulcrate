@@ -1,6 +1,8 @@
 // Diagnóstico das faixas que não vieram (protótipo "Faixas que não vieram"): para cada uma, o que foi encontrado, por
 // que foi recusado e o que fazer. "Talvez seja" corrige a linha; "Revisar e tentar de novo" gera a lista das que
 // faltaram (com as correções) e abre as opções do lote já com o que os motivos pedem.
+// No Modo DJ ("O que faltou"): sem as buscas, o MusicBrainz e o catálogo com contagem de usuários; o motivo vira uma
+// explicação com o que fazer, e os arquivos recusados viram "Parecidos que encontramos".
 import { useState } from 'react';
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router';
 import { useQueryClient } from '@tanstack/react-query';
@@ -8,14 +10,22 @@ import type { DiagnosticoFaixa, ExecucaoDetalhe, MotivoListaNaoAtualizada } from
 import { rotuloDoMomento } from '@shared/historico';
 import type { MotivoTraduzido } from '@shared/motivos';
 import { msg } from '@shared/mensagens';
+import { msgDj } from '@shared/mensagens-dj';
 import { Carregando, ErroDeLeitura, SemPasta, useSemPasta } from '../../components/estados';
 import { IconeVoltarPagina } from '../../components/icones';
 import { Botao, Cartao, Chip, classeBotao, Rotulo } from '../../components/ui';
 import { seguro } from '../../lib/acoes';
 import { api } from '../../lib/api';
 import { useAgora } from '../../lib/estado';
-import { CHAVE_HISTORICO, opcoesComoTexto, useDetalheDaExecucao, useLinhasNaLista } from '../../lib/historico';
+import {
+  arquivoParecido,
+  CHAVE_HISTORICO,
+  opcoesComoTexto,
+  useDetalheDaExecucao,
+  useLinhasNaLista,
+} from '../../lib/historico';
 import { semPrefixoIpc, estaSujo, useRascunho } from '../../lib/lote-store';
+import { useModoDj } from '../../lib/modo';
 
 const CATALOGO_VISIVEL = 12;
 
@@ -154,6 +164,100 @@ function CartaoDoCatalogo({
   );
 }
 
+/** Modo DJ: por que não veio e o que fazer, em texto corrido, com os dois botões que resolvem. */
+function PorQueNaoVeio({ d, lista, aoReceita }: { d: DiagnosticoFaixa; lista: string | null; aoReceita(): void }) {
+  const t = msgDj.historico.diagnostico;
+  const navegar = useNavigate();
+  const lentos = d.motivos.some((m) => m.botao === 'receita-usuarios-lentos');
+  async function editarLinha() {
+    if (lista && (await useRascunho.getState().abrir(lista))) navegar('/lista');
+  }
+  return (
+    <Cartao className="flex flex-col gap-3 !rounded-[10px] p-[22px]" data-testid="motivos">
+      <Rotulo>{t.porQueNaoVeio}</Rotulo>
+      {d.motivos.length > 0 ? (
+        <ul className="m-0 flex list-none flex-col gap-2 p-0">
+          {d.motivos.map((m) => (
+            <li key={m.bruto} className="text-[14.5px] leading-normal text-texto-medio" data-motivo={m.tipo}>
+              <strong className="text-texto">{m.rotulo}.</strong> {m.acao}
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <p className="m-0 text-[14.5px] leading-normal text-texto-medio">{d.nota || t.semMotivos}</p>
+      )}
+      <Rotulo className="pt-2">{t.oQueFazer}</Rotulo>
+      <p className="m-0 text-[14.5px] leading-normal text-texto-medio">
+        {d.sugestoes.length > 0 ? t.oQueFazerComSugestao : t.oQueFazerSemSugestao}
+      </p>
+      <div className="flex flex-wrap gap-2">
+        <Botao onClick={() => seguro(api.stack.openService('soulbeet', 'preferencia'))}>{t.buscarManualmente}</Botao>
+        {lista ? (
+          <Botao variante="fantasma" onClick={() => void editarLinha()}>
+            {t.editarLinha}
+          </Botao>
+        ) : null}
+        {lentos ? (
+          <Botao variante="fantasma" onClick={aoReceita}>
+            {t.esperarMais}
+          </Botao>
+        ) : null}
+      </div>
+    </Cartao>
+  );
+}
+
+/** Modo DJ: os arquivos recusados, pelo nome, com o formato e o motivo; ou o que deu errado no download. */
+function Parecidos({ d }: { d: DiagnosticoFaixa }) {
+  const t = msgDj.historico.diagnostico;
+  if (d.status === 'falhou') {
+    return (
+      <Cartao className="flex flex-col gap-2 !rounded-[10px] p-[22px]" data-testid="arquivos-parecidos">
+        <Rotulo>{t.deuErrado}</Rotulo>
+        {d.tentativas.length === 0 ? (
+          <p className="m-0 text-[13.5px] text-texto-suave">{t.semTentativas}</p>
+        ) : (
+          <ul className="m-0 flex list-none flex-col gap-2 p-0">
+            {d.tentativas.map((r, i) => (
+              <li key={i} className="text-[13.5px] text-chip-laranja">
+                {r}
+              </li>
+            ))}
+          </ul>
+        )}
+      </Cartao>
+    );
+  }
+  return (
+    <Cartao className="flex flex-col gap-2 !rounded-[10px] p-[22px]" data-testid="arquivos-parecidos">
+      <Rotulo>{t.parecidos}</Rotulo>
+      {d.arquivos.length === 0 ? (
+        <p className="m-0 text-[13.5px] text-texto-suave">{t.semParecidos}</p>
+      ) : (
+        <ul className="m-0 flex list-none flex-col p-0">
+          {d.arquivos.map((a, i) => {
+            const { nome, formato } = arquivoParecido(a.arquivo);
+            return (
+              <li
+                key={i}
+                className="flex flex-wrap items-center justify-between gap-3 border-t border-linha py-[10px] first:border-t-0"
+              >
+                <span className="min-w-0 flex-1 truncate text-[14px]" title={a.arquivo}>
+                  {nome}
+                </span>
+                <span className="flex flex-wrap gap-2">
+                  {formato ? <Chip cor="neutro">{formato}</Chip> : null}
+                  <Chip cor="laranja">{a.motivo}</Chip>
+                </span>
+              </li>
+            );
+          })}
+        </ul>
+      )}
+    </Cartao>
+  );
+}
+
 function PainelDaFaixa({
   d,
   d0,
@@ -176,6 +280,7 @@ function PainelDaFaixa({
   aoReceita(): void;
 }) {
   const t = msg.historico.diagnostico;
+  const dj = useModoDj();
   const titulo = d.correcao?.titulo ?? d.titulo;
   const lista = d0.resumo.lista;
   const buscas = d.buscas.map((b) => (b.tipo === 'artist' ? t.buscaArtista(b.consulta) : b.consulta)).join(' | ');
@@ -189,17 +294,19 @@ function PainelDaFaixa({
       <Cartao className="flex flex-col gap-3 !rounded-[10px] p-[22px]">
         <div className="flex flex-wrap items-center gap-[10px]">
           <Chip cor={d.corStatus}>{d.rotuloStatus}</Chip>
-          {d.musicbrainz ? <Chip cor={d.musicbrainz.cor}>{t.musicbrainz(d.musicbrainz.rotulo)}</Chip> : null}
+          {d.musicbrainz && !dj ? <Chip cor={d.musicbrainz.cor}>{t.musicbrainz(d.musicbrainz.rotulo)}</Chip> : null}
           {linhaNaLista !== null && lista ? (
             <span className="ml-auto font-mono text-xs text-texto-mudo" data-testid="linha-na-lista">
-              {t.linha(linhaNaLista, lista)}
+              {dj ? msgDj.historico.diagnostico.linha(linhaNaLista) : t.linha(linhaNaLista, lista)}
             </span>
           ) : null}
         </div>
         <h2 className="m-0 text-[26px] font-extrabold" data-testid="titulo-da-faixa">
           {d.artista} <span className="font-normal text-texto-apagado">–</span> {titulo}
         </h2>
-        <span className="font-mono text-[12.5px] text-texto-suave">{buscas ? t.buscas(buscas) : t.semBuscas}</span>
+        {dj ? null : (
+          <span className="font-mono text-[12.5px] text-texto-suave">{buscas ? t.buscas(buscas) : t.semBuscas}</span>
+        )}
       </Cartao>
 
       {d.sugestoes.length > 0 || d.correcao ? (
@@ -265,56 +372,67 @@ function PainelDaFaixa({
         </div>
       ) : null}
 
-      <Cartao className="flex flex-col !rounded-[10px] py-2" data-testid="motivos">
-        <Rotulo className="px-[22px] pt-3 pb-[6px]">{t.porQueRecusada}</Rotulo>
-        {comMotivos ? (
-          d.motivos.map((m) => <LinhaDeMotivo key={m.bruto} m={m} aoReceita={aoReceita} />)
-        ) : (
-          <div className="border-t border-linha px-[22px] py-[14px]">
-            <div className="font-bold">{t.semMotivos.rotulo}</div>
-            <p className="m-0 mt-1 text-sm text-texto-medio">{d.nota || t.semMotivos.acao}</p>
-          </div>
-        )}
-      </Cartao>
-
-      <div className="grid grid-cols-[repeat(auto-fit,minmax(min(320px,100%),1fr))] items-start gap-4">
-        <Cartao className="flex flex-col !rounded-[10px] py-2" data-testid="arquivos-parecidos">
-          <Rotulo className="px-[18px] pt-3 pb-[6px]">
-            {d.status === 'falhou' ? t.tentativasFalhas : t.maisParecidos}
-          </Rotulo>
-          {d.status === 'falhou' ? (
-            d.tentativas.length === 0 ? (
-              <p className="m-0 border-t border-linha px-[18px] py-[10px] text-[13px] text-texto-suave">
-                {t.semTentativas}
-              </p>
+      {dj ? (
+        <>
+          <PorQueNaoVeio d={d} lista={d0.listaExiste ? lista : null} aoReceita={aoReceita} />
+          <Parecidos d={d} />
+        </>
+      ) : (
+        <>
+          <Cartao className="flex flex-col !rounded-[10px] py-2" data-testid="motivos">
+            <Rotulo className="px-[22px] pt-3 pb-[6px]">{t.porQueRecusada}</Rotulo>
+            {comMotivos ? (
+              d.motivos.map((m) => <LinhaDeMotivo key={m.bruto} m={m} aoReceita={aoReceita} />)
             ) : (
-              d.tentativas.map((r, i) => (
-                <div key={i} className="border-t border-linha px-[18px] py-[10px]">
-                  <span className="font-mono text-xs break-all text-chip-laranja">{r}</span>
-                </div>
-              ))
-            )
-          ) : d.arquivos.length === 0 ? (
-            <p className="m-0 border-t border-linha px-[18px] py-[10px] text-[13px] text-texto-suave">
-              {t.semArquivos}
-            </p>
-          ) : (
-            d.arquivos.map((a, i) => (
-              <div key={i} className="flex flex-col gap-1 border-t border-linha px-[18px] py-[10px]">
-                <span className="text-[12.5px] font-bold text-chip-laranja">{a.motivo}</span>
-                <span className="font-mono text-xs break-all text-texto-claro">{a.arquivo}</span>
+              <div className="border-t border-linha px-[22px] py-[14px]">
+                <div className="font-bold">{t.semMotivos.rotulo}</div>
+                <p className="m-0 mt-1 text-sm text-texto-medio">{d.nota || t.semMotivos.acao}</p>
               </div>
-            ))
-          )}
-        </Cartao>
-        <CartaoDoCatalogo d={d} aoUsar={aoEscolherTitulo} ocupado={ocupado} />
-      </div>
+            )}
+          </Cartao>
+
+          <div className="grid grid-cols-[repeat(auto-fit,minmax(min(320px,100%),1fr))] items-start gap-4">
+            <Cartao className="flex flex-col !rounded-[10px] py-2" data-testid="arquivos-parecidos">
+              <Rotulo className="px-[18px] pt-3 pb-[6px]">
+                {d.status === 'falhou' ? t.tentativasFalhas : t.maisParecidos}
+              </Rotulo>
+              {d.status === 'falhou' ? (
+                d.tentativas.length === 0 ? (
+                  <p className="m-0 border-t border-linha px-[18px] py-[10px] text-[13px] text-texto-suave">
+                    {t.semTentativas}
+                  </p>
+                ) : (
+                  d.tentativas.map((r, i) => (
+                    <div key={i} className="border-t border-linha px-[18px] py-[10px]">
+                      <span className="font-mono text-xs break-all text-chip-laranja">{r}</span>
+                    </div>
+                  ))
+                )
+              ) : d.arquivos.length === 0 ? (
+                <p className="m-0 border-t border-linha px-[18px] py-[10px] text-[13px] text-texto-suave">
+                  {t.semArquivos}
+                </p>
+              ) : (
+                d.arquivos.map((a, i) => (
+                  <div key={i} className="flex flex-col gap-1 border-t border-linha px-[18px] py-[10px]">
+                    <span className="text-[12.5px] font-bold text-chip-laranja">{a.motivo}</span>
+                    <span className="font-mono text-xs break-all text-texto-claro">{a.arquivo}</span>
+                  </div>
+                ))
+              )}
+            </Cartao>
+            <CartaoDoCatalogo d={d} aoUsar={aoEscolherTitulo} ocupado={ocupado} />
+          </div>
+        </>
+      )}
     </section>
   );
 }
 
 function Corpo({ d }: { d: ExecucaoDetalhe }) {
   const t = msg.historico.diagnostico;
+  const dj = useModoDj();
+  const tdj = msgDj.historico.diagnostico;
   const navegar = useNavigate();
   const qc = useQueryClient();
   const agora = useAgora(false);
@@ -427,11 +545,13 @@ function Corpo({ d }: { d: ExecucaoDetalhe }) {
     <div className="flex flex-col gap-[22px]">
       {voltar}
       <header className="flex flex-col gap-2">
-        <Rotulo>{t.rotulo}</Rotulo>
+        <Rotulo>{dj ? tdj.rotulo : t.rotulo}</Rotulo>
         <h1 className="m-0 text-[34px] leading-tight font-extrabold tracking-[-0.01em]" style={{ fontStretch: '112%' }}>
           {t.titulo(diagnosticos.length)}
         </h1>
-        <p className="m-0 max-w-[720px] text-[15px] leading-normal text-texto-suave">{t.subtitulo}</p>
+        <p className="m-0 max-w-[720px] text-[15px] leading-normal text-texto-suave">
+          {dj ? tdj.subtitulo : t.subtitulo}
+        </p>
       </header>
 
       <div className="flex flex-wrap items-start gap-5">
@@ -462,14 +582,20 @@ function Corpo({ d }: { d: ExecucaoDetalhe }) {
           data-testid="rodape-tentar-de-novo"
         >
           <div className="flex min-w-[320px] flex-[1_1_420px] flex-col gap-[6px]">
-            <span className="text-base font-extrabold">{t.rodape.titulo(re.faixas)}</span>
-            <span className="text-[13.5px] leading-normal text-texto-suave">
-              {t.rodape.antes} <span className="font-mono text-texto">{re.arquivo}</span> {t.rodape.depois}
-            </span>
-            <code className="font-mono text-[12.5px] text-ambar-vivo" data-testid="opcoes-sugeridas">
-              {flags || t.rodape.opcoesPadrao}
-            </code>
-            {re.retentar ? <span className="text-xs text-texto-mudo">{t.rodape.retentarAviso}</span> : null}
+            <span className="text-base font-extrabold">{(dj ? tdj : t).rodape.titulo(re.faixas)}</span>
+            {dj ? (
+              <span className="text-[13.5px] leading-normal text-texto-suave">{tdj.rodape.corpo}</span>
+            ) : (
+              <>
+                <span className="text-[13.5px] leading-normal text-texto-suave">
+                  {t.rodape.antes} <span className="font-mono text-texto">{re.arquivo}</span> {t.rodape.depois}
+                </span>
+                <code className="font-mono text-[12.5px] text-ambar-vivo" data-testid="opcoes-sugeridas">
+                  {flags || t.rodape.opcoesPadrao}
+                </code>
+                {re.retentar ? <span className="text-xs text-texto-mudo">{t.rodape.retentarAviso}</span> : null}
+              </>
+            )}
             {erroRodape ? (
               <span role="alert" className="text-[13px] text-chip-vermelho">
                 {erroRodape}

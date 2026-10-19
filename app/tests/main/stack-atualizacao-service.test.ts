@@ -60,7 +60,7 @@ beforeEach(() => {
 });
 afterEach(() => rmSync(raiz, { recursive: true, force: true }));
 
-describe('decidirAcao (a regra da §3.3)', () => {
+describe('decidirAcao', () => {
   const h = { atual: 'a', instalado: 'a', doApp: 'b', jaOferecido: null, novoExiste: false };
   it.each([
     ['o app não traz o arquivo', { ...h, doApp: null }, 'sem-origem'],

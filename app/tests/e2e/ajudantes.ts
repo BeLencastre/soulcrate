@@ -359,7 +359,7 @@ export const abrirListaDosRecentes = async (janela: Page, nome: string) => {
 
 /** Sem MusicBrainz (não há rede nos testes) e sem beets (não há stack): "Só baixar" + "Não conferir os títulos". */
 export const opcoesDeTeste = async (janela: Page) => {
-  await janela.getByRole('link', { name: 'Revisar opções' }).click();
+  await janela.getByRole('link', { name: 'Mudar ajustes' }).click();
   await janela.locator('[data-receita="soBaixar"]').click();
   await janela.getByRole('switch', { name: /Não conferir os títulos no MusicBrainz/ }).click();
 };

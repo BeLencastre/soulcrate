@@ -2,15 +2,8 @@ import { describe, expect, it, vi } from 'vitest';
 import type { ExecucaoResumo } from '../../src/shared/historico';
 // o módulo também tem os hooks de consulta, que importam o `window.soulcrate`; aqui só as regras puras importam
 vi.mock('../../src/renderer/lib/api', () => ({ api: {} }));
-const {
-  destinoDaExecucao,
-  filtrarExecucoes,
-  fonteDaLinha,
-  formatarBytes,
-  resumoDaLinha,
-  rotuloDoFim,
-  segmentosDaLinha,
-} = await import('../../src/renderer/lib/historico');
+const { destinoDaExecucao, filtrarExecucoes, formatarBytes, resumoDaLinha, rotuloDoFim, segmentosDaLinha } =
+  await import('../../src/renderer/lib/historico');
 
 const r = (extra: Partial<ExecucaoResumo> = {}): ExecucaoResumo => ({
   id: '20261007-210200',
@@ -103,12 +96,6 @@ describe('textos', () => {
     expect(rotuloDoFim('completed')).toBe('Concluído');
     expect(rotuloDoFim('user')).toBe('Parado pelo usuário');
     expect(rotuloDoFim('rodando')).toBe('Rodando');
-  });
-
-  it('de onde veio a leitura', () => {
-    expect(fonteDaLinha({ fonte: 'eventos', fim: 'completed' })).toBe('eventos');
-    expect(fonteDaLinha({ fonte: 'eventos', fim: 'rodando' })).toBe('eventos ao vivo');
-    expect(fonteDaLinha({ fonte: 'resultado', fim: 'completed' })).toBe('antiga · lida do resultado-*.txt');
   });
 
   it('tamanhos', () => {

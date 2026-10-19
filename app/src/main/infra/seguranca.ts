@@ -1,4 +1,4 @@
-// Regras de segurança do app (§6.1), em funções puras: quais endereços o app pode abrir e como o log esconde segredos.
+// Regras de segurança do app, em funções puras: quais endereços o app pode abrir e como o log esconde segredos.
 import { servicoPorId, SERVICOS, type ServicoId } from '@shared/servicos';
 
 const HOSTS_LOCAIS = new Set(['127.0.0.1', 'localhost', '[::1]']);
@@ -44,7 +44,7 @@ export function ehUrlDoApp(valor: string, urlDev: string | null): boolean {
   return u.protocol === 'file:';
 }
 
-/** Partição de sessão de cada Web UI: persistente (o login sobrevive ao app) e separada por serviço (SP7). */
+/** Partição de sessão de cada Web UI: persistente (o login sobrevive ao app) e separada por serviço. */
 export function particaoDo(servico: ServicoId): string {
   return `persist:soulcrate-webui-${servico}`;
 }

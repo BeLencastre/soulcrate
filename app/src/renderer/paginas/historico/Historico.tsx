@@ -1,5 +1,6 @@
 // Tela Histórico (protótipo "Histórico"): as execuções de lotes/, as do app e as do .bat, com como terminaram e o que
-// saiu de cada uma. "Ver faltas" leva ao diagnóstico; "Abrir", ao detalhe (ou ao painel ao vivo, se o app a acompanha).
+// saiu de cada uma. "Ver o que faltou" leva ao diagnóstico; "Abrir", ao detalhe (ou ao painel ao vivo, se o app a
+// acompanha). A tela é a mesma nos dois modos (Modo DJ e Modo Dev).
 import { useMemo, useState } from 'react';
 import { Link } from 'react-router';
 import type { ExecucaoResumo } from '@shared/historico';
@@ -15,7 +16,6 @@ import { useAgora } from '../../lib/estado';
 import {
   destinoDaExecucao,
   filtrarExecucoes,
-  fonteDaLinha,
   resumoDaLinha,
   rotuloDoFim,
   segmentosDaLinha,
@@ -69,7 +69,7 @@ function LinhaDaExecucao({ r, agora, acompanhada }: { r: ExecucaoResumo; agora: 
           >
             {r.lista ?? t.semLista}
           </Link>
-          <span className="text-xs text-texto-mudo">{fonteDaLinha(r)}</span>
+          <span className="text-xs text-texto-mudo">{t.faixas(r.contagem.total)}</span>
         </span>
       </td>
       <td className="px-2 py-[14px] font-mono whitespace-nowrap text-texto-claro">
@@ -166,7 +166,7 @@ export function Historico() {
         </Cartao>
       ) : (
         <>
-          <div className="flex flex-wrap items-center gap-2">
+          <div role="group" aria-label={t.filtrar} className="flex flex-wrap items-center gap-2">
             {(
               [
                 ['todas', t.filtros.todas, todas.length],

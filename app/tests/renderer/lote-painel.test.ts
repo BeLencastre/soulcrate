@@ -91,8 +91,8 @@ describe('faixa de aviso do painel', () => {
   it('limite de buscas atingido, com os números do próprio lote', () => {
     const e = estado(start(), { ...base(T0), type: 'search.windowFull', full: true, limit: 30, windowSeconds: 220 });
     const f = faixaDoPainel(e, T0);
-    expect(f).toMatchObject({ id: 'janela', tom: 'azul', titulo: 'Limite de buscas atingido', pulsa: true });
-    expect(f?.texto).toContain('30 buscas a cada 220 s');
+    expect(f).toMatchObject({ id: 'janela', tom: 'azul', titulo: 'Buscando devagar', pulsa: true });
+    expect(f?.texto).toContain('30 a cada 220 s');
   });
 
   it('buscas pausadas até HH:mm (laranja); a pausa vence a janela cheia', () => {
@@ -108,9 +108,9 @@ describe('faixa de aviso do painel', () => {
     expect(f?.titulo).toContain(horaCurta(iso(T0 + 900_000)));
   });
 
-  it('parando: "Finalizando e gravando relatórios…" (âmbar)', () => {
+  it('parando: "Terminando…" (âmbar)', () => {
     const f = faixaDoPainel(estado(start(), { ...base(T0), type: 'run.stopping', reason: 'user' }), T0);
-    expect(f).toMatchObject({ id: 'parando', tom: 'ambar', titulo: 'Finalizando e gravando relatórios…' });
+    expect(f).toMatchObject({ id: 'parando', tom: 'ambar', titulo: 'Terminando…' });
   });
 
   it('conferindo o catálogo mostra o andamento', () => {
@@ -135,7 +135,7 @@ describe('faixa de aviso do painel', () => {
       code: 'slskd_unreachable',
       message: 'slskd não respondeu (2 de 5)',
     });
-    expect(faixaDoPainel(e, T0 + 10_000)).toMatchObject({ tom: 'laranja', titulo: 'O slskd não respondeu' });
+    expect(faixaDoPainel(e, T0 + 10_000)).toMatchObject({ tom: 'laranja', titulo: 'A busca (slskd) não respondeu' });
     expect(faixaDoPainel(e, T0 + 10_000)?.texto).toBe('slskd não respondeu (2 de 5)');
     expect(faixaDoPainel(e, T0 + 5 * 60_000)).toBeNull();
   });

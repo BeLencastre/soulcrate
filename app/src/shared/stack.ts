@@ -18,7 +18,7 @@ export interface DockerStatus {
   versaoServidor: string | null;
   /** Docker Compose v2 */
   compose: string | null;
-  /** o app está abrindo o Docker Desktop e esperando a engine (SP2); `desdeMs` é o instante em que começou */
+  /** o app está abrindo o Docker Desktop e esperando a engine; `desdeMs` é o instante em que começou */
   abrindo: { desdeMs: number } | null;
 }
 
@@ -226,7 +226,7 @@ export interface Etapa {
   acao: EtapaAcao | null;
 }
 
-/** As cinco etapas do cartão do Início (§5, Fase 1). */
+/** As cinco etapas do cartão do Início (Fase 1). */
 export function derivarEtapas(status: StackStatus): Etapa[] {
   if (status.atualizadoEm === 0) {
     const aguardando = (id: EtapaId, numero: number): Etapa => ({
@@ -314,6 +314,11 @@ export interface AcoesStack {
   ligar: boolean;
   desligar: boolean;
   reconstruir: boolean;
+  /**
+   * O que o botão único Ligar/Desligar oferece: desligar enquanto algum contêiner estiver de pé (uma stack pela
+   * metade se completa com Reiniciar), ligar quando nenhum estiver.
+   */
+  alternar: 'ligar' | 'desligar';
 }
 
 export function acoesDisponiveis(status: StackStatus): AcoesStack {
@@ -329,5 +334,6 @@ export function acoesDisponiveis(status: StackStatus): AcoesStack {
     ligar: pronto && !todosRodando,
     desligar: pronto && algumRodando,
     reconstruir: pronto,
+    alternar: algumRodando ? 'desligar' : 'ligar',
   };
 }

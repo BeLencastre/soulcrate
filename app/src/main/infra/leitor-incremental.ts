@@ -1,4 +1,4 @@
-// Leitura incremental de um arquivo que outro processo está escrevendo (SP4): guarda o offset em bytes, corta por
+// Leitura incremental de um arquivo que outro processo está escrevendo: guarda o offset em bytes, corta por
 // `\n` antes de decodificar (em UTF-8 o `\n` nunca aparece dentro de um caractere) e retém o pedaço final sem `\n`
 // até a próxima leitura. Serve ao arquivo de eventos (JSONL) e ao log de saída do lote.
 import { open, stat } from 'node:fs/promises';

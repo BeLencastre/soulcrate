@@ -1,4 +1,4 @@
-// MigracaoService (§5, Fase 7, "Migração de instalações via Git"): quem já usa o Soulcrate por um clone do Git escolhe
+// MigracaoService (migração de instalações via Git, Fase 7): quem já usa o Soulcrate por um clone do Git escolhe
 // "usar uma pasta que já existe" no assistente. O app não copia nada para ela (quem a atualiza é o `git pull`), mas
 // avisa se os arquivos da stack têm alterações locais, que um `git pull` ou uma atualização futura podem atropelar.
 // Duas fontes: o próprio git (`git diff --relative --name-only HEAD`, exato, quando há `.git` e o git está instalado) e a

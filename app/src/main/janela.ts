@@ -1,4 +1,4 @@
-// Janela principal com a segurança de base do §6.1: contextIsolation, sandbox, sem nodeIntegration,
+// Janela principal com a segurança de base: contextIsolation, sandbox, sem nodeIntegration,
 // navegação e window.open bloqueados, nenhuma permissão concedida.
 import { BrowserWindow, session, shell, type WebContents } from 'electron';
 import { podeAbrirNoNavegador, ehUrlDoApp } from './infra/seguranca';

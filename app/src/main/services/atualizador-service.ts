@@ -1,8 +1,8 @@
-// AtualizadorService (§5, Fase 7): a atualização do app pelo `electron-updater`, com os GitHub Releases como fonte.
+// AtualizadorService: a atualização do app pelo `electron-updater`, com os GitHub Releases como fonte.
 //   - procura na abertura (alguns segundos depois) e a cada 24 h, em silêncio; o download também é em segundo plano;
 //   - a atualização é aplicada ao REINICIAR o app, e nunca durante um lote: o botão "Reiniciar e atualizar" recusa
 //     enquanto um lote roda, e ao sair do app o instalador só entra se nenhum lote está rodando;
-//   - sem telemetria (§6.1): a única conversa do app com a internet é esta checagem.
+//   - sem telemetria: a única conversa do app com a internet é esta checagem.
 // O `electron-updater` entra por `AutoUpdaterLike`, então tudo aqui é testado sem rede e sem Electron.
 import { criarErro, type AppError } from '@shared/erros';
 import {
@@ -161,7 +161,7 @@ export class AtualizadorService {
 
   /**
    * Chamado no `before-quit`: ao sair, o instalador só entra se nenhum lote está rodando. (Fechar o app não mata o
-   * lote, mas trocar os arquivos do app por baixo de uma execução em andamento é o que a §5 manda evitar.)
+   * lote, mas trocar os arquivos do app por baixo de uma execução em andamento é o que se quer evitar.)
    */
   aoSair(): void {
     if (this.d.updater) this.d.updater.autoInstallOnAppQuit = !this.d.loteRodando();

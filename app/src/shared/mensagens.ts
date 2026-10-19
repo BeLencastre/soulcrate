@@ -1,4 +1,4 @@
-// Textos da interface em português do Brasil, num só lugar (§6.5 da especificação), prontos para i18n.
+// Textos da interface em português do Brasil, num só lugar, prontos para i18n.
 // Vocabulário do README: "lista", "lote", "biblioteca", "faixa", "stack".
 import type { ErroCodigo } from './erros.js';
 import type { TarefaEstado, TarefaSetupId } from './configuracao.js';
@@ -39,6 +39,35 @@ export const msg = {
     configuracoes: 'Configurações',
   },
 
+  /** Modo DJ e Modo Dev (protótipos "modos-dev-dj"): o alternador e as duas escolhas do assistente. */
+  modo: {
+    grupo: 'Modo da interface',
+    rotulo: 'Modo',
+    nome: { dj: 'DJ', dev: 'Dev' },
+    /** o mesmo atalho nos dois sentidos; o título do botão o anuncia */
+    titulo: (nome: string) => `Mudar para o Modo ${nome} (Ctrl+Shift+D)`,
+    tituloAtivo: (nome: string) => `Modo ${nome} ligado (Ctrl+Shift+D alterna)`,
+    saida: {
+      rotulo: 'Detalhes técnicos',
+      texto: 'Logs dos contêineres, portas e as verificações completas ficam no Modo Dev.',
+      botao: 'Mostrar detalhes técnicos',
+    },
+    /** tela final do assistente */
+    assistente: {
+      titulo: 'Como você vai usar o Soulcrate?',
+      dica: 'Muda só o que aparece na tela. Dá para trocar a qualquer hora na barra lateral.',
+      recomendado: 'RECOMENDADO',
+      dj: {
+        titulo: 'Sou DJ',
+        descricao: 'Modo DJ: só o que importa para baixar, organizar e ouvir. Termos técnicos ficam escondidos.',
+      },
+      dev: {
+        titulo: 'Quero ver os detalhes técnicos',
+        descricao: 'Modo Dev: etapas do ambiente, logs, portas, opções do script e a configuração completa da stack.',
+      },
+    },
+  },
+
   barraLateral: {
     titulo: 'Stack',
     /** texto da linha de estado (ex.: "No ar · 3/3 saudáveis") */
@@ -51,7 +80,8 @@ export const msg = {
     ligar: 'Ligar',
     ligarStack: 'Ligar a stack',
     desligar: 'Desligar',
-    reconstruir: 'Reconstruir',
+    /** `up --build`: recria os contêineres e reconstrói a imagem do Soulbeet */
+    reiniciar: 'Reiniciar',
     abrirDocker: 'Abrir Docker Desktop',
     baixarDocker: 'Baixar o Docker Desktop',
     comoInstalarWsl: 'Como instalar o WSL 2',
@@ -119,7 +149,7 @@ export const msg = {
             return { titulo: 'Desligando a stack', subtitulo: 'Parando os contêineres. A biblioteca não é afetada.' };
           }
           return {
-            titulo: r.operacao === 'reconstruindo' ? 'Reconstruindo a stack' : 'Ligando a stack',
+            titulo: r.operacao === 'reconstruindo' ? 'Reiniciando a stack' : 'Ligando a stack',
             subtitulo: `Construindo a imagem do Soulbeet e subindo os contêineres. ${msg.inicio.primeiroBuild}`,
           };
         case 'iniciando':
@@ -326,6 +356,7 @@ export const msg = {
       rede: 'Rede',
       avancado: 'Avançado',
       conferencia: 'Conferência',
+      compartilhamento: 'Compartilhamento',
       app: 'Aplicativo',
       sobre: 'Sobre',
     },
@@ -570,17 +601,17 @@ export const msg = {
   lote: {
     rotulo: 'Baixar lista',
     etapas: {
-      rotulo: 'Etapas do lote',
+      rotulo: 'Etapas do download',
       lista: 'Lista',
-      opcoes: 'Opções',
-      execucao: 'Execução',
+      opcoes: 'Ajustes',
+      execucao: 'Download',
     },
     lista: {
       salvaAgora: 'salva agora',
       salvaHa: (tempo: string) => `salva há ${tempo}`,
       salvando: 'salvando…',
       naoSalva: 'alterações não salvas',
-      listasRecentes: 'Listas recentes',
+      listasRecentes: 'Minhas listas',
       novaDoExemplo: 'Nova a partir do exemplo',
       novaEmBranco: 'Nova em branco',
       importar: 'Importar .txt ou .csv',
@@ -589,19 +620,19 @@ export const msg = {
       salvar: 'Salvar',
       editor: 'Editor da lista',
       textoDaLista: 'Texto da lista',
-      cabecalhoEditor: 'Uma faixa por linha · Artista - Título (Mix)',
+      cabecalhoEditor: 'Uma faixa por linha · Artista - Título',
       linhas: (n: number) => `${n} ${plural(n, 'linha', 'linhas')}`,
-      dica: 'Solte um .txt ou .csv do Spotify na janela, ou cole uma tracklist: numeração, traço longo e duração são limpos sozinhos.',
+      dica: 'Arraste um .txt ou .csv para a janela, ou cole a tracklist de um set.',
       somenteLeitura:
         'Lista em CSV: o app só lê. O lote usa as colunas de artista e título; para mudar a lista, edite o arquivo em outro programa.',
       previa: 'Pré-visualização',
-      comoVaiLer: 'Como o lote vai ler',
+      comoVaiLer: 'O que vai ser baixado',
       atualizando: 'Atualizando…',
-      paraBaixar: (n: number) => `${n} para baixar`,
-      duplicadas: (n: number) => `${n} ${plural(n, 'duplicada', 'duplicadas')}`,
-      naBiblioteca: (n: number) => `${n} na biblioteca`,
-      jaFeitas: (n: number) => `${n} ${plural(n, 'já feita', 'já feitas')}`,
-      colunas: { numero: '#', artista: 'Artista', titulo: 'Título', mix: 'Mix', aviso: 'Aviso' },
+      paraBaixar: (n: number) => `${n} ${plural(n, 'faixa', 'faixas')}`,
+      duplicadas: (n: number) => `${n} ${plural(n, 'repetida', 'repetidas')}`,
+      naBiblioteca: (n: number) => `${n} já na biblioteca`,
+      jaFeitas: (n: number) => `${n} ${plural(n, 'baixada antes', 'baixadas antes')}`,
+      colunas: { numero: '#', artista: 'Artista', titulo: 'Título', mix: 'Versão', aviso: 'Aviso' },
       previaVazia: 'Nenhuma faixa ainda. Escreva ou cole faixas ao lado.',
       analiseFalhou: 'Não consegui ler a lista',
       avisos: {
@@ -614,26 +645,26 @@ export const msg = {
         remixer: 'Artista é o remixer: aceita qualquer original',
       },
       retomada: {
-        titulo: (data: string) => `Esta lista já rodou em ${data}.`,
+        titulo: (data: string) => `Você já baixou esta lista em ${data}.`,
         corpo: (feitas: number) =>
           feitas > 0
-            ? `O lote continua de onde parou e pula ${feitas === 1 ? 'a faixa já feita' : `as ${feitas} faixas já feitas`}.`
-            : 'Nada do que já foi feito será pulado.',
+            ? `O download continua de onde parou e pula ${feitas === 1 ? 'a faixa que já veio' : `as ${feitas} faixas que já vieram`}.`
+            : 'Nada do que já veio será baixado de novo.',
         retentar: 'Tentar de novo as que falharam',
       },
-      rodandoAgora: 'Esta lista está rodando agora.',
-      verExecucao: 'Ver execução',
+      rodandoAgora: 'Esta lista está baixando agora.',
+      verExecucao: 'Ver o download',
       rodapeFaixas: (n: number) => (n === 1 ? 'faixa para baixar' : 'faixas para baixar'),
-      opcoesPadrao: 'Opções: padrão',
-      opcoesAlteradas: (n: number) => `Opções: padrão, com ${n} ${plural(n, 'alteração', 'alterações')}`,
-      revisarOpcoes: 'Revisar opções',
-      iniciar: 'Iniciar lote',
-      iniciando: 'Iniciando…',
+      opcoesPadrao: 'Ajustes: padrão',
+      opcoesAlteradas: (n: number) => `Ajustes: ${n} ${plural(n, 'diferente', 'diferentes')} do padrão`,
+      revisarOpcoes: 'Mudar ajustes',
+      iniciar: (n: number) => (n > 0 ? `Baixar ${n} ${plural(n, 'faixa', 'faixas')}` : 'Baixar'),
+      iniciando: 'Começando…',
       semFaixas: 'Não há faixas para baixar nesta lista.',
       vazio: {
         titulo: 'Escolha uma lista',
         corpo:
-          'Uma faixa por linha, no formato Artista - Título (Mix). Abra uma lista que você já tem, importe um .txt ou .csv, traga uma playlist de um streaming ou comece pelo exemplo.',
+          'Uma faixa por linha, no formato Artista - Título. Abra uma lista sua, importe um .txt ou .csv, traga uma playlist de um streaming ou comece pelo exemplo.',
       },
       playlist: {
         botao: 'Importar playlist',
@@ -731,7 +762,7 @@ export const msg = {
           'A primeira linha guarda de onde a lista veio: o lote a ignora e “Atualizar da playlist” usa o link.',
       },
       recentes: {
-        titulo: 'Listas recentes',
+        titulo: 'Minhas listas',
         corpo: 'Listas que estão na pasta do Soulcrate, da mais recente para a mais antiga.',
         vazio: 'Nenhuma lista na pasta do Soulcrate ainda.',
         fechar: 'Fechar',
@@ -744,15 +775,15 @@ export const msg = {
     },
     opcoes: {
       receitas: 'Receitas',
-      receitasDica: 'Um clique ajusta as opções para a situação.',
+      receitasDica: 'Um clique muda os ajustes para a situação.',
       avancadas: 'Avançadas',
       avancadasDica: 'Ritmo, filas e tentativas',
       diferente: '≠ PADRÃO',
       padrao: (v: string) => `PADRÃO ${v}`,
-      alteradas: (n: number) => `${n} ${plural(n, 'ALTERADA', 'ALTERADAS')}`,
+      alteradas: (n: number) => `${n} ${plural(n, 'ALTERADO', 'ALTERADOS')}`,
       resumo: 'Resumo',
-      nenhuma: 'Nenhuma opção diferente do padrão do script',
-      algumas: (n: number) => `${plural(n, 'opção diferente', 'opções diferentes')} do padrão do script`,
+      nenhuma: 'Nenhum ajuste diferente do padrão do script',
+      algumas: (n: number) => `${plural(n, 'ajuste diferente', 'ajustes diferentes')} do padrão do script`,
       equivale: 'Equivale a rodar',
       restaurar: 'Restaurar padrões',
       conferirStack: 'Antes de começar, o app confere se a stack está no ar e oferece ligá-la.',
@@ -837,16 +868,17 @@ export const msg = {
       ligandoCorpo: 'Esperando os serviços ficarem saudáveis. O lote começa sozinho em seguida.',
       naoDaTitulo: 'Não dá para ligar a stack agora',
       naoDaCorpo: (motivo: string) =>
-        `${motivo}. Resolva isso no Início e volte aqui; sua lista e suas opções ficam como estão.`,
+        `${motivo}. Resolva isso no Início e volte aqui; sua lista e seus ajustes ficam como estão.`,
       irParaInicio: 'Ir para o Início',
       cancelar: 'Cancelar',
       demorou: 'A stack não ficou saudável a tempo. Veja os serviços e tente de novo.',
     },
+    /** etapa 3: os recursos do Modo Dev, com os títulos e textos do Modo DJ (iguais nos dois modos) */
     execucao: {
-      rotulo: (id: string) => `Baixar lista · execução ${id}`,
+      rotulo: (id: string) => `Baixar lista · download ${id}`,
       vazio: {
-        titulo: 'Nenhum lote em execução',
-        corpo: 'Escolha uma lista, revise as opções e inicie o lote. O painel ao vivo aparece aqui.',
+        titulo: 'Nenhum download agora',
+        corpo: 'Escolha uma lista, confira os ajustes e baixe. O andamento aparece aqui.',
         irParaLista: 'Ir para a lista',
       },
       estado: {
@@ -868,34 +900,38 @@ export const msg = {
       abrirNaoBaixadas: 'Abrir não baixadas',
       novaExecucao: 'Voltar à lista',
       faixa: {
-        iniciando: ['Iniciando o lote…', 'Esperando o primeiro sinal do script.'] as const,
+        iniciando: ['Começando…', 'Preparando o download.'] as const,
         catalogo: (feitas: number, total: number) =>
-          ['Conferindo os títulos no MusicBrainz', `${feitas}/${total} faixas conferidas antes de buscar.`] as const,
+          [
+            'Conferindo os títulos no catálogo',
+            `${feitas}/${total} faixas conferidas no MusicBrainz antes de buscar.`,
+          ] as const,
         janelaCheia: (limite: number, janela: number) =>
           [
-            'Limite de buscas atingido',
-            `${limite} buscas a cada ${janela} s. As próximas buscas começam em instantes; os downloads seguem normalmente.`,
+            'Buscando devagar',
+            `O Soulseek limita quantas buscas cada um faz (${limite} a cada ${janela} s). As próximas começam em instantes; os downloads seguem normalmente.`,
           ] as const,
         pausado: (hora: string) =>
           [
             `Buscas pausadas até ${hora}`,
-            'O servidor do Soulseek não respondeu nem à busca de teste. Os downloads continuam; as buscas voltam sozinhas.',
+            'O Soulseek segurou as buscas por alguns minutos. Os downloads continuam; as buscas voltam sozinhas.',
           ] as const,
         parando: [
-          'Finalizando e gravando relatórios…',
-          'Esperando os downloads em andamento terminarem a etapa atual. Não feche o Soulcrate à força.',
+          'Terminando…',
+          'Esperando os downloads em andamento e gravando os relatórios. Não feche o Soulcrate à força.',
         ] as const,
         gravados: [
           'Relatórios gravados em lotes/',
-          'resultado, não baixadas, diagnóstico e catálogo desta execução.',
+          'resultado, não baixadas, diagnóstico e catálogo deste download.',
         ] as const,
-        concluido: ['Lote concluído', 'Os relatórios desta execução estão em lotes/.'] as const,
+        concluido: ['Download concluído', 'Os relatórios deste download estão em lotes/.'] as const,
       },
-      avisoSlskd: 'O slskd não respondeu',
-      avisoMusicbrainz: 'MusicBrainz indisponível',
+      avisoSlskd: 'A busca (slskd) não respondeu',
+      avisoMusicbrainz: 'Catálogo de títulos (MusicBrainz) indisponível',
       progresso: 'Progresso',
       concluidas: 'concluídas',
-      rodandoHa: 'rodando há',
+      rodandoHa: 'baixando há',
+      levou: 'levou',
       faltam: 'faltam',
       calculando: 'calculando…',
       barra: (c: { baixadas: number; atencao: number; puladas: number; andamento: number; aguardando: number }) =>
@@ -904,7 +940,7 @@ export const msg = {
         buscando: 'Buscando',
         baixando: 'Baixando',
         naFila: 'Na fila',
-        beets: 'Beets',
+        beets: 'Organizando',
         aguardando: 'Aguardando',
         baixadas: 'Baixadas',
         naoAchadas: 'Não achadas',
@@ -924,16 +960,16 @@ export const msg = {
       colunas: {
         numero: '#',
         faixa: 'Faixa',
-        status: 'Status',
+        status: 'Situação',
         formato: 'Formato',
         usuario: 'Usuário',
         tentativa: 'Tent.',
         observacao: 'Observação',
       },
       tabelaVazia: 'Nenhuma faixa neste filtro.',
-      tabela: 'Faixas do lote',
+      tabela: 'Faixas do download',
       logVazio: 'Nenhuma saída ainda.',
-      log: 'Log bruto do lote',
+      log: 'Log bruto do download',
     },
     fim: {
       sumiu:
@@ -996,12 +1032,15 @@ export const msg = {
 
   historico: {
     rotulo: 'Histórico',
-    titulo: 'Execuções',
-    subtitulo: 'Tudo o que está em lotes/, inclusive o que foi rodado pelos .bat.',
-    apagarAntigas: 'Apagar execuções antigas…',
+    titulo: 'Seus downloads',
+    subtitulo: 'Cada lista que você baixou, com o que chegou e o que faltou.',
+    apagarAntigas: 'Apagar os antigos…',
     abrirPasta: 'Abrir pasta lotes',
-    filtros: { todas: 'Todas', faltas: 'Com faixas que não vieram' },
-    tabela: 'Execuções',
+    filtrar: 'Filtrar',
+    filtros: { todas: 'Todos', faltas: 'Com faixas que faltaram' },
+    tabela: 'Seus downloads',
+    /** a linha de baixo da coluna Lista */
+    faixas: (n: number) => `${n.toLocaleString('pt-BR')} ${plural(n, 'faixa', 'faixas')}`,
     colunas: {
       quando: 'Quando',
       lista: 'Lista',
@@ -1014,12 +1053,6 @@ export const msg = {
     ontem: 'Ontem',
     semLista: 'lista não registrada',
     semDuracao: '—',
-    fonte: {
-      eventos: 'eventos',
-      aoVivo: 'eventos ao vivo',
-      resultado: 'antiga · lida do resultado-*.txt',
-      log: 'antiga · só o log da tela',
-    },
     resumo: {
       completo: (c: { ok: number; naoVieram: number; puladas: number; atencao: number }) =>
         [
@@ -1033,19 +1066,19 @@ export const msg = {
       rodando: (feitas: number, total: number) => `${feitas}/${total} concluídas`,
       semFaixas: 'nenhuma faixa registrada',
     },
-    verFaltas: 'Ver faltas',
+    verFaltas: 'Ver o que faltou',
     abrir: 'Abrir',
-    abrirNoPainel: 'Ver ao vivo',
+    abrirNoPainel: 'Acompanhar',
     vazio: {
-      titulo: 'Nenhuma execução ainda',
-      corpo: 'Quando você rodar uma lista, pelo app ou pelo .bat, ela aparece aqui com o resultado de cada faixa.',
+      titulo: 'Nenhum download ainda',
+      corpo: 'Cada lista que você baixar aparece aqui, com o que chegou e o que faltou.',
       irParaLista: 'Baixar uma lista',
     },
-    filtroVazio: 'Nenhuma execução com faixas que não vieram.',
+    filtroVazio: 'Nenhum download com faixas que faltaram.',
     semRelatorio:
       'Esta execução não gravou relatório: só o log da tela sobrou. Provavelmente foi interrompida ou deu erro antes do fim.',
     erroCarregar: 'Não consegui ler a pasta lotes',
-    carregando: 'Lendo a pasta lotes…',
+    carregando: 'Lendo seus downloads…',
     avisoEmAndamento: 'Esta execução ainda está rodando. Os números abaixo acompanham o lote.',
     verAoVivo: 'Ver painel ao vivo',
 
@@ -1355,10 +1388,11 @@ export const msg = {
 
   biblioteca: {
     rotulo: 'Biblioteca',
-    titulo: 'O caixote',
+    titulo: 'Suas músicas',
     /** `D:\Musica\Soulcrate\music · 1.204 faixas` */
     subtitulo: (pasta: string, n: number) => `${pasta} · ${n.toLocaleString('pt-BR')} ${plural(n, 'faixa', 'faixas')}`,
-    abrirMusic: 'Abrir music no Explorer',
+    /** `Abrir DJ/Musics no Explorer`; sem a pasta lida ainda, só "Abrir no Explorer" */
+    abrirMusic: (pasta: string | null) => (pasta ? `Abrir ${pasta} no Explorer` : 'Abrir no Explorer'),
     atualizar: 'Atualizar',
     carregando: 'Lendo a biblioteca…',
     lendo: 'Lendo a biblioteca com o beets. Com milhares de faixas, leva alguns segundos.',
@@ -1368,8 +1402,8 @@ export const msg = {
       grupo: 'Filtrar por pendência',
       bpm: 'Sem BPM',
       tom: 'Sem tom',
-      gen: 'Em _Sem Genero',
-      dl: 'Parados em downloads/',
+      gen: 'Sem gênero',
+      dl: 'Esperando organizar',
     },
     buscar: 'Buscar na biblioteca',
     placeholderBusca: 'Artista ou título',
@@ -1413,40 +1447,34 @@ export const msg = {
       importarAgora: 'Importar agora',
     },
     manutencao: {
-      titulo: 'Manutenção',
+      titulo: 'Cuidar da biblioteca',
       rodando: 'Rodando agora',
       verProgresso: 'Ver andamento',
-      tomEBpm: {
-        titulo: 'Recalcular tom e BPM',
-        descricao: 'Só das faixas sem · keyfinder e autobpm',
-      },
+      tomEBpm: { titulo: 'Calcular tom e BPM que faltam', descricao: 'Só nas faixas que estão sem.' },
       importLeftovers: {
-        titulo: 'Importar o que sobrou em downloads/',
+        titulo: 'Organizar o que ficou em downloads',
         descricao: (itens: number, desde: string | null) =>
           itens === 0
-            ? 'Nada parado em downloads/'
-            : `${itens} ${plural(itens, 'pasta parada', 'pastas paradas')}${desde ? ` desde ${desde}` : ''}`,
+            ? 'Nada esperando agora.'
+            : `${itens} ${plural(itens, 'pasta esperando', 'pastas esperando')}${desde ? ` desde ${desde}` : ''}.`,
       },
       update: {
-        titulo: 'Sincronizar com o disco',
-        descricao: 'Depois de apagar ou editar arquivos fora do app · update',
+        titulo: 'Atualizar depois de mexer nos arquivos',
+        descricao: 'Se você apagou ou editou músicas fora do app.',
       },
-      move: {
-        titulo: 'Reorganizar pastas',
-        descricao: 'Depois de mudar o padrão de pastas · move',
-      },
+      move: { titulo: 'Reorganizar as pastas', descricao: 'Depois de mudar o jeito de nomear as pastas.' },
     },
     compartilhamento: {
       titulo: 'Compartilhamento',
       /** vem depois do número: `1.204` + `arquivos anunciados no Soulseek` */
-      anunciados: (n: number) => `${plural(n, 'arquivo anunciado', 'arquivos anunciados')} no Soulseek`,
-      desconhecido: 'Não consegui ler quantos arquivos o slskd anuncia.',
-      varrendo: 'O slskd está varrendo a biblioteca…',
-      zero: 'O slskd anuncia 0 arquivos: quem não compartilha nada costuma ser recusado ou ficar no fim da fila. Reescaneie.',
-      dica: 'Compartilhar ajuda sua reputação na rede: quem não compartilha costuma ser despriorizado.',
-      reescanear: 'Reescanear',
-      pedido: 'Pedi a varredura ao slskd. O número sobe conforme ela avança.',
-      stackFora: 'Ligue a stack para ver o compartilhamento.',
+      anunciados: (n: number) => `${plural(n, 'música compartilhada', 'músicas compartilhadas')} no Soulseek`,
+      desconhecido: 'Não consegui ver quantas músicas estão compartilhadas.',
+      varrendo: 'Atualizando a lista de músicas compartilhadas…',
+      zero: 'Nenhuma música compartilhada: quem não compartilha costuma ser recusado ou ir para o fim da fila. Atualize a lista.',
+      dica: 'Compartilhar ajuda sua reputação na rede: quem não compartilha costuma ir para o fim da fila.',
+      reescanear: 'Atualizar a lista',
+      pedido: 'Atualizando. O número sobe conforme a lista é refeita.',
+      stackFora: 'Ligue o Soulcrate para ver o compartilhamento.',
     },
     rekordbox: {
       titulo: 'Rekordbox',
@@ -1550,20 +1578,23 @@ export const msg = {
     iniciarComWindows: { titulo: 'Iniciar com o Windows', dica: 'Abre minimizado na bandeja ao ligar o PC.' },
     bandeja: {
       titulo: 'Fechar a janela minimiza para a bandeja',
-      dica: 'O lote continua de qualquer forma; isto só decide se o app sai junto.',
+      dica: 'O download continua de qualquer forma; isto só decide se o app sai junto.',
     },
     avisarLote: {
-      titulo: 'Avisar quando um lote terminar',
-      dica: 'Notificação do Windows com a contagem de faixas.',
+      titulo: 'Avisar quando um download terminar',
+      dica: 'Notificação do Windows com quantas faixas chegaram.',
     },
     avisarPausa: {
       titulo: 'Avisar quando as buscas forem pausadas',
-      dica: 'Quando o servidor do Soulseek bloqueia as buscas por alguns minutos.',
+      dica: 'O Soulseek às vezes segura as buscas por alguns minutos. O download continua sozinho depois.',
     },
-    abrirWebUi: { grupo: 'Abrir Soulbeet, slskd e Navidrome', app: 'Dentro do app', navegador: 'No navegador' },
+    abrirWebUi: {
+      grupo: 'Abrir a busca, as transferências e o player',
+      app: 'Dentro do app',
+      navegador: 'No navegador',
+    },
     tema: {
       grupo: 'Tema',
-      dica: 'Vale para o app inteiro: as interfaces web do Soulbeet, do slskd e do Navidrome, os menus e as janelas do sistema também seguem.',
       escuro: 'Escuro',
       claro: 'Claro',
       sistema: 'Igual ao Windows',
@@ -1623,7 +1654,7 @@ export const msg = {
     },
   },
 
-  /** Os arquivos da stack que o app instalou na pasta do Soulcrate (Fase 7, §3.3) */
+  /** Os arquivos da stack que o app instalou na pasta do Soulcrate (Fase 7) */
   arquivosDaStack: {
     aviso: {
       titulo: 'Os arquivos da stack foram atualizados',
@@ -1920,7 +1951,7 @@ export function rotuloResumo(r: ResumoStack): string {
   const m: Record<MotivoResumo, string> = {
     verificando: 'Verificando…',
     operacao:
-      r.operacao === 'desligando' ? 'Desligando…' : r.operacao === 'reconstruindo' ? 'Reconstruindo…' : 'Ligando…',
+      r.operacao === 'desligando' ? 'Desligando…' : r.operacao === 'reconstruindo' ? 'Reiniciando…' : 'Ligando…',
     'docker-ausente': 'Docker não encontrado',
     'docker-fechado': 'Docker fechado',
     'docker-abrindo': 'Abrindo o Docker…',

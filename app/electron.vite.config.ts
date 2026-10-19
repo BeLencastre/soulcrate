@@ -7,7 +7,7 @@ import type { Plugin } from 'vite';
 const alias = { '@shared': resolve(import.meta.dirname, 'src/shared') };
 
 /**
- * CSP do renderer (§6.1): sem `unsafe-eval`, só recursos do próprio app.
+ * CSP do renderer: sem `unsafe-eval`, só recursos do próprio app.
  * Entra só no build: o modo dev precisa do script inline do HMR do Vite.
  * `style-src 'unsafe-inline'` cobre os atributos `style` que o React gera.
  */

@@ -1,7 +1,7 @@
 // Modelo do assistente de configuração (Fase 2): o que o renderer envia (`ConfigEntrada`), o que recebe de volta
 // (`ConfigPublica`, sem nenhum segredo) e os resultados da validação, da gravação e da pós-configuração.
 // Segredos (senhas e chaves) só atravessam o IPC em um sentido: o renderer envia as senhas digitadas uma vez e
-// nunca as recebe; as chaves nascem no main e ficam lá (§6.1).
+// nunca as recebe; as chaves nascem no main e ficam lá.
 import type { AppError } from './erros.js';
 import type { ConfigStatus } from './stack.js';
 import type { MigracaoInfo } from './stack-atualizacao.js';
@@ -112,7 +112,7 @@ export interface AchadoEntrada {
 
 export type EstadoPasta = 'existe' | 'sera-criada' | 'invalida' | 'e-arquivo';
 
-/** O que o main descobriu sobre uma pasta digitada: existência, disco, espaço livre e problemas conhecidos (SP8). */
+/** O que o main descobriu sobre uma pasta digitada: existência, disco, espaço livre e problemas conhecidos. */
 export interface InspecaoPasta {
   /** o que foi digitado */
   entrada: string;

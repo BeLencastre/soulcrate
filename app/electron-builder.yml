@@ -1,11 +1,11 @@
-# Instalador do Windows (NSIS) e publicação das atualizações (§5, Fases 0, 2 e 7). Guia completo: docs/distribuicao.md.
+# Instalador do Windows (NSIS) e publicação das atualizações. Guia completo: docs/distribuicao.md.
 #   - instalação por usuário (sem administrador), atalho no menu Iniciar, sem atalho na área de trabalho;
 #   - os arquivos da stack (resources/stack, montado por `npm run stack:preparar`) vão dentro do instalador, e o assistente
 #     os copia para a pasta do Soulcrate; a atualização desses arquivos é do app (src/main/services/stack-atualizacao-service.ts);
 #   - o desinstalador NÃO apaga a pasta do Soulcrate e pergunta (padrão: manter) se remove os dados do próprio app
 #     (resources/installer.nsh);
 #   - as atualizações do app saem dos GitHub Releases (electron-updater lê o latest.yml que o electron-builder publica);
-#   - sem certificado de código o instalador sai sem assinatura e o SmartScreen avisa (D3, §10 da especificação).
+#   - sem certificado de código o instalador sai sem assinatura e o SmartScreen avisa (ADR 0003).
 appId: br.com.soulcrate.app
 productName: Soulcrate
 copyright: Soulcrate
@@ -29,7 +29,7 @@ win:
     - target: nsis
       arch: [x64]
   icon: resources/icon.ico
-  # sem certificado: o instalador sai sem assinatura (o SmartScreen avisa; veja a §10 da especificação).
+  # sem certificado: o instalador sai sem assinatura (o SmartScreen avisa; veja o ADR 0003).
   # Com um certificado (variáveis CSC_LINK e CSC_KEY_PASSWORD no ambiente de release) o electron-builder assina sozinho:
   # é só tirar esta linha e acrescentar `publisherName` (o electron-updater passa a conferir a assinatura da atualização).
   signExecutable: false

@@ -206,6 +206,9 @@ describe('acompanhamento', () => {
   it('lê os eventos do arquivo enquanto o script escreve e os empurra numerados para o renderer', async () => {
     const r = await iniciar();
     const id = r.ok ? r.runId : '';
+    // o processo está vivo enquanto escreve (como na vida real): sem isto, num computador ocupado, duas leituras sem
+    // novidade entre um evento e outro bastam para o serviço concluir que o lote sumiu e sintetizar o run.end
+    vivos.add(4242);
     appendFileSync(
       eventosDe(id),
       `${runStart(id)}\n${ev('run.skip', { alreadyDone: 0, inLibrary: 0, toProcess: 2, libraryChecked: false })}\n`,
@@ -242,6 +245,7 @@ describe('acompanhamento', () => {
   it('linha de evento inválida vai para o log de erros e não derruba a leitura', async () => {
     const r = await iniciar();
     const id = r.ok ? r.runId : '';
+    vivos.add(4242); // vivo: senão o run.end sintetizado pode entrar nos eventos (veja o teste acima)
     appendFileSync(eventosDe(id), `isto não é json\n${runStart(id)}\n`);
     await ate(() => emitidosDo('batch.events').length >= 1);
     expect(erros).toHaveLength(1);

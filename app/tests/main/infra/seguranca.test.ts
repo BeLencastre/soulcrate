@@ -67,7 +67,7 @@ describe('endereços que o app pode abrir', () => {
   });
 });
 
-describe('Web UIs integradas (SP7)', () => {
+describe('Web UIs integradas', () => {
   it('cada serviço tem a própria partição persistente', () => {
     expect(particaoDo('slskd')).toBe('persist:soulcrate-webui-slskd');
     expect(new Set(['slskd', 'soulbeet', 'navidrome'].map((s) => particaoDo(s as 'slskd'))).size).toBe(3);
@@ -81,7 +81,7 @@ describe('Web UIs integradas (SP7)', () => {
   });
 });
 
-describe('filtro de segredos (§6.1)', () => {
+describe('filtro de segredos', () => {
   const SEGREDOS = [
     'hunter2-senha-soulseek',
     'webpass-9f8e7d',

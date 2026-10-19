@@ -198,3 +198,11 @@ export function receitaAtiva(r: Receita, opcoes: OpcoesLote): boolean {
 export function aplicarReceita(opcoes: OpcoesLote, r: Receita): OpcoesLote {
   return { ...opcoes, ...r.ajuste };
 }
+
+/** O clique no cartão da receita: aplica, ou, se ela já está marcada, volta ao padrão só o que ela ajusta. */
+export function alternarReceita(opcoes: OpcoesLote, r: Receita): OpcoesLote {
+  if (!receitaAtiva(r, opcoes)) return aplicarReceita(opcoes, r);
+  const volta: Partial<OpcoesLote> = {};
+  for (const id of Object.keys(r.ajuste) as OpcaoId[]) Object.assign(volta, { [id]: OPCOES_PADRAO[id] });
+  return { ...opcoes, ...volta };
+}

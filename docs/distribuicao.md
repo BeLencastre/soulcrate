@@ -1,6 +1,6 @@
 # Distribuição do app: instalar, atualizar, desinstalar e publicar
 
-> Referência da Fase 7 de [`interface-electron.md`](interface-electron.md). Para quem **instala** o app (seções 1 a 5) e para quem **publica** uma versão (seções 6 a 8).
+> Para quem **instala** o app (seções 1 a 6) e para quem **publica** uma versão (seções 7 e 8).
 
 ## Sumário
 
@@ -21,14 +21,14 @@
 2. (Opcional, recomendado) Confira o arquivo contra o `SHA256SUMS.txt` da mesma release:
 
    ```powershell
-   (Get-FileHash .\Soulcrate-Setup-1.0.0.exe -Algorithm SHA256).Hash.ToLower()
+   (Get-FileHash .\Soulcrate-Setup-<versão>.exe -Algorithm SHA256).Hash.ToLower()
    ```
 
    O resultado tem que ser igual ao da linha do arquivo em `SHA256SUMS.txt`.
 
 3. Dê dois cliques no instalador. A instalação é **por usuário** (não pede senha de administrador), cria um atalho no menu Iniciar e abre o app no fim.
 
-O instalador **ainda não é assinado** (decisão [D3](interface-electron.md#10-decisões-em-aberto): sem certificado no beta). Por isso o Windows mostra o SmartScreen na primeira vez:
+O instalador **ainda não é assinado** (não há certificado de assinatura; veja o [ADR 0003](adr/0003-app-desktop-decisoes-da-primeira-versao.md)). Por isso o Windows mostra o SmartScreen na primeira vez:
 
 > **O Windows protegeu seu computador** · O Microsoft Defender SmartScreen impediu a inicialização de um aplicativo não reconhecido.
 
@@ -63,7 +63,7 @@ Em desenvolvimento (`npm run dev`) e num app aberto sem o instalador não há at
 
 ## 4. Atualização dos arquivos da stack
 
-Uma versão nova do app pode trazer versões novas do `docker-compose.yml`, dos scripts, do `Dockerfile` do Soulbeet e da configuração do beets. Na primeira vez que o app novo abre, ele os atualiza na pasta do Soulcrate, seguindo a §3.3 da especificação:
+Uma versão nova do app pode trazer versões novas do `docker-compose.yml`, dos scripts, do `Dockerfile` do Soulbeet e da configuração do beets. Na primeira vez que o app novo abre, ele os atualiza na pasta do Soulcrate, seguindo o [ADR 0003](adr/0003-app-desktop-decisoes-da-primeira-versao.md):
 
 | Situação do arquivo na sua pasta | O que o app faz |
 | --- | --- |
@@ -82,7 +82,7 @@ Uma versão nova do app pode trazer versões novas do `docker-compose.yml`, dos 
 
 Configurações do Windows → Aplicativos → Soulcrate → Desinstalar.
 
-- **A pasta do Soulcrate nunca é apagada** (decisão [D17](interface-electron.md#10-decisões-em-aberto)): ela tem o `.env`, as listas, os relatórios e a biblioteca, pode estar em outro disco, e o desinstalador não tem como saber o que mais mora ali.
+- **A pasta do Soulcrate nunca é apagada** (decisão registrada no [ADR 0003](adr/0003-app-desktop-decisoes-da-primeira-versao.md)): ela tem o `.env`, as listas, os relatórios e a biblioteca, pode estar em outro disco, e o desinstalador não tem como saber o que mais mora ali.
 - O desinstalador pergunta se **também** remove as preferências e os logs do app (`%APPDATA%\Soulcrate`). O padrão é **Não** (manter).
 - Desinstalação silenciosa (`/S`) não pergunta nem apaga nada; `--delete-app-data` pede para remover a pasta de dados do app.
 - A stack (contêineres e imagens do Docker) **não** é desligada nem removida: use **Desligar** no app (ou `parar.bat`) antes de desinstalar, e `docker compose down --rmi all` se quiser remover as imagens.
@@ -104,8 +104,8 @@ O fluxo está em [`.github/workflows/release.yml`](../.github/workflows/release.
 2. Crie e envie a tag **com o mesmo número**, precedido de `v`:
 
    ```bash
-   git tag v1.0.0
-   git push origin v1.0.0
+   git tag v<versão>
+   git push origin v<versão>
    ```
 
 3. O workflow roda `npm run check`, os testes ponta a ponta, gera o instalador e cria um **rascunho** de release com `Soulcrate-Setup-<versão>.exe`, o `.blockmap`, o `latest.yml` (que o `electron-updater` lê) e o `SHA256SUMS.txt`.
@@ -143,19 +143,9 @@ O fluxo está em [`.github/workflows/release.yml`](../.github/workflows/release.
    gh api -X PATCH repos/BeLencastre/soulcrate/releases/<id> -f tag_name=v1.1.0
    ```
 
-Antes de cada release, rode também o roteiro manual: [`roteiro-manual.md`](roteiro-manual.md) (a matriz da [§7](interface-electron.md#7-estratégia-de-testes) da especificação, em forma de checklist).
+Antes de cada release, rode também o roteiro manual: [`roteiro-manual.md`](roteiro-manual.md) (a matriz de teste manual, em forma de checklist).
 
-**Checklist da primeira release (1.0.0):**
-
-1. O pull request com a versão (`app/package.json` em `1.0.0`, `VERSION` em `1.1.0`, `CHANGELOG.md`) passou no CI e entrou na `main`.
-2. O CI da `main` está verde (jobs de scripts, do app e do instalador).
-3. `git tag v1.0.0 && git push origin v1.0.0`. O workflow gera o **rascunho** da release.
-4. Baixe o `.exe` do rascunho, confira o SHA-256 e rode o [roteiro manual](roteiro-manual.md) numa máquina de teste. Anote o resultado no registro do roteiro.
-5. Revise as notas da release (cole a seção "App 1.0.0" do `CHANGELOG.md`) e **publique**.
-6. Depois de publicada, no `README.md`: troque o aviso "Ainda não há release publicada" por um link direto para a release, tire a frase "ainda não foi publicada" do bloco **Status** e confira o link de [Releases](https://github.com/BeLencastre/soulcrate/releases).
-7. Para testar a atualização de verdade (cenário G do roteiro), publique uma segunda versão (`1.0.1`) com uma mudança mínima.
-
-**Testar o ciclo instalar → atualizar → desinstalar** (critério de aceite da Fase 7), o que o CI faz a cada push:
+**Testar o ciclo instalar → atualizar → desinstalar** (o que o CI faz a cada push):
 
 ```powershell
 cd app
@@ -167,11 +157,11 @@ npx electron-builder --win nsis --publish never '-c.directories.output=dist-test
 
 O script **instala e desinstala o Soulcrate no seu usuário** (e recusa se achar uma instalação anterior): use numa máquina de teste. `-TestarApagarDados` também testa o `--delete-app-data` e apaga `%APPDATA%\Soulcrate`: só em máquina descartável (o CI).
 
-Canal beta (`allowPrerelease`) e a política de versões do Electron estão na [§8](interface-electron.md#8-depois-lançamento-e-manutenção).
+A política de atualização do Electron e das versões fixas da stack está em [Manutenção contínua](adr/0003-app-desktop-decisoes-da-primeira-versao.md#manutenção-contínua), no ADR 0003.
 
 ## 8. Assinatura de código
 
-Sem certificado (decisão D3), o instalador sai sem assinatura e o SmartScreen avisa (seção 1). Para assinar quando houver certificado:
+Sem certificado, o instalador sai sem assinatura e o SmartScreen avisa (seção 1). Para assinar quando houver certificado:
 
 1. Cadastre `CSC_LINK` (o `.pfx` em base64 ou uma URL) e `CSC_KEY_PASSWORD` como *secrets* do repositório. O `release.yml` já os repassa ao `electron-builder`.
 2. Em `app/electron-builder.yml`, tire `signExecutable: false` e acrescente `publisherName` com o nome exato do certificado: o `electron-updater` passa a conferir a assinatura de cada atualização.

@@ -3,6 +3,7 @@ import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import {
   alterouAlgo,
+  alternarReceita,
   aplicarReceita,
   argumentosDasOpcoes,
   comandoEquivalente,
@@ -152,6 +153,18 @@ describe('receitas do README', () => {
     const aplicada = aplicarReceita(base, querTudo);
     expect(receitaAtiva(querTudo, aplicada)).toBe(true);
     expect(receitaAtiva(querTudo, { ...aplicada, AceitarAacAiff: false })).toBe(false);
+  });
+
+  it('alternar: o primeiro clique aplica; o segundo volta ao padrão só o que a receita ajusta', () => {
+    const listaGrande = RECEITAS.find((r) => r.id === 'listaGrande');
+    if (!listaGrande) throw new Error('receita listaGrande sumiu');
+    const base = { ...novasOpcoes(), SemBeets: true };
+    const marcada = alternarReceita(base, listaGrande);
+    expect(marcada).toEqual({ ...base, Paralelo: 8 });
+    expect(receitaAtiva(listaGrande, marcada)).toBe(true);
+    const desmarcada = alternarReceita(marcada, listaGrande);
+    expect(desmarcada).toEqual(base);
+    expect(receitaAtiva(listaGrande, desmarcada)).toBe(false);
   });
 
   it('cada receita passa na validação', () => {

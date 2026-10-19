@@ -141,7 +141,7 @@ export class ChecksService {
       nota:
         estado === 'ok'
           ? null
-          : 'A imagem do Soulbeet pode estar incompleta. Use Reconstruir no Início e acompanhe o log do build.',
+          : 'A imagem do Soulbeet pode estar incompleta. Use Reiniciar no Início e acompanhe o log do build.',
     };
   }
 
@@ -186,7 +186,7 @@ export class ChecksService {
         item('o slskd e o Soulbeet não veem o mesmo /downloads', 'erro'),
         item(`diferem: ${so.slice(0, 3).join(', ')}`, 'neutro'),
       ],
-      nota: 'O /downloads precisa ser exatamente a mesma pasta nos dois contêineres. Confira DOWNLOADS_DIR no .env e use Reconstruir.',
+      nota: 'O /downloads precisa ser exatamente a mesma pasta nos dois contêineres. Confira DOWNLOADS_DIR no .env e use Reiniciar no Início.',
     };
   }
 

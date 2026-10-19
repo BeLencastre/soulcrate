@@ -1,4 +1,4 @@
-// Monta o comando que inicia o baixar-lista.ps1 destacado do app (§3.4 e SP3). Tudo aqui é puro e testado, porque é
+// Monta o comando que inicia o baixar-lista.ps1 destacado do app. Tudo aqui é puro e testado, porque é
 // o ponto onde aspas, espaços e acentos dão errado: o `-ArgumentList` do Start-Process junta os itens com espaço e
 // SEM aspas, então todo item com espaço precisa das suas, e o comando inteiro vai em -EncodedCommand para não
 // depender de nenhuma regra de aspas da linha de comando do Windows.

@@ -1,4 +1,5 @@
 // Tela Serviços (protótipo "Serviços"): as verificações do status.bat em verde/amarelo/vermelho e os logs de cada contêiner.
+// No Modo DJ a tela é outra (`servicos/ServicosDj.tsx`): um cartão por coisa que a pessoa usa, sem logs nem portas.
 import { useEffect, useRef, useState } from 'react';
 import * as Tabs from '@radix-ui/react-tabs';
 import { useQuery } from '@tanstack/react-query';
@@ -13,6 +14,8 @@ import { seguro } from '../lib/acoes';
 import { api } from '../lib/api';
 import { useAgora, useStackStatus } from '../lib/estado';
 import { textoDasLinhas, useLogs } from '../lib/logs';
+import { useModoDj } from '../lib/modo';
+import { ServicosDj } from './servicos/ServicosDj';
 
 const ALVOS: AlvoLog[] = [...SERVICOS.map((s) => s.id), 'todos'];
 
@@ -123,7 +126,7 @@ function PainelLogs({ rodando }: { rodando: boolean }) {
   );
 }
 
-export function Servicos() {
+function ServicosDev() {
   const status = useStackStatus();
   const rodando = status.docker.engine && status.servicos.some((s) => s.container === 'running');
   // refaz as verificações quando algum contêiner muda de estado, além do ritmo normal
@@ -205,4 +208,8 @@ export function Servicos() {
       </div>
     </div>
   );
+}
+
+export function Servicos() {
+  return useModoDj() ? <ServicosDj /> : <ServicosDev />;
 }

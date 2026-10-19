@@ -109,7 +109,7 @@ test('preferências: iniciar com o Windows, avisos e onde abrir valem na hora e 
   await marcar(iniciar);
   await expect.poll(() => global<boolean>(app, '__inicioComWindows')).toBe(true);
   expect(settings(amb).iniciarComWindows).toBe(true);
-  await marcar(janela.getByRole('switch', { name: /Avisar quando um lote terminar/ }), false);
+  await marcar(janela.getByRole('switch', { name: /Avisar quando um download terminar/ }), false);
   await marcar(janela.getByRole('switch', { name: /Avisar quando as buscas forem pausadas/ }), false);
   await marcar(janela.getByRole('radio', { name: 'No navegador' }));
   await expect.poll(() => settings(amb).abrirWebUi).toBe('navegador');
@@ -127,7 +127,7 @@ test('preferências: iniciar com o Windows, avisos e onde abrir valem na hora e 
   await expect.poll(() => global<boolean>(app, '__inicioComWindows')).toBe(true);
   await irParaConfiguracoes(janela, 'Aplicativo');
   await expect(janela.getByRole('switch', { name: /Iniciar com o Windows/ })).toBeChecked();
-  await expect(janela.getByRole('switch', { name: /Avisar quando um lote terminar/ })).not.toBeChecked();
+  await expect(janela.getByRole('switch', { name: /Avisar quando um download terminar/ })).not.toBeChecked();
   await expect(janela.getByRole('radio', { name: 'No navegador' })).toBeChecked();
 
   await marcar(janela.getByRole('switch', { name: /Iniciar com o Windows/ }), false);

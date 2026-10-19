@@ -761,3 +761,95 @@ describe('Configurações', () => {
     expect(api.setup.checkPort).toHaveBeenCalledTimes(1);
   });
 });
+
+describe('Modo DJ e Modo Dev: a escolha no assistente e as seções de Configurações', () => {
+  const comProjeto = (): StackStatus => ({
+    ...statusComPasta('C:\\Soulcrate'),
+    configuracao: { estado: 'valida', erros: 0, avisos: 0, achados: [] },
+  });
+  const preferencias = (modo: 'dj' | 'dev' | null) => ({
+    minimizarParaBandeja: true,
+    avisoBandejaDispensado: true,
+    pastaDoProjeto: null,
+    modo,
+  });
+
+  /** Configurações lê a configuração que já existe; o assistente começa de uma pasta vazia */
+  function comConfiguracao() {
+    config = configBoa();
+    api.config.read.mockImplementation(() => Promise.resolve(config));
+  }
+
+  async function irParaTelaFinal() {
+    renderizar(<Assistente />);
+    await irParaPasso(7);
+    fireEvent.click(screen.getByRole('button', { name: 'Gravar e ligar a stack' }));
+    await waitFor(() => expect(screen.getByTestId('tela-fim')).toBeTruthy());
+    return screen.getByRole('group', { name: /Como você vai usar o Soulcrate\?/ });
+  }
+
+  it('instalação nova: a tela final pergunta o modo com o Modo DJ marcado, e ir para o Início grava a escolha', async () => {
+    api.app.getSettings.mockResolvedValue(preferencias(null));
+    api.app.setSettings.mockImplementation((p: object) => Promise.resolve({ ...preferencias(null), ...p }));
+    const grupo = await irParaTelaFinal();
+    const dj = within(grupo).getByRole('radio', { name: /Sou DJ/ }) as HTMLInputElement;
+    await waitFor(() => expect(dj.checked).toBe(true));
+    expect(within(grupo).getByText('RECOMENDADO')).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: 'Ir para o Início' }));
+    await waitFor(() => expect(api.app.setSettings).toHaveBeenCalledWith({ modo: 'dj' }));
+  });
+
+  it('quem quer os detalhes técnicos marca o Modo Dev, que é gravado na hora', async () => {
+    api.app.getSettings.mockResolvedValue(preferencias(null));
+    api.app.setSettings.mockImplementation((p: object) => Promise.resolve({ ...preferencias(null), ...p }));
+    const grupo = await irParaTelaFinal();
+    fireEvent.click(within(grupo).getByRole('radio', { name: /Quero ver os detalhes técnicos/ }));
+    await waitFor(() => expect(api.app.setSettings).toHaveBeenCalledWith({ modo: 'dev' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Ir para o Início' }));
+    await waitFor(() => expect(api.app.setSettings).toHaveBeenLastCalledWith({ modo: 'dev' }));
+  });
+
+  it('refazer o assistente repete a escolha anterior em vez de propor o DJ de novo', async () => {
+    api.app.getSettings.mockResolvedValue(preferencias('dev'));
+    const grupo = await irParaTelaFinal();
+    await waitFor(() =>
+      expect(
+        (within(grupo).getByRole('radio', { name: /Quero ver os detalhes técnicos/ }) as HTMLInputElement).checked,
+      ).toBe(true),
+    );
+  });
+
+  it('no Modo DJ, Configurações só tem "Suas coisas" e as do app; o endereço de Rede abre Compartilhamento', async () => {
+    api.app.getSettings.mockResolvedValue(preferencias('dj'));
+    comConfiguracao();
+    renderizar(<Configuracoes />, comProjeto(), '/configuracoes?secao=rede');
+    expect(await screen.findByRole('heading', { level: 2, name: 'Compartilhamento' })).toBeTruthy();
+    const nav = screen.getByRole('navigation', { name: 'Seções' });
+    expect(
+      within(nav)
+        .getAllByRole('button')
+        .map((b) => b.textContent),
+    ).toEqual(['Pastas', 'Conta Soulseek', 'Compartilhamento', 'Aplicativo', 'Sobre']);
+    expect(nav.textContent).toContain('Suas coisas');
+    expect(await screen.findByText('Ouvir no celular e em outros aparelhos da casa')).toBeTruthy();
+    expect(screen.getByText('Suas pastas, sua conta do Soulseek e o jeito do app.')).toBeTruthy();
+  });
+
+  it('uma seção só do Modo Dev (Avançado, Conferência) volta para a seção inicial no Modo DJ', async () => {
+    api.app.getSettings.mockResolvedValue(preferencias('dj'));
+    comConfiguracao();
+    renderizar(<Configuracoes />, comProjeto(), '/configuracoes?secao=avancado');
+    expect(await screen.findByRole('heading', { level: 2, name: 'Pastas' })).toBeTruthy();
+    expect(screen.queryByRole('button', { name: 'Avançado' })).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Conferência' })).toBeNull();
+  });
+
+  it('no Modo Dev, nada muda: as seis seções da stack, sem Compartilhamento', async () => {
+    api.app.getSettings.mockResolvedValue(preferencias(null));
+    comConfiguracao();
+    renderizar(<Configuracoes />, comProjeto(), '/configuracoes');
+    const nav = await screen.findByRole('navigation', { name: 'Seções' });
+    await waitFor(() => expect(within(nav).getAllByRole('button')).toHaveLength(8));
+    expect(within(nav).queryByRole('button', { name: 'Compartilhamento' })).toBeNull();
+  });
+});

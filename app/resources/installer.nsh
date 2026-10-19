@@ -1,4 +1,4 @@
-﻿; Soulcrate: regras do instalador e do desinstalador (Fase 7, §5). O electron-builder inclui este arquivo sozinho.
+﻿; Soulcrate: regras do instalador e do desinstalador. O electron-builder inclui este arquivo sozinho.
 ;
 ; Desinstalar NUNCA apaga a pasta do Soulcrate (o .env, as listas, os relatórios em lotes/, a biblioteca e os downloads).
 ; Ela é do usuário, pode estar em outro disco, e o desinstalador não tem como saber o que mais mora ali. O que ele

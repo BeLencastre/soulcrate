@@ -78,7 +78,7 @@ jobs:
             throw "Já existe uma release PUBLICADA com a tag $tag ($($publicadas[0].html_url)): suba a versão em vez de republicar."
           }
           if ($rascunhos.Count -gt 1) {
-            throw "Há $($rascunhos.Count) rascunhos com a tag $tag (ids $($rascunhos.id -join ', ')): apague os que sobram e rode de novo (docs/distribuicao.md, §7)."
+            throw "Há $($rascunhos.Count) rascunhos com a tag $tag (ids $($rascunhos.id -join ', ')): apague os que sobram e rode de novo (docs/distribuicao.md, seção 7)."
           }
           if ($rascunhos.Count -eq 1) {
             $id = $rascunhos[0].id
@@ -100,7 +100,7 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      # com os segredos CSC_LINK e CSC_KEY_PASSWORD no repositório o electron-builder assina o instalador sozinho (D3);
+      # com os segredos CSC_LINK e CSC_KEY_PASSWORD no repositório o electron-builder assina o instalador sozinho;
       # sem eles sai sem assinatura e o SmartScreen avisa (docs/distribuicao.md)
       - name: Gerar o instalador e anexar ao rascunho da release
         run: npm run dist:publicar
@@ -110,7 +110,7 @@ jobs:
           CSC_KEY_PASSWORD: ${{ secrets.CSC_KEY_PASSWORD }}
           CSC_IDENTITY_AUTO_DISCOVERY: ${{ secrets.CSC_LINK != '' && 'true' || 'false' }}
 
-      # checksums SHA-256 junto da release (§8.1): quem baixa confere o arquivo antes de rodar. A release ainda é um
+      # checksums SHA-256 junto da release: quem baixa confere o arquivo antes de rodar. A release ainda é um
       # RASCUNHO, e a API de "release por tag" (usada pelo `gh release upload`) não enxerga rascunhos: usa o id devolvido
       # pelo passo do rascunho, confere que o electron-builder anexou tudo NELE e que não surgiu um segundo rascunho.
       - name: Checksums SHA-256
@@ -151,7 +151,7 @@ jobs:
             $lista = ($rascunhos | ForEach-Object { "  id $($_.id): $(@($_.assets.name) -join ', ')" }) -join "`n"
             throw ("Há $($rascunhos.Count) rascunhos com a tag $tag (o deste workflow é o $id):`n$lista`n" +
               "Junte os arquivos no rascunho $id, APAGUE os outros antes de publicar e anexe o SHA256SUMS.txt do artefato " +
-              "instalador-release (docs/distribuicao.md, §7).")
+              "instalador-release (docs/distribuicao.md, seção 7).")
           }
 
           $release = Invoke-GitHub Get "https://api.github.com/repos/$repo/releases/$id"
