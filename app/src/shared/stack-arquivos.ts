@@ -20,11 +20,12 @@ export const ARQUIVOS_DA_STACK: readonly string[] = [
   'validar-config.ps1',
   // slskd: só o modelo; o slskd.yml é gerado pelo assistente
   'slskd/slskd.example.yml',
-  // Soulbeet: imagem estendida, configuração do beets e plugin
+  // Soulbeet: imagem estendida, configuração do beets e plugins
   'soulbeet/Dockerfile',
   'soulbeet/fix-metadata.py',
   'soulbeet/config/config.yaml',
   'soulbeet/beets-plugins/keepmix.py',
+  'soulbeet/beets-plugins/pastas.py',
 ];
 
 /** Pastas vazias que o compose espera encontrar (o Docker cria só as de sintaxe curta, mas ficam à vista). */

@@ -19,6 +19,7 @@ cd app && npm run test:e2e                                # app: ponta a ponta (
 | `tests/baixar-lista.Integracao.Tests.ps1` | O lote inteiro contra um slskd falso: relatórios, eventos, parada segura, trava, códigos de saída, análise |
 | `tests/validar-config.Tests.ps1` | Regras do `.env` e do `slskd.yml` (casos em `app/tests/fixtures/config/casos.json`) |
 | `tests/Repositorio.Tests.ps1` | Codificação: `.ps1` com acento precisa de BOM; `.bat` só com ASCII |
+| `tests/soulbeet/test_pastas.py` | Nome das pastas do beets (`pastas.py`): primeiro artista e gênero unificado. Roda com `python -m unittest discover -s tests/soulbeet` (Python 3.11+, sem o contêiner) |
 
 **Mudou o `baixar-lista.ps1`?** Sem os parâmetros novos (`-Eventos`, `-ArquivoParada`, `-IdExecucao`, `-SoAnalisar`), a tela e os arquivos de `lotes/` precisam continuar iguais. Se o protocolo de eventos mudar, atualize [`docs/eventos-lote.md`](docs/eventos-lote.md), os tipos em `app/src/shared/` e regenere as fixtures:
 

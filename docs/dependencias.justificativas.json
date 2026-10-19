@@ -9,6 +9,11 @@
       "motivo": "Instala o Node.js da versão do app/.nvmrc e guarda o cache do npm no CI e na release. Ação oficial do GitHub.",
       "adicionada": "2026-10-07"
     },
+    "actions:actions/setup-python": {
+      "motivo": "Instala o Python 3.11 (o mesmo da imagem do Soulbeet) no CI para rodar os testes das regras dos plugins do beets (tests/soulbeet), só com a biblioteca padrão. Ação oficial do GitHub.",
+      "alternativas": "Usar o Python que vem no runner do Windows: a versão muda sem aviso e pode não bater com a da imagem.",
+      "adicionada": "2026-10-19"
+    },
     "actions:actions/upload-artifact": {
       "motivo": "Guarda resultados do Pester, capturas do Playwright e o instalador gerado como artefatos do CI. Ação oficial do GitHub.",
       "adicionada": "2026-10-07"

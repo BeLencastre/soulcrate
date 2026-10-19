@@ -661,12 +661,14 @@ Vale para as faixas do Soulbeet e do lote:
 2. **Título preservado:** o `keepmix` garante que "(Original Mix)", "(Extended Mix)" etc. não se percam no autotag.
 3. **BPM** (autobpm): calculado se o arquivo não tiver. É gravado como inteiro, com referência de 125 BPM.
 4. **Tom** (keyfinder): calculado se o arquivo não tiver. Vai na tag `TKEY` / `initial_key`.
-5. **Gênero** (lastgenre): só se o arquivo não tiver gênero. Ele define a **pasta raiz**.
+5. **Gênero** (lastgenre): só se o arquivo não tiver gênero. O primeiro gênero define a **pasta raiz**.
 6. **Capa:** busca uma capa de pelo menos 500 px e embute uma versão de 600 px. Se o arquivo já tem capa, ela é mantida.
 7. **Limpeza:** remove tags-lixo e grava em **ID3v2.3**.
-8. **Move** para `music/<Gênero>/<Artista>/<Título>.<ext>`:
-  - sem gênero, a pasta é `_Sem Genero`;
-  - caracteres proibidos em pendrive (`/ \ : * ? " < > |`) são trocados ou removidos. Por isso aparecem pastas como `Electro, Techno_House, Dance`;
+8. **Move** para `music/<Gênero>/<Artista>/<Título>.<ext>` (o plugin `pastas` escolhe os nomes; as tags não mudam):
+  - **Gênero:** o primeiro da tag, sem o qualificador entre parênteses e numa grafia só. `Hard Dance / Hardcore / Neo Rave`, `Hard Dance;Hardcore;Neo Rave` e `Hard Dance` vão todos para `Hard Dance`; `Techno (Peak Time / Driving)` vai para `Techno`; `psytrance`, `Psy Trance` e `Psy-Trance` vão para `Psy-Trance`. Gêneros diferentes continuam separados (`Hard Techno` não vira `Techno`);
+  - **Artista:** o primeiro da faixa. `KUKO, 9inebro, NEUF` e `KUKO feat. NEUF` vão para `KUKO`. O `&` não separa: `Above & Beyond` continua inteiro;
+  - sem gênero (ou com o nome de um site no lugar dele, como `djsoundtop.com`), a pasta é `_Sem Genero`;
+  - caracteres proibidos em pendrive (`/ \ : * ? " < > |`) são trocados ou removidos;
   - se a faixa já está na biblioteca, ela é **pulada** (não duplica).
 
 O Navidrome reescaneia a `music` a cada 15 min.
@@ -678,7 +680,8 @@ Tudo o que o beets faz está em `[soulbeet/config/config.yaml](soulbeet/config/c
 
 | Quero...                                     | Altere                                                     |
 | -------------------------------------------- | ---------------------------------------------------------- |
-| Outra estrutura de pastas                    | `paths:` (ex.: `'$genre/$artist - $title'`)                |
+| Outra estrutura de pastas                    | `paths:` (ex.: `'$genero_pasta/$artist - $title'`)         |
+| Juntar outra grafia de gênero na mesma pasta | `pastas.apelidos` (ex.: `'Psychedelic': 'Psy-Trance'`)     |
 | Sobrescrever o BPM/tom que já vem no arquivo | `autobpm.force` / `keyfinder.overwrite`                    |
 | Outro gênero de referência para o BPM        | `autobpm.beat_track_kwargs.start_bpm` (125 = house/techno) |
 | Capa maior/menor                             | `embedart.maxwidth`                                        |
@@ -688,7 +691,7 @@ Tudo o que o beets faz está em `[soulbeet/config/config.yaml](soulbeet/config/c
 > [!NOTE]
 > Mantenha `/opt/beets-plugins` em `pluginpath` e `musicbrainz`/`mbtwopass` em `plugins`: o Soulbeet depende deles.
 
-Depois de editar o `config.yaml`, basta reiniciar: `docker compose restart soulbeet`. Mudanças no `Dockerfile` exigem rebuild (`subir.bat`). Depois de mudar `paths:`, rode `BEET move` para reorganizar o que já está na biblioteca.
+Depois de editar o `config.yaml`, basta reiniciar: `docker compose restart soulbeet`. Mudanças no `Dockerfile` exigem rebuild (`subir.bat`). Depois de mudar `paths:` ou `pastas:`, rode **Suas músicas → Cuidar da biblioteca → Reorganizar as pastas** no app (ou `BEET move`) para reorganizar o que já está na biblioteca.
 
 ## Estrutura do projeto
 
@@ -711,7 +714,7 @@ soulcrate/                      # repositório (código)
 │   ├── Dockerfile              # soulbeet:full + keyfinder + autobpm + beetcamp
 │   ├── fix-metadata.py         # corrige metadados de pacotes da imagem base (lastgenre)
 │   ├── config/config.yaml      # configuração do beets (perfil DJ)
-│   └── beets-plugins/keepmix.py
+│   └── beets-plugins/          # keepmix.py (título com o mix) e pastas.py (nome das pastas)
 ├── docs/                       # distribuição, roteiro de teste manual, protocolo do lote, validação da configuração,
 │   │                           #   rotas do Navidrome e do Soulbeet, ADRs e img/ (as capturas de tela do README)
 ├── tests/                      # testes (Pester) e o slskd falso usado por eles
@@ -1065,7 +1068,7 @@ Versões testadas juntas (outubro de 2026). As marcadas como **fixa** estão tra
 | Componente                                                      | Versão                                    | Observação                                                                        |
 | --------------------------------------------------------------- | ----------------------------------------- | --------------------------------------------------------------------------------- |
 | Python                                                          | `3.11.2`                                  | o da imagem base (distroless, Debian 12)                                          |
-| [beets](https://github.com/beetbox/beets)                       | `2.11.0` (fixa)                           | restrição no `Dockerfile`; usado por `keepmix.py` (`beets.plugins`, `beets.util`) |
+| [beets](https://github.com/beetbox/beets)                       | `2.11.0` (fixa)                           | restrição no `Dockerfile`; usado por `keepmix.py` e `pastas.py` (`beets.plugins`) |
 | [mediafile](https://github.com/beetbox/mediafile)               | `0.17.0`                                  | usado por `keepmix.py` (`MediaFile`); vem com o beets                             |
 | [beetcamp](https://github.com/snejus/beetcamp)                  | `0.25.0` (fixa)                           | plugin `bandcamp`                                                                 |
 | [librosa](https://github.com/librosa/librosa)                   | `0.11.0` (fixa)                           | plugin `autobpm`                                                                  |
@@ -1077,7 +1080,7 @@ Versões testadas juntas (outubro de 2026). As marcadas como **fixa** estão tra
 | mbtwopass                                                       | o da imagem do Soulbeet                   | em `/opt/beets-plugins`                                                           |
 
 
-Plugins do beets ativos (`soulbeet/config/config.yaml`): `musicbrainz`, `mbtwopass`, `chroma`, `bandcamp`, `keepmix`, `autobpm`, `keyfinder`, `lastgenre`, `fetchart`, `embedart`, `scrub`.
+Plugins do beets ativos (`soulbeet/config/config.yaml`): `musicbrainz`, `mbtwopass`, `chroma`, `bandcamp`, `keepmix`, `pastas`, `autobpm`, `keyfinder`, `lastgenre`, `fetchart`, `embedart`, `scrub`.
 
 **Estágios de build** (só existem durante o `docker compose build`): `debian:bookworm-slim` e `python:3.11-slim-bookworm`.
 
