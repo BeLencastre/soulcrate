@@ -111,7 +111,7 @@ test('corrigir o título pela sugestão e tentar de novo baixa a faixa, sem edit
 
   // 1. o lote de verdade: uma faixa vem, a outra não (o título da lista está errado)
   await abrirListaDosRecentes(janela, 'set.txt');
-  await expect(janela.getByRole('region', { name: 'Pré-visualização' })).toContainText('2 para baixar', {
+  await expect(janela.getByRole('region', { name: 'Pré-visualização' })).toContainText('2 faixas', {
     timeout: 60_000,
   });
   await opcoesDeTeste(janela);

@@ -249,6 +249,44 @@ describe('Início no Modo DJ', () => {
     expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('Ligando…');
     expect(screen.getByTestId('passos-de-ligar')).toHaveTextContent('Passo 4 de 4 · esperando tudo responder');
   });
+
+  describe('aviso "Os arquivos da stack foram atualizados"', () => {
+    const comAviso = () =>
+      api.stackFiles.status.mockResolvedValue({
+        gerenciada: true,
+        motivoSemGestao: null,
+        versaoDaPasta: '1.1.0',
+        versaoDoApp: '1.1.0',
+        pendente: false,
+        esperando: false,
+        arquivosPendentes: 0,
+        aviso: {
+          aplicadoEm: 1,
+          versaoAnterior: '1.0.0',
+          versaoNova: '1.1.0',
+          atualizados: ['baixar-lista.ps1'],
+          copiados: [],
+          mantidos: [],
+          precisaReconstruir: false,
+          dispensado: false,
+        },
+      });
+
+    it('aparece no Modo Dev', async () => {
+      comAviso();
+      montar(<Inicio />, noAr(), 'dev');
+      expect(await screen.findByTestId('aviso-arquivos-da-stack')).toBeInTheDocument();
+    });
+
+    it('não aparece no Modo DJ', async () => {
+      comAviso();
+      montar(<Inicio />, noAr(), 'dj');
+      await screen.findByTestId('inicio-dj');
+      // espera as consultas da tela assentarem (o aviso, se fosse desenhado, já teria chegado)
+      await waitFor(() => expect(api.reports.listRuns).toHaveBeenCalled());
+      expect(screen.queryByTestId('aviso-arquivos-da-stack')).toBeNull();
+    });
+  });
 });
 
 // ---------------------------------------------------------------- Serviços

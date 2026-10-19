@@ -2,7 +2,7 @@
 // As três telas do lote renderizadas de verdade (React + Testing Library), com o `window.soulcrate` simulado.
 import './matchers';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { MemoryRouter, Route, Routes } from 'react-router';
 import completoRaw from '../fixtures/lote/eventos-completo.jsonl?raw';
 import erroConfigRaw from '../fixtures/lote/eventos-erro-config.jsonl?raw';
@@ -247,9 +247,11 @@ describe('tela Lista', () => {
 
     // os totais da análise
     const area = screen.getByRole('region', { name: 'Pré-visualização' });
-    expect(within(area).getByText('3 para baixar')).toBeInTheDocument();
-    expect(within(area).getByText('0 duplicadas')).toBeInTheDocument();
-    expect(within(area).getByText('1 já feita')).toBeInTheDocument();
+    expect(within(area).getAllByText('O que vai ser baixado').length).toBeGreaterThan(0);
+    expect(within(area).getByText('3 faixas')).toBeInTheDocument();
+    expect(within(area).getByText('0 repetidas')).toBeInTheDocument();
+    expect(within(area).getByText('1 baixada antes')).toBeInTheDocument();
+    expect(within(previa).getByText('Versão')).toBeInTheDocument();
     expect(screen.getByTestId('rodape-contagem')).toHaveTextContent('3 faixas para baixar');
   });
 
@@ -297,8 +299,8 @@ describe('tela Lista', () => {
     await abrirLista(TEXTO_PADRAO, analise({ alreadyDone: 2 }, new Date(2026, 9, 4, 12).getTime()));
     montar('/lista');
     const faixa = await screen.findByTestId('faixa-retomada');
-    expect(faixa).toHaveTextContent('Esta lista já rodou em 04/10.');
-    expect(faixa).toHaveTextContent('pula as 2 faixas já feitas');
+    expect(faixa).toHaveTextContent('Você já baixou esta lista em 04/10.');
+    expect(faixa).toHaveTextContent('pula as 2 faixas que já vieram');
 
     api.lists.analyze.mockClear();
     fireEvent.click(within(faixa).getByRole('checkbox', { name: 'Tentar de novo as que falharam' }));
@@ -350,19 +352,19 @@ describe('tela Lista', () => {
     expect(screen.getByTestId('iniciar-lote')).toBeDisabled();
   });
 
-  it('o rodapé diz o que difere do padrão e leva às opções', async () => {
+  it('o rodapé diz o que difere do padrão e leva aos ajustes', async () => {
     await abrirLista();
     useRascunho.getState().definirOpcoes({ ...novasOpcoes(), Paralelo: 8, AceitarAacAiff: true });
     montar('/lista');
-    expect(screen.getByText('Opções: padrão, com 2 alterações')).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: 'Revisar opções' })).toHaveAttribute('href', '/lista/opcoes');
+    expect(screen.getByText('Ajustes: 2 diferentes do padrão')).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Mudar ajustes' })).toHaveAttribute('href', '/lista/opcoes');
   });
 
   it('listas recentes: abre o diálogo e troca de lista', async () => {
     await abrirLista();
     api.lists.listRecent.mockResolvedValue([ref('outra.txt')]);
     montar('/lista');
-    fireEvent.click(screen.getByRole('button', { name: 'Listas recentes' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Minhas listas' }));
     const dialogo = await screen.findByTestId('dialogo-recentes');
     api.lists.read.mockResolvedValue(conteudo('X - Y', { nome: 'outra.txt' }));
     fireEvent.click(await within(dialogo).findByRole('button', { name: /outra\.txt/ }));
@@ -523,7 +525,7 @@ describe('iniciar o lote', () => {
 
 // ---------------------------------------------------------------- Opções
 
-describe('tela Opções', () => {
+describe('tela Ajustes no Modo Dev (o layout do Modo DJ, com os parâmetros do script)', () => {
   beforeEach(() => {
     useRascunho.setState({ lista: conteudo('x'), texto: 'x', textoSalvo: 'x' });
   });
@@ -533,19 +535,20 @@ describe('tela Opções', () => {
     expect(
       screen.getAllByRole('button', { pressed: false }).filter((b) => b.hasAttribute('data-receita')),
     ).toHaveLength(9);
-    for (const g of ['Qualidade', 'Títulos', 'Comportamento']) {
+    for (const g of ['Títulos', 'Comportamento']) {
       expect(screen.getByRole('region', { name: g })).toBeInTheDocument();
     }
-    expect(screen.getAllByRole('switch')).toHaveLength(11);
-    // Qualidade: FLAC e WAV são sempre aceitos; o resto é opção (padrão: desligado)
-    const qualidade = screen.getByRole('region', { name: 'Qualidade' });
+    expect(screen.getAllByRole('switch')).toHaveLength(8);
+    // Qualidade: FLAC e WAV são sempre aceitos; o resto é caixa de marcar (padrão: desmarcada), com o parâmetro ao lado
+    const qualidade = screen.getByRole('group', { name: /^Qualidade/ });
     expect(qualidade).toHaveTextContent('FLAC e WAV são sempre aceitos');
-    const chaves = within(qualidade).getAllByRole('switch');
-    expect(chaves).toHaveLength(3);
-    for (const c of chaves) expect(c).not.toBeChecked();
+    const caixas = within(qualidade).getAllByRole('checkbox');
+    expect(caixas).toHaveLength(3);
+    for (const c of caixas) expect(c).not.toBeChecked();
     for (const nome of [/Aceitar AAC e AIFF/, /Aceitar MP3 320/, /Aceitar MP3 256 e VBR/]) {
-      expect(within(qualidade).getByRole('switch', { name: nome })).toBeInTheDocument();
+      expect(within(qualidade).getByRole('checkbox', { name: nome })).toBeInTheDocument();
     }
+    expect(qualidade).toHaveTextContent('-AceitarAacAiff');
     // avançadas: fechadas até abrir
     expect(screen.queryByText('Downloads simultâneos')).toBeNull();
     fireEvent.click(screen.getByRole('button', { name: /Avançadas/ }));
@@ -553,25 +556,25 @@ describe('tela Opções', () => {
     expect(screen.getByText('Faixas por chamada do beets')).toBeInTheDocument();
   });
 
-  it('o resumo começa em "nenhuma opção diferente" e o comando é o do padrão', () => {
+  it('o resumo começa em "nenhum ajuste diferente" e o comando é o do padrão', () => {
     montar('/lista/opcoes');
-    expect(screen.getByTestId('resumo-opcoes')).toHaveTextContent('Nenhuma opção diferente do padrão do script');
+    expect(screen.getByTestId('resumo-opcoes')).toHaveTextContent('Nenhum ajuste diferente do padrão do script');
     expect(screen.getByTestId('comando-equivalente')).toHaveTextContent('baixar-lista.bat set.txt');
     expect(screen.queryByText('≠ PADRÃO')).toBeNull();
   });
 
-  it('ligar uma opção mostra "≠ PADRÃO", conta no resumo e entra no comando', () => {
+  it('marcar um ajuste mostra "≠ PADRÃO", conta no resumo e entra no comando', () => {
     montar('/lista/opcoes');
-    fireEvent.click(screen.getByRole('switch', { name: /Aceitar AAC e AIFF/ }));
+    fireEvent.click(screen.getByRole('checkbox', { name: /Aceitar AAC e AIFF/ }));
     expect(useRascunho.getState().opcoes.AceitarAacAiff).toBe(true);
     expect(
       within(document.querySelector('[data-opcao="AceitarAacAiff"]') as HTMLElement).getByText('≠ PADRÃO'),
     ).toBeInTheDocument();
-    expect(screen.getByTestId('resumo-opcoes')).toHaveTextContent('1 opção diferente do padrão do script');
+    expect(screen.getByTestId('resumo-opcoes')).toHaveTextContent('1 ajuste diferente do padrão do script');
     expect(screen.getByTestId('comando-equivalente')).toHaveTextContent('baixar-lista.bat set.txt -AceitarAacAiff');
   });
 
-  it('receita de um clique ajusta as opções e fica marcada; clicar em outra opção a desmarca', () => {
+  it('receita de um clique ajusta e fica marcada; clicar nela de novo ou mudar um ajuste dela a desmarca', () => {
     montar('/lista/opcoes');
     const receita = document.querySelector('[data-receita="querTudo"]') as HTMLElement;
     expect(receita).toHaveTextContent('-AceitarAacAiff -AceitarMp3320 -AceitarMp3Menor');
@@ -582,7 +585,13 @@ describe('tela Opções', () => {
       AceitarMp3Menor: true,
     });
     expect(receita).toHaveAttribute('aria-pressed', 'true');
-    fireEvent.click(screen.getByRole('switch', { name: /Aceitar AAC e AIFF/ }));
+    // o segundo clique desmarca: o que a receita ajustou volta ao padrão, o resto fica
+    act(() => useRascunho.getState().definirOpcoes({ ...useRascunho.getState().opcoes, Paralelo: 9 }));
+    fireEvent.click(receita);
+    expect(receita).toHaveAttribute('aria-pressed', 'false');
+    expect(useRascunho.getState().opcoes).toEqual({ ...novasOpcoes(), Paralelo: 9 });
+    fireEvent.click(receita);
+    fireEvent.click(screen.getByRole('checkbox', { name: /Aceitar AAC e AIFF/ }));
     expect(receita).toHaveAttribute('aria-pressed', 'false');
   });
 
@@ -592,7 +601,7 @@ describe('tela Opções', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Aumentar: Downloads simultâneos' }));
     expect(useRascunho.getState().opcoes.Paralelo).toBe(6);
     expect(screen.getByText('PADRÃO 5')).toBeInTheDocument();
-    expect(screen.getByText('1 ALTERADA')).toBeInTheDocument();
+    expect(screen.getByText('1 ALTERADO')).toBeInTheDocument();
     expect(screen.getByTestId('comando-equivalente')).toHaveTextContent('-Paralelo 6');
     for (let i = 0; i < 20; i++)
       fireEvent.click(screen.getByRole('button', { name: 'Diminuir: Downloads simultâneos' }));
@@ -631,10 +640,10 @@ async function carregarExecucao(eventos: EventoLote[], log: string[] = [], resum
   await useExecucao.getState().anexar('exemplo');
 }
 
-describe('tela Execução', () => {
-  it('sem execução: convida a iniciar um lote', () => {
+describe('tela Download (igual nos dois modos: recursos do Dev, textos do DJ)', () => {
+  it('sem execução: convida a escolher uma lista', () => {
     montar('/lista/execucao');
-    expect(screen.getByTestId('execucao-vazia')).toHaveTextContent('Nenhum lote em execução');
+    expect(screen.getByTestId('execucao-vazia')).toHaveTextContent('Nenhum download agora');
     expect(screen.getByRole('link', { name: 'Ir para a lista' })).toHaveAttribute('href', '/lista');
   });
 
@@ -643,7 +652,7 @@ describe('tela Execução', () => {
     await carregarExecucao(COMPLETO.slice(0, 22));
     montar('/lista/execucao');
     expect(screen.getByTestId('nome-da-lista')).toHaveTextContent('lista.txt');
-    expect(screen.getByTestId('estado-do-lote')).toHaveTextContent('Rodando');
+    expect(screen.getByTestId('estado-do-lote')).toHaveTextContent('Baixando');
     const c = useExecucao.getState().estado.contagem;
     expect(screen.getByTestId('progresso-numero')).toHaveTextContent(`${c.concluidas}/6`);
     expect(document.querySelector('[data-valor="baixadas"]')).toHaveTextContent(String(c.baixadas));
@@ -696,15 +705,15 @@ describe('tela Execução', () => {
     await waitFor(() => expect(screen.getByTestId('parar-lote')).toBeDisabled());
   });
 
-  it('parando: "Finalizando e gravando relatórios…" até o run.end; depois, relatórios gravados e botões de abrir', async () => {
+  it('parando: "Terminando…" até o run.end; depois, relatórios gravados e botões de abrir', async () => {
     await carregarExecucao(PARADO.slice(0, 7)); // até o run.stopping
     montar('/lista/execucao');
     expect(screen.getByTestId('estado-do-lote')).toHaveTextContent('Parando');
-    expect(screen.getByText('Finalizando e gravando relatórios…')).toBeInTheDocument();
+    expect(screen.getByText('Terminando…')).toBeInTheDocument();
     expect(screen.queryByTestId('parar-lote')).toBeNull();
 
     useExecucao.getState().aoEvento({ type: 'batch.events', runId: 'exemplo', desde: 7, eventos: PARADO.slice(7) });
-    await waitFor(() => expect(screen.getByTestId('estado-do-lote')).toHaveTextContent('Parado pelo usuário'));
+    await waitFor(() => expect(screen.getByTestId('estado-do-lote')).toHaveTextContent('Parado por você'));
     expect(screen.getByText('Relatórios gravados em lotes/')).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: 'Abrir resultado' }));
     expect(api.batch.openFile).toHaveBeenCalledWith('exemplo', 'resultado');
@@ -716,7 +725,7 @@ describe('tela Execução', () => {
     await carregarExecucao(COMPLETO);
     montar('/lista/execucao');
     expect(screen.getByTestId('estado-do-lote')).toHaveTextContent('Concluído');
-    expect(screen.getByText('Lote concluído')).toBeInTheDocument();
+    expect(screen.getByText('Download concluído')).toBeInTheDocument();
     expect(screen.queryByTestId('parar-lote')).toBeNull();
     fireEvent.click(screen.getByRole('button', { name: 'Abrir não baixadas' }));
     expect(api.batch.openFile).toHaveBeenCalledWith('exemplo', 'nao-baixadas');
@@ -725,7 +734,7 @@ describe('tela Execução', () => {
   it('configuração inválida: cartão de erro com a mensagem do script e a ação de abrir as configurações', async () => {
     await carregarExecucao(ERRO_CONFIG);
     montar('/lista/execucao');
-    expect(screen.getByTestId('estado-do-lote')).toHaveTextContent('Configuração inválida');
+    expect(screen.getByTestId('estado-do-lote')).toHaveTextContent('Faltou configurar');
     const erro = screen.getByRole('alert');
     expect(erro).toHaveAttribute('data-codigo-erro', 'lote.config');
     expect(within(erro).getByRole('button', { name: 'Ver configurações' })).toBeInTheDocument();
@@ -741,6 +750,7 @@ describe('tela Execução', () => {
     montar('/lista/execucao');
     expect(screen.getByTestId('estado-do-lote')).toHaveTextContent('Buscas pausadas');
     expect(screen.getByText(/^Buscas pausadas até \d{2}:\d{2}$/)).toBeInTheDocument();
+    expect(screen.getByText(/O Soulseek segurou as buscas/)).toBeInTheDocument();
   });
 
   it('log bruto: as linhas do script, na aba própria', async () => {
@@ -796,6 +806,16 @@ describe('tela Execução', () => {
     fireEvent.click(document.querySelector('[data-filtro="atencao"]') as HTMLElement);
     expect(screen.getByTestId('tabela-faixas')).toHaveAttribute('aria-rowcount', '101');
   });
+
+  it.each(['dev', 'dj'] as const)('Modo %s: a mesma tela, com o log bruto e os relatórios', async (modo) => {
+    await carregarExecucao(COMPLETO);
+    montar('/lista/execucao', stack(), modo);
+    expect(screen.getByTestId('tela-download')).toBeInTheDocument();
+    expect(screen.getByRole('tab', { name: 'Log bruto' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Abrir resultado' })).toBeInTheDocument();
+    expect(screen.getByRole('columnheader', { name: 'Situação' })).toBeInTheDocument();
+    expect(document.querySelector('[data-contador="beets"]')).toHaveTextContent('Organizando');
+  });
 });
 
 // ---------------------------------------------------------------- Barra lateral e Início
@@ -843,29 +863,37 @@ describe('estado a partir dos eventos', () => {
 // ---------------------------------------------------------------- Modo DJ
 
 describe('as três telas no Modo DJ', () => {
-  it('Lista: o mesmo editor, com "O que vai ser baixado", "Mudar ajustes" e "Baixar 3 faixas"', async () => {
-    await abrirLista(TEXTO_PADRAO, analise({ toProcess: 3 }));
-    montar('/lista', stack(), 'dj');
-    const etapas = screen.getByRole('navigation', { name: 'Etapas do download' });
-    expect(
-      within(etapas)
-        .getAllByRole('link')
-        .map((l) => l.textContent),
-    ).toEqual(['1Lista', '2Ajustes', '3Download']);
-    expect(screen.getByRole('button', { name: 'Minhas listas' })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Nova lista' })).toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: /Importar .txt ou .csv/ })).toBeNull();
-    expect(screen.getByText('Uma faixa por linha · Artista - Título')).toBeInTheDocument();
-    await waitFor(() => expect(screen.getByText('O que vai ser baixado')).toBeInTheDocument());
-    expect(screen.getByRole('link', { name: 'Mudar ajustes' })).toHaveAttribute('href', '/lista/opcoes');
-    await waitFor(() => expect(screen.getByTestId('iniciar-lote')).toHaveTextContent('Baixar 3 faixas'));
-  });
+  it.each(['dev', 'dj'] as const)(
+    'Modo %s: a Lista é a mesma, com as etapas 01 Lista, 02 Ajustes e 03 Download',
+    async (modo) => {
+      await abrirLista(TEXTO_PADRAO, analise({ toProcess: 3 }));
+      montar('/lista', stack(), modo);
+      const etapas = screen.getByRole('navigation', { name: 'Etapas do download' });
+      expect(
+        within(etapas)
+          .getAllByRole('link')
+          .map((l) => l.textContent),
+      ).toEqual(['01Lista', '02Ajustes', '03Download']);
+      expect(screen.getByTestId('nome-da-lista')).toHaveTextContent('set.txt');
+      expect(screen.getByRole('button', { name: 'Minhas listas' })).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: 'Nova a partir do exemplo' })).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /Importar .txt ou .csv/ })).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /Importar playlist/ })).toBeInTheDocument();
+      expect(screen.getByText('Uma faixa por linha · Artista - Título')).toBeInTheDocument();
+      await waitFor(() => expect(screen.getAllByText('O que vai ser baixado').length).toBeGreaterThan(0));
+      expect(screen.getByRole('link', { name: 'Mudar ajustes' })).toHaveAttribute('href', '/lista/opcoes');
+      await waitFor(() => expect(screen.getByTestId('iniciar-lote')).toHaveTextContent('Baixar 3 faixas'));
+    },
+  );
 
   it('Ajustes: interruptores em palavras (invertidos onde o script diz "Sem") e o resumo sem o comando', () => {
     useRascunho.setState({ lista: conteudo('x'), texto: 'x', textoSalvo: 'x' });
     montar('/lista/opcoes', stack(), 'dj');
-    expect(screen.getByTestId('ajustes-dj')).toBeInTheDocument();
+    expect(screen.getByTestId('ajustes')).toHaveAttribute('data-modo', 'dj');
     expect(screen.queryByTestId('comando-equivalente')).toBeNull();
+    // o nome da lista com a mesma fonte do Modo Dev
+    expect(screen.getByTestId('nome-da-lista').className).toContain('font-mono');
+    expect(screen.getByTestId('nome-da-lista')).toHaveTextContent('set.txt');
     const organizar = screen.getByRole('switch', { name: /Organizar depois de baixar/ });
     expect(organizar).toBeChecked();
     fireEvent.click(organizar);
@@ -879,22 +907,24 @@ describe('as três telas no Modo DJ', () => {
     expect(useRascunho.getState().opcoes.AceitarMp3320).toBe(true);
     // a situação comum marca o mesmo ajuste
     expect(screen.getByRole('button', { name: /Só baixar, organizar depois/ })).toHaveAttribute('aria-pressed', 'true');
+    // e o segundo clique nela desmarca, também no Modo DJ
+    fireEvent.click(screen.getByRole('button', { name: /Só baixar, organizar depois/ }));
+    expect(useRascunho.getState().opcoes.SemBeets).toBe(false);
+    expect(screen.getByRole('button', { name: /Só baixar, organizar depois/ })).toHaveAttribute(
+      'aria-pressed',
+      'false',
+    );
   });
 
-  it('Download: três contadores, sem o log bruto, e no fim o que fazer em seguida', async () => {
-    await carregarExecucao(COMPLETO);
-    montar('/lista/execucao', stack(), 'dj');
-    expect(screen.getByTestId('download-dj')).toBeInTheDocument();
-    expect(screen.queryByRole('tab', { name: 'Log bruto' })).toBeNull();
-    expect(screen.getByTestId('estado-do-lote')).toHaveTextContent('Concluído');
-    const valor = (k: string) => document.querySelector(`[data-valor="${k}"]`)?.textContent;
-    expect([valor('chegaram'), valor('andamento'), valor('naoVieram')]).toEqual(['4', '0', '2']);
-    expect(screen.getByTestId('fim-do-download')).toHaveTextContent('Download concluído');
-    expect(screen.getByRole('link', { name: 'Ver o que faltou' })).toHaveAttribute('href', '/historico/exemplo/faltas');
-    const filtro = (f: string) => document.querySelector(`[data-filtro="${f}"]`) as HTMLElement;
-    expect(filtro('naoVieram')).toHaveTextContent('Não vieram 2');
-    fireEvent.click(screen.getByRole('button', { name: 'Abrir a pasta' }));
-    expect(api.library.openMusicFolder).toHaveBeenCalled();
+  it.each(['dev', 'dj'] as const)('Modo %s: o mesmo layout de Ajustes, com o texto de cada modo', (modo) => {
+    useRascunho.setState({ lista: conteudo('x'), texto: 'x', textoSalvo: 'x' });
+    montar('/lista/opcoes', stack(), modo);
+    const qualidade = screen.getByRole('group', { name: /^Qualidade/ });
+    expect(within(qualidade).getAllByRole('checkbox')).toHaveLength(3);
+    expect(within(qualidade).queryByRole('switch')).toBeNull();
+    const receita = document.querySelector('[data-receita="listaGrande"]') as HTMLElement;
+    expect(receita).toHaveTextContent(modo === 'dj' ? 'Baixa 8 faixas ao mesmo tempo.' : '-Paralelo 8');
+    expect(screen.getByRole('heading', { name: modo === 'dj' ? 'Situações comuns' : 'Receitas' })).toBeInTheDocument();
   });
 
   it('a barra lateral chama o lote rodando de "Baixando agora"', async () => {

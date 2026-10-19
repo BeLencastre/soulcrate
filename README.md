@@ -343,7 +343,7 @@ As cinco etapas do ambiente (Docker, Docker Desktop, configuração, stack e ser
 
 #### Baixar lista
 
-Editor da lista com pré-visualização feita pelo próprio script (repetidas, "já na biblioteca", "já feita", linhas com problema). Importa `.txt`/`.csv` pelo botão ou arrastando para a janela e cria a lista a partir do exemplo.
+Três etapas: **01 Lista**, **02 Ajustes** e **03 Download**. A Lista tem o editor com a pré-visualização feita pelo próprio script (o que vai ser baixado, repetidas, "já na biblioteca", "baixada antes", linhas com problema). Importa `.txt`/`.csv` pelo botão ou arrastando para a janela e cria a lista a partir do exemplo.
 
 ![Tela Baixar lista: o editor à esquerda e a pré-visualização do que o lote vai ler à direita](docs/img/03-lista.png)
 
@@ -351,11 +351,11 @@ Editor da lista com pré-visualização feita pelo próprio script (repetidas, "
 
 ![Diálogo Importar playlist: a revisão de uma playlist do Deezer, com as faixas, a repetida marcada e o nome da lista](docs/img/03-importar-playlist.png)
 
-Depois vêm as **opções** do lote: as receitas da tabela de [Opções](#opções), com o que difere do padrão destacado e o comando equivalente.
+Depois vêm os **ajustes** do lote: as receitas da tabela de [Opções](#opções) (um clique liga, outro desliga), a qualidade em caixas de marcar, os outros ajustes em interruptores e as avançadas, com o que difere do padrão destacado. No Modo Dev, cada ajuste mostra o parâmetro do script e o resumo traz o comando equivalente; no Modo DJ, cada um diz o que faz.
 
-![Tela de opções do lote, com as receitas e os interruptores, e o que difere do padrão destacado](docs/img/04-opcoes.png)
+![Tela de ajustes do lote, com as receitas, a qualidade e os interruptores, e o que difere do padrão destacado](docs/img/04-opcoes.png)
 
-E o **painel ao vivo**: progresso, contadores, tabela por faixa (com filtro e busca), log bruto, parada segura e notificação do Windows ao terminar. **Fechar o app não interrompe o lote**: ao reabrir, o painel volta de onde estava.
+E o **Download**, ao vivo: progresso, contadores, tabela por faixa (com filtro e busca), log bruto, parada segura e notificação do Windows ao terminar. A Lista e o Download são iguais nos dois modos. **Fechar o app não interrompe o lote**: ao reabrir, o painel volta de onde estava.
 
 ![Painel de execução do lote concluído: 10 baixadas e 1 não encontrada, com a tabela por faixa](docs/img/05-execucao.png)
 
@@ -513,7 +513,7 @@ Cloudy - Yeah (Cloudy Remix)
   ```bat
   baixar-lista.bat minhas.txt -Paralelo 8 -AceitarAacAiff
   ```
-- **No app:** tela **Baixar lista** → escolha ou cole a lista → **Opções** → iniciar.
+- **No app:** tela **Baixar lista** → escolha ou cole a lista → **Ajustes** → iniciar.
 - **Linux/macOS:** `pwsh ./baixar-lista.ps1 -Lista lista.txt`.
 
 O Docker precisa estar no ar (o `.bat` avisa se não estiver). Pode **fechar a janela no meio**: ao rodar de novo a mesma lista, ele continua de onde parou. Downloads já enfileirados no slskd continuam por lá. Enquanto roda, o PC não entra em suspensão.

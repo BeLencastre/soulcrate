@@ -1,11 +1,10 @@
 // Etapa 1 do lote (protótipo "Baixar lista · Lista"): editor da lista com a pré-visualização ao lado (gerada pelo
 // próprio baixar-lista.ps1, com debounce), importação (arquivo ou playlist de streaming), listas recentes, retomada e
-// o botão de iniciar. No Modo DJ muda só o vocabulário ("O que vai ser baixado", "Baixar 11 faixas", "Mudar ajustes").
+// o botão de iniciar. Igual nos dois modos (os textos do Modo DJ, os recursos do Modo Dev).
 import { useEffect, useState } from 'react';
 import * as Dialog from '@radix-ui/react-dialog';
 import { Link } from 'react-router';
 import { msg } from '@shared/mensagens';
-import { msgDj } from '@shared/mensagens-dj';
 import { alterouAlgo, opcoesAlteradas } from '@shared/opcoes-lote';
 import { origemDoTexto, STREAMINGS, streamingPorId, type StreamingId } from '@shared/playlists';
 import { resumirStack } from '@shared/stack';
@@ -21,8 +20,6 @@ import { useAgora, useStackStatus } from '../../lib/estado';
 import { avisoDaLinha, COR_DO_MARCADOR, linhaPulada, marcadoresDoEditor } from '../../lib/lote-lista';
 import { dataCurta, haQuanto } from '../../lib/lote-painel';
 import { estaSujo, execucaoRodando, ultimaListaLembrada, useExecucao, useRascunho } from '../../lib/lote-store';
-import { semExtensao } from '../../lib/historico';
-import { useModoDj } from '../../lib/modo';
 
 const ALTURA_LINHA_EDITOR = 24;
 const COLUNAS_PREVIA = '44px minmax(80px,1.1fr) minmax(90px,1.4fr) minmax(70px,0.9fr) minmax(150px,1.5fr)';
@@ -85,12 +82,11 @@ function EditorDaLista({
 
 function Previa({ linhas }: { linhas: readonly LinhaAnalise[] }) {
   const c = msg.lote.lista.colunas;
-  const dj = useModoDj();
   return (
     <TabelaVirtual
-      rotulo={dj ? msgDj.lote.lista.comoVaiLer : msg.lote.lista.comoVaiLer}
+      rotulo={msg.lote.lista.comoVaiLer}
       colunas={COLUNAS_PREVIA}
-      cabecalho={[c.numero, c.artista, c.titulo, dj ? msgDj.lote.lista.versao : c.mix, c.aviso]}
+      cabecalho={[c.numero, c.artista, c.titulo, c.mix, c.aviso]}
       linhas={linhas}
       alturaLinha={40}
       alturaMax={520}
@@ -226,8 +222,7 @@ function ListaVazia({ aoImportarPlaylist }: { aoImportarPlaylist(s: StreamingId)
   const criar = useRascunho((s) => s.criar);
   const importar = useRascunho((s) => s.importarArquivo);
   const t = msg.lote.lista;
-  const dj = useModoDj();
-  const vazio = dj ? msgDj.lote.lista.vazio : t.vazio;
+  const vazio = t.vazio;
   return (
     <div className="flex flex-col gap-6">
       <Cartao borda="vazio" className="flex max-w-[880px] flex-col gap-5 p-6" data-testid="lista-vazia">
@@ -236,21 +231,10 @@ function ListaVazia({ aoImportarPlaylist }: { aoImportarPlaylist(s: StreamingId)
           <h2 className="m-0 text-lg font-extrabold">{vazio.titulo}</h2>
           <p className="m-0 max-w-[640px] text-sm leading-normal text-texto-claro">{vazio.corpo}</p>
           <div className="mt-1 flex flex-wrap gap-2">
-            {dj ? (
-              <>
-                <Botao variante="primario" onClick={() => void criar('vazia')}>
-                  {msgDj.lote.lista.novaDoExemplo}
-                </Botao>
-                <Botao onClick={() => void criar('exemplo')}>{t.novaDoExemplo}</Botao>
-              </>
-            ) : (
-              <>
-                <Botao variante="primario" onClick={() => void criar('exemplo')}>
-                  {t.novaDoExemplo}
-                </Botao>
-                <Botao onClick={() => void criar('vazia')}>{t.novaEmBranco}</Botao>
-              </>
-            )}
+            <Botao variante="primario" onClick={() => void criar('exemplo')}>
+              {t.novaDoExemplo}
+            </Botao>
+            <Botao onClick={() => void criar('vazia')}>{t.novaEmBranco}</Botao>
             <Botao onClick={() => void importar()}>
               <IconeEnviar />
               {t.importar}
@@ -260,7 +244,7 @@ function ListaVazia({ aoImportarPlaylist }: { aoImportarPlaylist(s: StreamingId)
         <GradeDeStreamings aoEscolher={aoImportarPlaylist} />
       </Cartao>
       <Cartao className="flex max-w-[880px] flex-col gap-3 p-5">
-        <Rotulo>{dj ? msgDj.lote.lista.listasRecentes : t.recentes.titulo}</Rotulo>
+        <Rotulo>{t.recentes.titulo}</Rotulo>
         <ListaDeRecentes aoEscolher={(nome) => void abrir(nome)} />
       </Cartao>
     </div>
@@ -309,8 +293,6 @@ export function Lista() {
   const avisoPlaylist = useRascunho((s) => s.avisoPlaylist);
   const atualizandoPlaylist = useRascunho((s) => s.atualizandoPlaylist);
   const iniciarLote = useIniciarLote();
-  const dj = useModoDj();
-  const tdj = msgDj.lote.lista;
 
   const sujo = estaSujo({ texto, textoSalvo });
   const somenteLeitura = lista?.somenteLeitura ?? false;
@@ -378,8 +360,8 @@ export function Lista() {
         <div className="flex flex-col gap-2">
           <Rotulo>{msg.lote.rotulo}</Rotulo>
           <div className="flex flex-wrap items-center gap-3">
-            <h1 className={`m-0 text-[28px] font-bold ${dj ? '' : 'font-mono'}`} data-testid="nome-da-lista">
-              {lista ? (dj ? semExtensao(lista.nome) : lista.nome) : msg.nav.lista}
+            <h1 className="m-0 font-mono text-[28px] font-bold" data-testid="nome-da-lista">
+              {lista ? lista.nome : msg.nav.lista}
             </h1>
             {lista ? <EstadoDoSalvamento /> : null}
           </div>
@@ -410,20 +392,13 @@ export function Lista() {
               setRecentesAbertas(true);
             }}
           >
-            {dj ? tdj.listasRecentes : t.listasRecentes}
+            {t.listasRecentes}
           </Botao>
-          {dj ? (
-            // no Modo DJ, importar um arquivo é arrastar para a janela (a dica do editor diz isso)
-            <Botao onClick={() => void useRascunho.getState().criar('vazia')}>{tdj.novaDoExemplo}</Botao>
-          ) : (
-            <>
-              <Botao onClick={() => void useRascunho.getState().criar('exemplo')}>{t.novaDoExemplo}</Botao>
-              <Botao onClick={() => void useRascunho.getState().importarArquivo()}>
-                <IconeEnviar />
-                {t.importar}
-              </Botao>
-            </>
-          )}
+          <Botao onClick={() => void useRascunho.getState().criar('exemplo')}>{t.novaDoExemplo}</Botao>
+          <Botao onClick={() => void useRascunho.getState().importarArquivo()}>
+            <IconeEnviar />
+            {t.importar}
+          </Botao>
           <Botao onClick={() => setPlaylistAberta('spotify')} data-testid="abrir-importar-playlist">
             <IconePlaylist />
             {tp.botao}
@@ -486,8 +461,8 @@ export function Lista() {
               data-testid="faixa-retomada"
             >
               <span className="min-w-[320px] flex-1 text-sm leading-normal">
-                <strong>{(dj ? tdj : t).retomada.titulo(dataCurta(ultimaExecucao))}</strong>{' '}
-                <span className="text-texto-suave">{(dj ? tdj : t).retomada.corpo(analiseOk.alreadyDone)}</span>
+                <strong>{t.retomada.titulo(dataCurta(ultimaExecucao))}</strong>{' '}
+                <span className="text-texto-suave">{t.retomada.corpo(analiseOk.alreadyDone)}</span>
               </span>
               <label className="inline-flex cursor-pointer items-center gap-2 text-[13px]">
                 <input
@@ -506,9 +481,9 @@ export function Lista() {
               role="status"
               className="flex flex-wrap items-center gap-3 rounded-lg border border-azul-borda bg-azul-fundo px-4 py-3 text-sm"
             >
-              <span className="flex-1">{dj ? tdj.rodandoAgora : t.rodandoAgora}</span>
+              <span className="flex-1">{t.rodandoAgora}</span>
               <Link className={classeBotao('padrao', true)} to="/lista/execucao">
-                {dj ? tdj.verExecucao : t.verExecucao}
+                {t.verExecucao}
               </Link>
             </div>
           ) : null}
@@ -520,7 +495,7 @@ export function Lista() {
               data-testid="editor"
             >
               <div className="flex items-center gap-3 border-b border-borda-fraca px-4 py-[10px]">
-                <span className="lbl">{dj ? tdj.cabecalhoEditor : t.cabecalhoEditor}</span>
+                <span className="lbl">{t.cabecalhoEditor}</span>
                 <span className="ml-auto font-mono text-xs text-texto-mudo">{t.linhas(texto.split('\n').length)}</span>
               </div>
               <EditorDaLista
@@ -530,7 +505,7 @@ export function Lista() {
                 marcadores={marcadores}
               />
               <div className="flex items-center gap-[10px] border-t border-dashed border-borda-forte px-4 py-3 text-[13px] text-texto-suave">
-                {somenteLeitura ? t.somenteLeitura : origem ? tp.dicaOrigem : dj ? tdj.dica : t.dica}
+                {somenteLeitura ? t.somenteLeitura : origem ? tp.dicaOrigem : t.dica}
               </div>
             </section>
 
@@ -540,17 +515,8 @@ export function Lista() {
               aria-busy={analisando || !fresca}
             >
               <div className="flex flex-wrap items-center gap-2 border-b border-borda-fraca px-4 py-[10px]">
-                <span className="lbl mr-[6px]">{dj ? tdj.comoVaiLer : t.comoVaiLer}</span>
-                {analiseOk && dj ? (
-                  <>
-                    <Chip cor="verde">{tdj.paraBaixar(paraBaixar)}</Chip>
-                    <Chip cor="neutro">{tdj.duplicadas(analiseOk.duplicates)}</Chip>
-                    {analiseOk.libraryChecked ? (
-                      <Chip cor="neutro">{tdj.naBiblioteca(analiseOk.inLibrary ?? 0)}</Chip>
-                    ) : null}
-                    {analiseOk.alreadyDone > 0 ? <Chip cor="neutro">{tdj.jaFeitas(analiseOk.alreadyDone)}</Chip> : null}
-                  </>
-                ) : analiseOk ? (
+                <span className="lbl mr-[6px]">{t.comoVaiLer}</span>
+                {analiseOk ? (
                   <>
                     <Chip cor="verde">{t.paraBaixar(paraBaixar)}</Chip>
                     <Chip cor="laranja">{t.duplicadas(analiseOk.duplicates)}</Chip>
@@ -595,14 +561,10 @@ export function Lista() {
               <strong className="font-mono text-base">{paraBaixar}</strong> {t.rodapeFaixas(paraBaixar)}
             </span>
             <span className="text-[13px] text-texto-suave">
-              {alterouAlgo(opcoes)
-                ? (dj ? tdj : t).opcoesAlteradas(nAlteracoes)
-                : dj
-                  ? tdj.opcoesPadrao
-                  : t.opcoesPadrao}
+              {alterouAlgo(opcoes) ? t.opcoesAlteradas(nAlteracoes) : t.opcoesPadrao}
             </span>
             <Link to="/lista/opcoes" className="text-[13px] font-semibold">
-              {dj ? tdj.revisarOpcoes : t.revisarOpcoes}
+              {t.revisarOpcoes}
             </Link>
             <div className="ml-auto flex gap-2">
               <Botao
@@ -618,13 +580,7 @@ export function Lista() {
                 data-testid="iniciar-lote"
               >
                 <IconePlay />
-                {dj
-                  ? iniciarLote.ocupado
-                    ? tdj.iniciando
-                    : tdj.iniciar(analiseOk ? paraBaixar : 0)
-                  : iniciarLote.ocupado
-                    ? t.iniciando
-                    : t.iniciar}
+                {iniciarLote.ocupado ? t.iniciando : t.iniciar(analiseOk ? paraBaixar : 0)}
               </Botao>
             </div>
           </div>

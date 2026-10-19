@@ -1,16 +1,13 @@
-// As regras do Modo DJ no renderer, sem React: o atalho, os ajustes em palavras (com os interruptores invertidos), o
-// painel do download e o histórico (nova tentativa, frase da linha, arquivos parecidos).
+// As regras do Modo DJ no renderer, sem React: o atalho, os ajustes em palavras (com os interruptores invertidos) e o
+// histórico (nova tentativa, frase da linha, arquivos parecidos).
 import { describe, expect, it, vi } from 'vitest';
 import type { ExecucaoResumo } from '../../src/shared/historico';
-import { estadoInicialLote, type FaixaLote } from '../../src/shared/lote-estado';
 import { novasOpcoes, OPCOES_PADRAO } from '../../src/shared/opcoes-lote';
 // os módulos também têm hooks de consulta, que importam o `window.soulcrate`; aqui só as regras puras importam
 vi.mock('../../src/renderer/lib/api', () => ({ api: {} }));
 const { ehAtalhoDoModo } = await import('../../src/renderer/lib/modo');
 const { linhasDoResumoDj, marcadoNoDj, numericosAlterados, opcaoDoDj } =
   await import('../../src/renderer/lib/ajustes-dj');
-const { contarDj, esperandoOrganizar, faixaDoPainelDj, filtrarDj, grupoDj, infoNoDj, notaDj } =
-  await import('../../src/renderer/lib/download-dj');
 const { arquivoParecido, origemDaTentativa, semExtensao } = await import('../../src/renderer/lib/historico');
 
 describe('atalho Ctrl+Shift+D', () => {
@@ -57,84 +54,6 @@ describe('ajustes no Modo DJ', () => {
     ]);
     expect(numericosAlterados(tudo)).toBe(1);
     expect(numericosAlterados(OPCOES_PADRAO)).toBe(0);
-  });
-});
-
-const faixa = (n: number, status: string, extra: Partial<FaixaLote> = {}): FaixaLote => ({
-  n,
-  key: `k${n}`,
-  linha: `Artista ${n} - Título ${n}`,
-  status,
-  naFilaDoUsuario: false,
-  formato: null,
-  usuario: null,
-  tentativa: null,
-  nota: '',
-  linhaBusca: null,
-  busca: null,
-  candidatos: null,
-  ultimaFalha: null,
-  temDiagnostico: false,
-  local: null,
-  ...extra,
-});
-
-describe('download no Modo DJ', () => {
-  const faixas = [
-    faixa(1, 'importada'),
-    faixa(2, 'baixada'),
-    faixa(3, 'baixada (beets falhou)'),
-    faixa(4, 'nao encontrada'),
-    faixa(5, 'falhou'),
-    faixa(6, 'buscando'),
-    faixa(7, 'ja feita'),
-  ];
-
-  it('três grupos que importam: chegou (mesmo sem organizar), não veio e em andamento', () => {
-    expect(faixas.map(grupoDj)).toEqual([
-      'chegaram',
-      'chegaram',
-      'chegaram',
-      'naoVieram',
-      'naoVieram',
-      'andamento',
-      'pulada',
-    ]);
-    expect(contarDj(faixas)).toEqual({ todas: 7, chegaram: 3, naoVieram: 2, andamento: 1, pulada: 1 });
-    expect(filtrarDj(faixas, 'naoVieram', '').map((f) => f.n)).toEqual([4, 5]);
-    expect(filtrarDj(faixas, 'todas', 'título 6').map((f) => f.n)).toEqual([6]);
-  });
-
-  it('os rótulos falam sem "beets" nem "execução"', () => {
-    expect(infoNoDj(faixa(1, 'importando')).rotulo).toBe('Organizando');
-    expect(infoNoDj(faixa(1, 'baixada (beets falhou)')).rotulo).toBe('Baixada, sem organizar');
-    expect(infoNoDj(faixa(1, 'ja feita')).rotulo).toBe('Baixada antes');
-    expect(infoNoDj(faixa(1, 'baixando', { naFilaDoUsuario: true })).rotulo).toBe('Esperando o usuário');
-  });
-
-  it('esperando organizar e a nota só no fim', () => {
-    expect(esperandoOrganizar(faixas)).toBe(true);
-    expect(esperandoOrganizar([faixa(1, 'importada')])).toBe(false);
-    expect(notaDj(faixa(1, 'importada', { nota: 'veio da busca pelo artista' }))).toBe('veio da busca pelo artista');
-    expect(notaDj(faixa(1, 'buscando', { nota: 'qualquer' }))).toBe('');
-  });
-
-  it('a faixa de aviso troca as palavras e some no fim (o DJ tem o aviso próprio)', () => {
-    const e = estadoInicialLote();
-    expect(faixaDoPainelDj({ ...e, fase: 'aguardando' }, 0)).toMatchObject({ id: 'iniciando', titulo: 'Começando…' });
-    expect(faixaDoPainelDj({ ...e, fase: 'parando' }, 0)).toMatchObject({ id: 'parando', titulo: 'Terminando…' });
-    expect(faixaDoPainelDj({ ...e, fase: 'rodando', janelaCheia: true }, 0)).toMatchObject({
-      id: 'janela',
-      titulo: 'Buscando devagar',
-    });
-    const fim = {
-      t: '2026-10-07T15:48:36.000-03:00',
-      reason: 'completed' as const,
-      message: '',
-      summary: {},
-      files: {},
-    };
-    expect(faixaDoPainelDj({ ...e, fase: 'terminou', fim } as never, 0)).toBeNull();
   });
 });
 

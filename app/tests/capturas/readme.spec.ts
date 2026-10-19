@@ -171,7 +171,7 @@ test('capturas: lista, opções, execução, histórico e diagnóstico', async (
 
   // 1. a lista, com a pré-visualização feita pelo próprio script
   await abrirListaDosRecentes(janela, 'set-sexta.txt');
-  await expect(janela.getByRole('region', { name: 'Pré-visualização' })).toContainText('11 para baixar', {
+  await expect(janela.getByRole('region', { name: 'Pré-visualização' })).toContainText('11 faixas', {
     timeout: 60_000,
   });
   await foto(janela, '03-lista');

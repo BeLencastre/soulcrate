@@ -328,43 +328,6 @@ export const msgDj = {
 
   /** Baixar lista: Lista, Ajustes e Download (protótipos "DJ · Baixar lista") */
   lote: {
-    etapas: {
-      rotulo: 'Etapas do download',
-      lista: { numero: '1', rotulo: 'Lista' },
-      opcoes: { numero: '2', rotulo: 'Ajustes' },
-      execucao: { numero: '3', rotulo: 'Download' },
-    },
-    lista: {
-      listasRecentes: 'Minhas listas',
-      novaDoExemplo: 'Nova lista',
-      cabecalhoEditor: 'Uma faixa por linha · Artista - Título',
-      dica: 'Arraste um .txt ou .csv para a janela, ou cole a tracklist de um set.',
-      comoVaiLer: 'O que vai ser baixado',
-      paraBaixar: (n: number) => `${n} ${plural(n, 'faixa', 'faixas')}`,
-      duplicadas: (n: number) => `${n} ${plural(n, 'repetida', 'repetidas')}`,
-      naBiblioteca: (n: number) => `${n} já na biblioteca`,
-      jaFeitas: (n: number) => `${n} ${plural(n, 'baixada antes', 'baixadas antes')}`,
-      versao: 'Versão',
-      retomada: {
-        titulo: (data: string) => `Você já baixou esta lista em ${data}.`,
-        corpo: (feitas: number) =>
-          feitas > 0
-            ? `O download continua de onde parou e pula ${feitas === 1 ? 'a faixa que já veio' : `as ${feitas} faixas que já vieram`}.`
-            : 'Nada do que já veio será baixado de novo.',
-      },
-      rodandoAgora: 'Esta lista está baixando agora.',
-      verExecucao: 'Ver o download',
-      opcoesPadrao: 'Ajustes: padrão',
-      opcoesAlteradas: (n: number) => `Ajustes: ${n} ${plural(n, 'diferente', 'diferentes')} do padrão`,
-      revisarOpcoes: 'Mudar ajustes',
-      iniciar: (n: number) => (n > 0 ? `Baixar ${n} ${plural(n, 'faixa', 'faixas')}` : 'Baixar'),
-      iniciando: 'Começando…',
-      vazio: {
-        titulo: 'Escolha uma lista',
-        corpo:
-          'Uma faixa por linha, no formato Artista - Título. Abra uma lista sua, traga uma playlist de um streaming ou comece por uma lista nova.',
-      },
-    },
     ajustes: {
       situacoes: 'Situações comuns',
       situacoesDica: 'Um clique ajusta tudo para o caso.',
@@ -480,69 +443,6 @@ export const msgDj = {
         `${motivo}. Resolva isso no Início e volte aqui; sua lista e seus ajustes ficam como estão.`,
       demorou: 'O Soulcrate não ficou pronto a tempo. Veja os serviços e tente de novo.',
     },
-    download: {
-      rotulo: 'Baixar lista',
-      vazio: {
-        titulo: 'Nenhum download agora',
-        corpo: 'Escolha uma lista, confira os ajustes e baixe. O andamento aparece aqui.',
-        irParaLista: 'Ir para a lista',
-      },
-      abrirPasta: 'Abrir a pasta',
-      verOQueFaltou: 'Ver o que faltou',
-      voltarALista: 'Voltar à lista',
-      concluidas: 'concluídas',
-      levou: 'levou',
-      baixandoHa: 'baixando há',
-      faltam: 'faltam',
-      calculando: 'calculando…',
-      barra: (c: { chegaram: number; naoVieram: number; andamento: number }) =>
-        `Progresso: ${c.chegaram} chegaram, ${c.naoVieram} não vieram, ${c.andamento} em andamento`,
-      contadores: { chegaram: 'Chegaram', andamento: 'Em andamento', naoVieram: 'Não vieram' },
-      filtrar: 'Filtrar',
-      filtros: { todas: 'Todas', andamento: 'Em andamento', chegaram: 'Chegaram', naoVieram: 'Não vieram' },
-      colunas: { numero: '#', faixa: 'Faixa', situacao: 'Situação', formato: 'Formato' },
-      porQue: 'Por quê?',
-      porQueDe: (linha: string) => `Por que não veio: ${linha}`,
-      tabela: 'Faixas do download',
-      fim: {
-        titulo: 'Download concluído',
-        organizar: 'As faixas estão em downloads, esperando para ser organizadas.',
-        organizarAgora: 'Organizar agora',
-        naBiblioteca: 'As faixas já estão na biblioteca, com tom, BPM e gênero.',
-        abrirBiblioteca: 'Abrir a biblioteca',
-        parado: 'Download parado',
-        paradoCorpo: 'O que já tinha chegado ficou. Baixe a lista de novo para continuar de onde parou.',
-      },
-      /** a faixa de aviso durante o download, sem "lote", "script" nem "relatórios" */
-      faixa: {
-        iniciando: ['Começando…', 'Preparando o download.'] as const,
-        catalogo: 'Conferindo os títulos no catálogo antes de buscar.',
-        janela: [
-          'Buscando devagar',
-          'O Soulseek limita quantas buscas cada um faz. As próximas começam em instantes; os downloads seguem normalmente.',
-        ] as const,
-        pausado: 'O Soulseek segurou as buscas por alguns minutos. Os downloads continuam; as buscas voltam sozinhas.',
-        parando: ['Terminando…', 'Esperando os downloads em andamento. Não feche o Soulcrate à força.'] as const,
-        avisoSlskd: 'A busca não respondeu',
-        avisoMusicbrainz: 'Catálogo de títulos indisponível',
-      },
-    },
-    /** a situação de cada faixa (o mesmo mapa de `msg.lote.status`), sem "beets" nem "execução" */
-    status: {
-      aguardando: 'Aguardando',
-      buscando: 'Procurando',
-      aguardandoVaga: 'Aguardando a vez',
-      baixando: 'Baixando',
-      naFila: 'Esperando o usuário',
-      organizando: 'Organizando',
-      naBiblioteca: 'Na biblioteca',
-      baixada: 'Baixada',
-      beetsFalhou: 'Baixada, sem organizar',
-      jaEstavaNaBiblioteca: 'Já estava na biblioteca',
-      jaFeita: 'Baixada antes',
-      naoEncontrada: 'Não encontrada',
-      falhou: 'Não baixou',
-    } satisfies Record<keyof typeof msg.lote.status, string>,
   },
 
   /** Histórico, o detalhe de um download e "O que faltou" (protótipos "DJ · Histórico") */

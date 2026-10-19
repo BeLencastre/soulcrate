@@ -11,7 +11,7 @@ import { FUNCAO_DO_SERVICO, msgDj } from '@shared/mensagens-dj';
 import { numeroDoPasso, PASSOS_DE_LIGAR, situacaoDj, type PassoDeLigar, type SituacaoDj } from '@shared/painel-dj';
 import { acoesDisponiveis, servicoDe, servicoSaudavel, type StackStatus } from '@shared/stack';
 import type { ServicoId } from '@shared/servicos';
-import { AvisoDeAtualizacaoDoApp, AvisoDosArquivosDaStack } from '../../components/AvisosDoApp';
+import { AvisoDeAtualizacaoDoApp } from '../../components/AvisosDoApp';
 import { CartaoErro } from '../../components/CartaoErro';
 import { BotoesDaStack } from '../../components/BotoesDaStack';
 import { IconeBaixar, IconeBusca, IconeFones, IconeTransferencias } from '../../components/icones';
@@ -360,7 +360,7 @@ export function InicioDj() {
       {erro ? <CartaoErro erro={erro} aoFechar={dispensarOperacao} /> : null}
 
       <AvisoDeAtualizacaoDoApp />
-      <AvisoDosArquivosDaStack />
+      {/* Sem o aviso dos arquivos da stack: é detalhe técnico (arquivos .novo, reconstruir a imagem) e fica no Modo Dev. */}
 
       <Atalhos status={status} />
 

@@ -1,11 +1,12 @@
 // Etapa 3 do lote (protótipo "Baixar lista · Execução ao vivo"): faixa de aviso, progresso com a barra por faixa,
 // contadores, a tabela de faixas (filtro e busca) e a aba com o log bruto. Tudo vem dos eventos do script; fechar o
 // app não interrompe o lote, e ao reabrir o painel é remontado a partir do arquivo de eventos.
-// No Modo DJ a tela é outra (`DownloadDj.tsx`): três contadores, a situação de cada faixa e o que fazer no fim.
+// Igual nos dois modos: os recursos do Modo Dev, com os títulos e textos do Modo DJ ("Download", "Baixando").
 import { useEffect, useMemo, useRef, useState } from 'react';
 import * as Tabs from '@radix-ui/react-tabs';
 import { Link } from 'react-router';
 import { msg } from '@shared/mensagens';
+import { msgDj } from '@shared/mensagens-dj';
 import {
   contarPorGrupo,
   filtrarFaixas,
@@ -35,8 +36,6 @@ import {
 } from '../../lib/lote-painel';
 import { useExecucao } from '../../lib/lote-store';
 import { FaixaDeAviso } from '../../components/lote/FaixaDeAviso';
-import { useModoDj } from '../../lib/modo';
-import { DownloadDj } from './DownloadDj';
 
 const COR_SEGMENTO: Record<CorSegmento, string> = {
   verde: 'var(--color-led-verde)',
@@ -194,7 +193,7 @@ function TabelaDeFaixas({ faixas }: { faixas: readonly FaixaLote[] }) {
 
 // ---------------------------------------------------------------- Tela
 
-function ExecucaoDev() {
+export function Execucao() {
   const runId = useExecucao((s) => s.runId);
   const anexado = useExecucao((s) => s.anexado);
   const estado = useExecucao((s) => s.estado);
@@ -252,7 +251,7 @@ function ExecucaoDev() {
   }
 
   return (
-    <div className="flex flex-col gap-[18px] pb-4">
+    <div className="flex flex-col gap-[18px] pb-4" data-testid="tela-download">
       <header className="flex flex-wrap items-end justify-between gap-4">
         <div className="flex flex-col gap-2">
           <Rotulo>{t.rotulo(runId)}</Rotulo>
@@ -261,7 +260,7 @@ function ExecucaoDev() {
               {nomeDaLista ?? '…'}
             </h1>
             <span data-testid="estado-do-lote" data-estado={chave}>
-              <Chip cor={corDoEstado(chave)}>{t.estado[chave]}</Chip>
+              <Chip cor={corDoEstado(chave)}>{msgDj.estadoDoDownload[chave]}</Chip>
             </span>
           </div>
         </div>
@@ -309,7 +308,8 @@ function ExecucaoDev() {
           <span className="ml-auto flex gap-6 text-[13px] text-texto-suave">
             {duracao !== null ? (
               <span>
-                {t.rodandoHa} <strong className="font-mono text-texto">{formatarDuracao(duracao)}</strong>
+                {estado.fase === 'terminou' ? t.levou : t.rodandoHa}{' '}
+                <strong className="font-mono text-texto">{formatarDuracao(duracao)}</strong>
               </span>
             ) : null}
             {estado.fase === 'rodando' ? (
@@ -383,8 +383,4 @@ function ExecucaoDev() {
       </Cartao>
     </div>
   );
-}
-
-export function Execucao() {
-  return useModoDj() ? <DownloadDj /> : <ExecucaoDev />;
 }

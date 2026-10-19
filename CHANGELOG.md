@@ -11,9 +11,9 @@ O **app desktop** e a **stack** (Docker Compose, scripts e configuração do bee
 - **Modo DJ e Modo Dev.** O Modo DJ mostra só o que importa para baixar, organizar e ouvir, sem termos técnicos; o Modo Dev é o app de sempre, com as etapas do ambiente, os logs, as portas, as opções do script e a configuração completa da stack. Troque pelo alternador no rodapé da barra lateral, ou pelo atalho **Ctrl+Shift+D**. A troca muda só o que aparece: a tela atual fica onde está, nada é apagado e um download em andamento continua.
 - Numa instalação nova, a tela final do assistente pergunta como você vai usar o Soulcrate, com o Modo DJ marcado. **Quem já usa o app continua no Modo Dev** até escolher outro.
 - No Modo DJ:
-  - o **Início** diz numa frase o que está acontecendo, com o único botão que resolve ("O player não está respondendo → Reiniciar o player"), e traz atalhos para baixar, buscar, ouvir e ver transferências, o último download e a biblioteca;
+  - o **Início** diz numa frase o que está acontecendo, com o único botão que resolve ("O player não está respondendo → Reiniciar o player"), e traz atalhos para baixar, buscar, ouvir e ver transferências, o último download e a biblioteca. O aviso "Os arquivos da stack foram atualizados" (arquivos `.novo`, reconstruir a imagem) só aparece no Modo Dev;
   - **Serviços** mostra um cartão por coisa que você usa (organização, busca e download, player, compartilhamento, pastas);
-  - **Baixar lista** vira *Lista · Ajustes · Download*: os ajustes falam o que fazem ("Organizar depois de baixar") e o download conta o que chegou e o que faltou;
+  - em **Baixar lista → Ajustes**, cada ajuste diz o que faz ("Organizar depois de baixar", "Baixa 8 faixas ao mesmo tempo.") no lugar do parâmetro do script, e o resumo fala em frases, sem o comando equivalente;
   - **Configurações** fica com Pastas, Conta Soulseek, **Compartilhamento** (músicas compartilhadas, ouvir no celular e o teste da porta) e as preferências do app.
   - Onde o Modo DJ esconde algo útil para resolver um problema, "Mostrar detalhes técnicos" leva à mesma tela no Modo Dev.
 
@@ -22,10 +22,12 @@ O **app desktop** e a **stack** (Docker Compose, scripts e configuração do bee
 - **Biblioteca, nos dois modos:** a tela se chama **Suas músicas**; os indicadores viraram "Sem gênero" e "Esperando organizar"; a manutenção virou **Cuidar da biblioteca**, com cada tarefa explicada em palavras ("Calcular tom e BPM que faltam", "Atualizar depois de mexer nos arquivos"); o compartilhamento conta as músicas compartilhadas e o botão virou **Atualizar a lista**. O botão de abrir a pasta diz qual pasta abre ("Abrir DJ/Musics no Explorer"), e o tom aparece também na roda de Camelot ("8A Am").
 - **Início, nos dois modos:** Ligar e Desligar viraram um botão só, que alterna conforme a stack está ligada ou desligada, e **Reconstruir** passou a se chamar **Reiniciar** (faz o mesmo: refaz a imagem e recria os contêineres) e aparece também no Modo DJ.
 - **Configurações → Aplicativo, nos dois modos:** as preferências usam os textos mais simples ("Avisar quando um download terminar", "Abrir a busca, as transferências e o player").
+- **Baixar lista, nos dois modos:** as etapas são *01 Lista · 02 Ajustes · 03 Download* (a 02 se chamava *Opções*). Os Ajustes têm o mesmo layout nos dois modos: a explicação de cada grupo embaixo do título, a qualidade em caixas de marcar e as avançadas em duas colunas; o Modo Dev continua mostrando o parâmetro do script ("-Paralelo 8") e o comando equivalente. A Lista e o Download têm os textos mais simples ("O que vai ser baixado", "Minhas listas", "Baixar 11 faixas", "3 repetidas", "Esta lista está baixando agora", "Buscando devagar", "Terminando…") e continuam com tudo o que tinham: os botões de importar, o nome do arquivo, os nove contadores, a tabela com usuário, tentativa e observação, o log bruto e os relatórios.
 - **Histórico, nos dois modos:** a tela se chama **Seus downloads**, com os textos mais simples ("Ver o que faltou", "Com faixas que faltaram", "Apagar os antigos…"), e a coluna Lista mostra quantas faixas a lista tinha, no lugar de "eventos" ou "antiga · lida do resultado-*.txt".
 
 ### Corrigido
 
+- **Baixar lista → Ajustes: clicar de novo numa receita não a desmarcava.** Agora o segundo clique desmarca e volta ao padrão só o que a receita tinha ajustado.
 - **Assistente: o Avançar podia ignorar um clique feito logo depois de o passo aparecer.** Com o computador ocupado, o clique na hora em que o passo "Pastas das músicas" surgia não fazia nada e não mostrava nenhum aviso. Agora ele sempre avança.
 
 ## App 1.1.1 (2026-10-13)
