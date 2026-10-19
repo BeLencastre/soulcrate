@@ -3,10 +3,8 @@
 import { useState, type ReactNode } from 'react';
 import * as Dialog from '@radix-ui/react-dialog';
 import { useQuery } from '@tanstack/react-query';
-import type { AppSettings, ModoInterface, OndeAbrirWebUi, TemaPreferido } from '@shared/ipc';
+import type { AppSettings, OndeAbrirWebUi, TemaPreferido } from '@shared/ipc';
 import { msg } from '@shared/mensagens';
-import { msgDj } from '@shared/mensagens-dj';
-import { modoEfetivo } from '@shared/modo';
 import type { ResultadoPacoteSuporte } from '@shared/sobre';
 import { erroInesperado, type AppError } from '@shared/erros';
 import { resumirStack } from '@shared/stack';
@@ -15,19 +13,16 @@ import { api } from '../../lib/api';
 import { textoDaAtualizacao, useArquivosDaStack, useEstadoAtualizacao } from '../../lib/atualizacao';
 import { useStackStatus } from '../../lib/estado';
 import { formatarBytes } from '../../lib/historico';
-import { useTrocarModo } from '../../lib/modo';
 import { useMudarSettings, useSettings } from '../../lib/preferencias';
 import { CartaoErro } from '../CartaoErro';
 import { ErroDeLeitura } from '../estados';
 import { Interruptor } from '../campos';
-import { EscolhaDoModo } from '../modo';
 import { Botao, Cartao, Chip, Rotulo } from '../ui';
 
 // ---------------------------------------------------------------- Aplicativo
 
 function GrupoDeOpcoes<T extends string>({
   legenda,
-  dica,
   nome,
   valor,
   opcoes,
@@ -35,7 +30,6 @@ function GrupoDeOpcoes<T extends string>({
   desabilitado,
 }: {
   legenda: string;
-  dica?: string;
   nome: string;
   valor: T | undefined;
   opcoes: readonly { valor: T; rotulo: string }[];
@@ -45,7 +39,6 @@ function GrupoDeOpcoes<T extends string>({
   return (
     <fieldset className="m-0 flex flex-col gap-[10px] border-0 p-0" disabled={desabilitado}>
       <legend className="pb-[10px] font-bold">{legenda}</legend>
-      {dica ? <p className="hint m-0">{dica}</p> : null}
       <div className="flex flex-wrap gap-2">
         {opcoes.map((o) => (
           <label key={o.valor} className="rad">
@@ -66,46 +59,14 @@ function GrupoDeOpcoes<T extends string>({
 }
 
 /**
- * O modo da interface, no topo das preferências. No Modo Dev, dois rádios com a explicação do que o DJ esconde; no
- * Modo DJ, os dois cartões do assistente. A troca daqui não mostra o aviso: a escolha já está à vista.
+ * As preferências do app: interruptores, onde abrir as Web UIs e o tema. Gravam na hora (sem "Salvar"). Iguais nos
+ * dois modos; o modo se troca só na barra lateral (ou Ctrl+Shift+D).
  */
-function GrupoDoModo({ modo, desabilitado }: { modo: ModoInterface; desabilitado: boolean }) {
-  const trocar = useTrocarModo();
-  const t = msg.modo.configuracoes;
-  if (modo === 'dev') {
-    return (
-      <GrupoDeOpcoes<ModoInterface>
-        legenda={t.legenda}
-        dica={t.dicaDev}
-        nome="modo-da-interface"
-        valor={modo}
-        desabilitado={desabilitado}
-        aoMudar={(m) => trocar(m)}
-        opcoes={[
-          { valor: 'dj', rotulo: t.dj.titulo },
-          { valor: 'dev', rotulo: t.dev.titulo },
-        ]}
-      />
-    );
-  }
-  return (
-    <fieldset className="m-0 flex flex-col gap-[10px] border-0 p-0" disabled={desabilitado}>
-      <legend className="pb-[10px] font-bold">{t.legenda}</legend>
-      <p className="hint m-0">{t.dicaDj}</p>
-      <EscolhaDoModo textos={t} valor={modo} aoMudar={(m) => trocar(m)} desabilitado={desabilitado} />
-    </fieldset>
-  );
-}
-
-/** As preferências do app: modo, interruptores, onde abrir as Web UIs e o tema. Gravam na hora (sem "Salvar"). */
 export function SecaoAplicativo() {
   const { data, isError, refetch } = useSettings();
   const mudar = useMudarSettings();
   const t = msg.aplicativo;
   const gravar = (parcial: Partial<AppSettings>) => seguro(mudar(parcial));
-  const modo = modoEfetivo(data);
-  const dj = modo === 'dj';
-  const tdj = msgDj.aplicativo;
 
   if (isError) {
     return (
@@ -118,7 +79,6 @@ export function SecaoAplicativo() {
   const desabilitado = !data;
   return (
     <div className="flex flex-col gap-[22px]" data-testid="secao-aplicativo" aria-busy={desabilitado}>
-      <GrupoDoModo modo={modo} desabilitado={desabilitado} />
       <Interruptor
         titulo={t.iniciarComWindows.titulo}
         descricao={t.iniciarComWindows.dica}
@@ -128,27 +88,27 @@ export function SecaoAplicativo() {
       />
       <Interruptor
         titulo={t.bandeja.titulo}
-        descricao={dj ? tdj.bandejaDica : t.bandeja.dica}
+        descricao={t.bandeja.dica}
         marcado={data?.minimizarParaBandeja ?? true}
         desabilitado={desabilitado}
         aoMudar={(v) => gravar({ minimizarParaBandeja: v })}
       />
       <Interruptor
-        titulo={dj ? tdj.avisarLote.titulo : t.avisarLote.titulo}
-        descricao={dj ? tdj.avisarLote.dica : t.avisarLote.dica}
+        titulo={t.avisarLote.titulo}
+        descricao={t.avisarLote.dica}
         marcado={data?.avisarFimDoLote ?? true}
         desabilitado={desabilitado}
         aoMudar={(v) => gravar({ avisarFimDoLote: v })}
       />
       <Interruptor
         titulo={t.avisarPausa.titulo}
-        descricao={dj ? tdj.avisarPausaDica : t.avisarPausa.dica}
+        descricao={t.avisarPausa.dica}
         marcado={data?.avisarBuscasPausadas ?? true}
         desabilitado={desabilitado}
         aoMudar={(v) => gravar({ avisarBuscasPausadas: v })}
       />
       <GrupoDeOpcoes<OndeAbrirWebUi>
-        legenda={dj ? tdj.abrirWebUi : t.abrirWebUi.grupo}
+        legenda={t.abrirWebUi.grupo}
         nome="abrir-webui"
         valor={data?.abrirWebUi}
         desabilitado={desabilitado}
@@ -160,7 +120,6 @@ export function SecaoAplicativo() {
       />
       <GrupoDeOpcoes<TemaPreferido>
         legenda={t.tema.grupo}
-        {...(dj ? {} : { dica: t.tema.dica })}
         nome="tema"
         valor={data?.tema}
         desabilitado={desabilitado}

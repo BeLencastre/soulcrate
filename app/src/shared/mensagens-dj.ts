@@ -58,17 +58,6 @@ export const msgDj = {
     },
   },
 
-  /** Configurações → Aplicativo: as mesmas preferências, ditas sem "lote" nem nomes de programa */
-  aplicativo: {
-    bandejaDica: 'O download continua de qualquer forma; isto só decide se o app sai junto.',
-    avisarLote: {
-      titulo: 'Avisar quando um download terminar',
-      dica: 'Notificação do Windows com quantas faixas chegaram.',
-    },
-    avisarPausaDica: 'O Soulseek às vezes segura as buscas por alguns minutos. O download continua sozinho depois.',
-    abrirWebUi: 'Abrir a busca, as transferências e o player',
-  },
-
   configuracoes: {
     subtitulo: 'Suas pastas, sua conta do Soulseek e o jeito do app.',
     grupoSuasCoisas: 'Suas coisas',

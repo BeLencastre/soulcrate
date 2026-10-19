@@ -66,6 +66,7 @@ describe('antes da primeira sondagem', () => {
       ligar: false,
       desligar: false,
       reconstruir: false,
+      alternar: 'ligar',
     });
   });
 
@@ -102,7 +103,7 @@ describe('resumirStack', () => {
     expect(abrindo).toMatchObject({ estado: 'ligando', nivel: 'amarelo', motivo: 'docker-abrindo' });
     expect(rotuloResumo(resumirStack(status({ operacao: 'ligando' })))).toBe('Ligando…');
     expect(rotuloResumo(resumirStack(status({ operacao: 'desligando' })))).toBe('Desligando…');
-    expect(rotuloResumo(resumirStack(status({ operacao: 'reconstruindo' })))).toBe('Reconstruindo…');
+    expect(rotuloResumo(resumirStack(status({ operacao: 'reconstruindo' })))).toBe('Reiniciando…');
   });
 
   it('sem pasta do Soulcrate: atenção', () => {
@@ -243,20 +244,25 @@ describe('derivarEtapas', () => {
 });
 
 describe('acoesDisponiveis', () => {
-  it('desligada: só Ligar e Reconstruir', () => {
-    expect(acoesDisponiveis(status())).toEqual({ ligar: true, desligar: false, reconstruir: true });
+  it('desligada: o botão único oferece Ligar, e Reiniciar vale', () => {
+    expect(acoesDisponiveis(status())).toEqual({ ligar: true, desligar: false, reconstruir: true, alternar: 'ligar' });
   });
-  it('no ar: Desligar e Reconstruir; Ligar não faz nada', () => {
-    expect(acoesDisponiveis(comServicos(TODOS))).toEqual({ ligar: false, desligar: true, reconstruir: true });
+  it('no ar: o botão único oferece Desligar, e Reiniciar vale', () => {
+    expect(acoesDisponiveis(comServicos(TODOS))).toEqual({
+      ligar: false,
+      desligar: true,
+      reconstruir: true,
+      alternar: 'desligar',
+    });
   });
-  it('parcial: Ligar sobe o que falta', () => {
-    expect(
-      acoesDisponiveis(comServicos({ slskd: { c: 'exited', s: 'nenhuma', http: null }, soulbeet: {}, navidrome: {} }))
-        .ligar,
-    ).toBe(true);
+  it('parcial: o botão único oferece Desligar (algo está de pé); Reiniciar sobe o que falta', () => {
+    const a = acoesDisponiveis(
+      comServicos({ slskd: { c: 'exited', s: 'nenhuma', http: null }, soulbeet: {}, navidrome: {} }),
+    );
+    expect(a).toMatchObject({ ligar: true, desligar: true, reconstruir: true, alternar: 'desligar' });
   });
   it('nada vale sem Docker, sem pasta ou durante uma operação', () => {
-    const nada = { ligar: false, desligar: false, reconstruir: false };
+    const nada = { ligar: false, desligar: false, reconstruir: false, alternar: 'ligar' };
     expect(acoesDisponiveis(status({ docker: { ...status().docker, engine: false } }))).toEqual(nada);
     expect(acoesDisponiveis(status({ projeto: { dir: null, origem: null } }))).toEqual(nada);
     expect(acoesDisponiveis(status({ operacao: 'ligando' }))).toEqual(nada);

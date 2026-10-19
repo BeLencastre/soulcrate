@@ -67,8 +67,7 @@ export function SaidaParaModoDev() {
 }
 
 /**
- * A escolha do modo em dois cartões (rádios num fieldset): na tela final do assistente ("Sou DJ", recomendado) e em
- * Configurações → Aplicativo no Modo DJ. Grava na hora, como as outras preferências.
+ * A escolha do modo em dois cartões (rádios num fieldset): na tela final do assistente ("Sou DJ", recomendado). Grava na hora, como as outras preferências.
  */
 export function EscolhaDoModo({
   textos,

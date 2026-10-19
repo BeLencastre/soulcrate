@@ -314,6 +314,11 @@ export interface AcoesStack {
   ligar: boolean;
   desligar: boolean;
   reconstruir: boolean;
+  /**
+   * O que o botão único Ligar/Desligar oferece: desligar enquanto algum contêiner estiver de pé (uma stack pela
+   * metade se completa com Reiniciar), ligar quando nenhum estiver.
+   */
+  alternar: 'ligar' | 'desligar';
 }
 
 export function acoesDisponiveis(status: StackStatus): AcoesStack {
@@ -329,5 +334,6 @@ export function acoesDisponiveis(status: StackStatus): AcoesStack {
     ligar: pronto && !todosRodando,
     desligar: pronto && algumRodando,
     reconstruir: pronto,
+    alternar: algumRodando ? 'desligar' : 'ligar',
   };
 }

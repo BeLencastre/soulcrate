@@ -13,7 +13,8 @@ import { acoesDisponiveis, servicoDe, servicoSaudavel, type StackStatus } from '
 import type { ServicoId } from '@shared/servicos';
 import { AvisoDeAtualizacaoDoApp, AvisoDosArquivosDaStack } from '../../components/AvisosDoApp';
 import { CartaoErro } from '../../components/CartaoErro';
-import { IconeBaixar, IconeBusca, IconeFones, IconeLigar, IconeTransferencias } from '../../components/icones';
+import { BotoesDaStack } from '../../components/BotoesDaStack';
+import { IconeBaixar, IconeBusca, IconeFones, IconeTransferencias } from '../../components/icones';
 import { SaidaParaModoDev } from '../../components/modo';
 import { Botao, CabecalhoPagina, Cartao, Chip, classeBotao, Rotulo } from '../../components/ui';
 import { seguro } from '../../lib/acoes';
@@ -36,19 +37,8 @@ function AcoesDaSituacao({ sit, status }: { sit: SituacaoDj; status: StackStatus
   const acoes = acoesDisponiveis(status);
   switch (sit.tipo) {
     case 'ligado':
-      return (
-        <Botao disabled={!acoes.desligar} onClick={() => seguro(api.stack.down())}>
-          <IconeLigar />
-          {msg.acoes.desligar}
-        </Botao>
-      );
     case 'desligado':
-      return (
-        <Botao variante="primario" disabled={!acoes.ligar} onClick={() => seguro(api.stack.up())}>
-          <IconeLigar />
-          {msg.acoes.ligar}
-        </Botao>
-      );
+      return <BotoesDaStack acoes={acoes} />;
     case 'docker-fechado':
       return (
         <>

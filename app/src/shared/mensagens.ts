@@ -39,7 +39,7 @@ export const msg = {
     configuracoes: 'Configurações',
   },
 
-  /** Modo DJ e Modo Dev (protótipos "modos-dev-dj"): o alternador, o aviso depois de trocar e as duas escolhas. */
+  /** Modo DJ e Modo Dev (protótipos "modos-dev-dj"): o alternador e as duas escolhas do assistente. */
   modo: {
     grupo: 'Modo da interface',
     rotulo: 'Modo',
@@ -66,22 +66,6 @@ export const msg = {
         descricao: 'Modo Dev: etapas do ambiente, logs, portas, opções do script e a configuração completa da stack.',
       },
     },
-    /** Configurações → Aplicativo */
-    configuracoes: {
-      legenda: 'Modo da interface',
-      dicaDev:
-        'O Modo DJ esconde etapas do ambiente, logs, portas, opções do script e as seções técnicas desta tela. Nada é apagado; também troca pela barra lateral (Ctrl+Shift+D).',
-      dicaDj: 'Muda só o que aparece na tela. Nada é apagado, e dá para trocar a qualquer hora pela barra lateral.',
-      dj: {
-        titulo: 'Modo DJ',
-        descricao: 'Só o que importa para baixar, organizar e ouvir. Termos técnicos ficam escondidos.',
-      },
-      dev: {
-        titulo: 'Modo Dev',
-        descricao:
-          'Mostra as etapas do ambiente, logs, portas, as opções do script e a configuração completa da stack.',
-      },
-    },
   },
 
   barraLateral: {
@@ -96,7 +80,8 @@ export const msg = {
     ligar: 'Ligar',
     ligarStack: 'Ligar a stack',
     desligar: 'Desligar',
-    reconstruir: 'Reconstruir',
+    /** `up --build`: recria os contêineres e reconstrói a imagem do Soulbeet */
+    reiniciar: 'Reiniciar',
     abrirDocker: 'Abrir Docker Desktop',
     baixarDocker: 'Baixar o Docker Desktop',
     comoInstalarWsl: 'Como instalar o WSL 2',
@@ -164,7 +149,7 @@ export const msg = {
             return { titulo: 'Desligando a stack', subtitulo: 'Parando os contêineres. A biblioteca não é afetada.' };
           }
           return {
-            titulo: r.operacao === 'reconstruindo' ? 'Reconstruindo a stack' : 'Ligando a stack',
+            titulo: r.operacao === 'reconstruindo' ? 'Reiniciando a stack' : 'Ligando a stack',
             subtitulo: `Construindo a imagem do Soulbeet e subindo os contêineres. ${msg.inicio.primeiroBuild}`,
           };
         case 'iniciando':
@@ -1588,20 +1573,23 @@ export const msg = {
     iniciarComWindows: { titulo: 'Iniciar com o Windows', dica: 'Abre minimizado na bandeja ao ligar o PC.' },
     bandeja: {
       titulo: 'Fechar a janela minimiza para a bandeja',
-      dica: 'O lote continua de qualquer forma; isto só decide se o app sai junto.',
+      dica: 'O download continua de qualquer forma; isto só decide se o app sai junto.',
     },
     avisarLote: {
-      titulo: 'Avisar quando um lote terminar',
-      dica: 'Notificação do Windows com a contagem de faixas.',
+      titulo: 'Avisar quando um download terminar',
+      dica: 'Notificação do Windows com quantas faixas chegaram.',
     },
     avisarPausa: {
       titulo: 'Avisar quando as buscas forem pausadas',
-      dica: 'Quando o servidor do Soulseek bloqueia as buscas por alguns minutos.',
+      dica: 'O Soulseek às vezes segura as buscas por alguns minutos. O download continua sozinho depois.',
     },
-    abrirWebUi: { grupo: 'Abrir Soulbeet, slskd e Navidrome', app: 'Dentro do app', navegador: 'No navegador' },
+    abrirWebUi: {
+      grupo: 'Abrir a busca, as transferências e o player',
+      app: 'Dentro do app',
+      navegador: 'No navegador',
+    },
     tema: {
       grupo: 'Tema',
-      dica: 'Vale para o app inteiro: as interfaces web do Soulbeet, do slskd e do Navidrome, os menus e as janelas do sistema também seguem.',
       escuro: 'Escuro',
       claro: 'Claro',
       sistema: 'Igual ao Windows',
@@ -1958,7 +1946,7 @@ export function rotuloResumo(r: ResumoStack): string {
   const m: Record<MotivoResumo, string> = {
     verificando: 'Verificando…',
     operacao:
-      r.operacao === 'desligando' ? 'Desligando…' : r.operacao === 'reconstruindo' ? 'Reconstruindo…' : 'Ligando…',
+      r.operacao === 'desligando' ? 'Desligando…' : r.operacao === 'reconstruindo' ? 'Reiniciando…' : 'Ligando…',
     'docker-ausente': 'Docker não encontrado',
     'docker-fechado': 'Docker fechado',
     'docker-abrindo': 'Abrindo o Docker…',

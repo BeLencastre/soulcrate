@@ -206,8 +206,12 @@ describe('Início no Modo DJ', () => {
       'href',
       '/historico/20261007-154809/faltas',
     );
+    // o mesmo par de botões do Modo Dev: um só Ligar/Desligar e Reiniciar
+    expect(screen.queryByRole('button', { name: 'Ligar' })).toBeNull();
     fireEvent.click(screen.getByRole('button', { name: 'Desligar' }));
     expect(api.stack.down).toHaveBeenCalled();
+    fireEvent.click(screen.getByRole('button', { name: 'Reiniciar' }));
+    expect(api.stack.up).toHaveBeenCalledWith({ rebuild: true });
   });
 
   it('desligado: uma frase e o botão Ligar; os atalhos das interfaces esperam o Soulcrate ligar', () => {
@@ -215,6 +219,8 @@ describe('Início no Modo DJ', () => {
     expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('O Soulcrate está desligado');
     expect(screen.getByRole('button', { name: /Buscar uma faixa/ })).toBeDisabled();
     expect(screen.getAllByText('Ligue o Soulcrate para usar')).toHaveLength(3);
+    expect(screen.queryByRole('button', { name: 'Desligar' })).toBeNull();
+    expect(screen.getByRole('button', { name: 'Reiniciar' })).toBeEnabled();
     fireEvent.click(screen.getByRole('button', { name: 'Ligar' }));
     expect(api.stack.up).toHaveBeenCalled();
   });

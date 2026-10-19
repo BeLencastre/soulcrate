@@ -1,4 +1,4 @@
-// Tela Início (protótipo "Início"): cinco etapas do ambiente, Ligar/Desligar/Reconstruir, interfaces web e log da stack.
+// Tela Início (protótipo "Início"): cinco etapas do ambiente, Ligar ou Desligar (um botão só) e Reiniciar, interfaces web e log da stack.
 // No Modo DJ a tela é outra (`inicio/InicioDj.tsx`): uma frase com o botão que resolve, atalhos e o último download.
 import * as Collapsible from '@radix-ui/react-collapsible';
 import { useNavigate } from 'react-router';
@@ -15,11 +15,11 @@ import {
 } from '@shared/stack';
 import { ledDoServico } from '../components/BarraLateral';
 import { AvisoDeAtualizacaoDoApp, AvisoDosArquivosDaStack } from '../components/AvisosDoApp';
+import { BotoesDaStack } from '../components/BotoesDaStack';
 import { CartaoErro } from '../components/CartaoErro';
-import { IconeLigar, IconeLinkExterno, IconeReconstruir, IconeSeta } from '../components/icones';
+import { IconeLinkExterno, IconeSeta } from '../components/icones';
 import { Botao, CabecalhoPagina, Cartao, Chip, Led, Rotulo, type CorChip } from '../components/ui';
-import { seguro, useAcoes } from '../lib/acoes';
-import { api } from '../lib/api';
+import { useAcoes } from '../lib/acoes';
 import { resumirFim } from '@shared/lote-estado';
 import { useAgora, useStackStatus, useUi } from '../lib/estado';
 import { useAbrirServico } from '../lib/preferencias';
@@ -240,21 +240,7 @@ function InicioDev() {
         rotulo={msg.inicio.rotulo}
         titulo={titulo}
         subtitulo={subtitulo}
-        acoes={
-          <>
-            <Botao variante="primario" disabled={!acoes.ligar} onClick={() => seguro(api.stack.up())}>
-              <IconeLigar />
-              {msg.acoes.ligar}
-            </Botao>
-            <Botao disabled={!acoes.desligar} onClick={() => seguro(api.stack.down())}>
-              {msg.acoes.desligar}
-            </Botao>
-            <Botao disabled={!acoes.reconstruir} onClick={() => seguro(api.stack.up({ rebuild: true }))}>
-              <IconeReconstruir />
-              {msg.acoes.reconstruir}
-            </Botao>
-          </>
-        }
+        acoes={<BotoesDaStack acoes={acoes} />}
       />
 
       {erro ? <CartaoErro erro={erro} aoFechar={dispensarOperacao} /> : null}

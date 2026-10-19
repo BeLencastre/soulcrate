@@ -132,7 +132,7 @@ describe('ChecksService.executar', () => {
     ).executar();
     const p = aviso.checks.find((c) => c.id === 'plugins');
     expect(p?.estado).toBe('aviso');
-    expect(p?.nota).toContain('Reconstruir');
+    expect(p?.nota).toContain('Reiniciar no Início');
   });
 
   it('keyfinder-cli que sai com código ≠ 0 mas mostra o uso conta como funcionando', async () => {

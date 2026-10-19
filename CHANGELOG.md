@@ -8,7 +8,7 @@ O **app desktop** e a **stack** (Docker Compose, scripts e configuração do bee
 
 ### Adicionado
 
-- **Modo DJ e Modo Dev.** O Modo DJ mostra só o que importa para baixar, organizar e ouvir, sem termos técnicos; o Modo Dev é o app de sempre, com as etapas do ambiente, os logs, as portas, as opções do script e a configuração completa da stack. Troque pelo alternador no rodapé da barra lateral, pelo atalho **Ctrl+Shift+D** ou em Configurações → Aplicativo. A troca muda só o que aparece: a tela atual fica onde está, nada é apagado e um download em andamento continua.
+- **Modo DJ e Modo Dev.** O Modo DJ mostra só o que importa para baixar, organizar e ouvir, sem termos técnicos; o Modo Dev é o app de sempre, com as etapas do ambiente, os logs, as portas, as opções do script e a configuração completa da stack. Troque pelo alternador no rodapé da barra lateral, ou pelo atalho **Ctrl+Shift+D**. A troca muda só o que aparece: a tela atual fica onde está, nada é apagado e um download em andamento continua.
 - Numa instalação nova, a tela final do assistente pergunta como você vai usar o Soulcrate, com o Modo DJ marcado. **Quem já usa o app continua no Modo Dev** até escolher outro.
 - No Modo DJ:
   - o **Início** diz numa frase o que está acontecendo, com o único botão que resolve ("O player não está respondendo → Reiniciar o player"), e traz atalhos para baixar, buscar, ouvir e ver transferências, o último download e a biblioteca;
@@ -20,6 +20,8 @@ O **app desktop** e a **stack** (Docker Compose, scripts e configuração do bee
 ### Mudado
 
 - **Biblioteca, nos dois modos:** a tela se chama **Suas músicas**; os indicadores viraram "Sem gênero" e "Esperando organizar"; a manutenção virou **Cuidar da biblioteca**, com cada tarefa explicada em palavras ("Calcular tom e BPM que faltam", "Atualizar depois de mexer nos arquivos"); o compartilhamento conta as músicas compartilhadas e o botão virou **Atualizar a lista**. O botão de abrir a pasta diz qual pasta abre ("Abrir DJ/Musics no Explorer"), e o tom aparece também na roda de Camelot ("8A Am").
+- **Início, nos dois modos:** Ligar e Desligar viraram um botão só, que alterna conforme a stack está ligada ou desligada, e **Reconstruir** passou a se chamar **Reiniciar** (faz o mesmo: refaz a imagem e recria os contêineres) e aparece também no Modo DJ.
+- **Configurações → Aplicativo, nos dois modos:** as preferências usam os textos mais simples ("Avisar quando um download terminar", "Abrir a busca, as transferências e o player").
 - **Histórico, nos dois modos:** a tela se chama **Seus downloads**, com os textos mais simples ("Ver o que faltou", "Com faixas que faltaram", "Apagar os antigos…"), e a coluna Lista mostra quantas faixas a lista tinha, no lugar de "eventos" ou "antiga · lida do resultado-*.txt".
 
 ### Corrigido

@@ -74,7 +74,7 @@ afterEach(cleanup);
 const etapa = (id: string) => document.querySelector(`[data-etapa="${id}"]`) as HTMLElement;
 
 describe('Início', () => {
-  it('stack no ar: cinco etapas OK, os três serviços saudáveis e Desligar habilitado', () => {
+  it('stack no ar: cinco etapas OK, os três serviços saudáveis e o botão único em Desligar', () => {
     renderizar(noAr());
     expect(screen.getByRole('heading', { level: 1 }).textContent).toBe('Stack no ar');
     expect(['docker', 'desktop', 'configuracao', 'stack', 'servicos'].map((e) => etapa(e).dataset.estado)).toEqual([
@@ -85,20 +85,21 @@ describe('Início', () => {
       'ok',
     ]);
     expect(within(etapa('servicos')).getAllByText('saudável')).toHaveLength(3);
-    expect((screen.getByRole('button', { name: 'Ligar' }) as HTMLButtonElement).disabled).toBe(true);
-    expect((screen.getByRole('button', { name: 'Desligar' }) as HTMLButtonElement).disabled).toBe(false);
-    expect((screen.getByRole('button', { name: 'Reconstruir' }) as HTMLButtonElement).disabled).toBe(false);
+    expect(screen.queryByRole('button', { name: 'Ligar' })).toBeNull();
+    fireEvent.click(screen.getByRole('button', { name: 'Desligar' }));
+    expect(api.stack.down).toHaveBeenCalledOnce();
+    expect((screen.getByRole('button', { name: 'Reiniciar' }) as HTMLButtonElement).disabled).toBe(false);
     expect(screen.getByTestId('resumo-stack').textContent).toBe('No ar · 3/3 saudáveis');
   });
 
-  it('stack desligada: Ligar e "Ligar a stack" chamam stack.up; Desligar fica desabilitado', () => {
+  it('stack desligada: o botão único vira Ligar; Ligar, "Ligar a stack" e Reiniciar chamam stack.up', () => {
     renderizar(status());
     expect(screen.getByRole('heading', { level: 1 }).textContent).toBe('A stack está desligada');
-    expect((screen.getByRole('button', { name: 'Desligar' }) as HTMLButtonElement).disabled).toBe(true);
+    expect(screen.queryByRole('button', { name: 'Desligar' })).toBeNull();
     fireEvent.click(screen.getByRole('button', { name: 'Ligar' }));
     fireEvent.click(screen.getByRole('button', { name: 'Ligar a stack' }));
     expect(api.stack.up).toHaveBeenCalledTimes(2);
-    fireEvent.click(screen.getByRole('button', { name: /Reconstruir/ }));
+    fireEvent.click(screen.getByRole('button', { name: 'Reiniciar' }));
     expect(api.stack.up).toHaveBeenLastCalledWith({ rebuild: true });
   });
 
@@ -118,8 +119,8 @@ describe('Início', () => {
     expect(screen.getByRole('heading', { level: 1 }).textContent).toBe('O Docker Desktop está fechado');
     expect(etapa('desktop').dataset.estado).toBe('erro');
     expect(etapa('stack').dataset.estado).toBe('aguardando');
-    for (const nome of ['Ligar', 'Desligar', 'Reconstruir']) {
-      expect((screen.getByRole('button', { name: new RegExp(nome) }) as HTMLButtonElement).disabled, nome).toBe(true);
+    for (const nome of ['Ligar', 'Reiniciar']) {
+      expect((screen.getByRole('button', { name: nome }) as HTMLButtonElement).disabled, nome).toBe(true);
     }
     fireEvent.click(within(etapa('desktop')).getByRole('button', { name: 'Abrir Docker Desktop' }));
     expect(api.env.startDockerDesktop).toHaveBeenCalledOnce();

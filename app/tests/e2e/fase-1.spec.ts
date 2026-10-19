@@ -116,7 +116,7 @@ test('ligar, desligar e reconstruir refletem o estado real', async () => {
   await expect(resumo(janela)).toHaveText('Desligada', { timeout: 30_000 });
   expect(amb.chamadas().some((c) => c.endsWith('down'))).toBe(true);
 
-  await janela.getByRole('button', { name: 'Reconstruir' }).click();
+  await janela.getByRole('button', { name: 'Reiniciar', exact: true }).click();
   await expect(resumo(janela)).toHaveText('No ar · 3/3 saudáveis', { timeout: 30_000 });
   expect(amb.chamadas().some((c) => c.includes('--force-recreate'))).toBe(true);
 });
