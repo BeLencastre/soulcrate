@@ -26,6 +26,7 @@ cd app && npm run test:e2e                              # ponta a ponta com o ap
 powershell -File tests\Invoke-Testes.ps1                # scripts PowerShell (Pester)
 node scripts/dependencias.mjs                           # refaz o mapa de dependências (--check só confere)
 node --test "scripts/*.test.mjs" ".claude/hooks/*.test.mjs"   # testes do mapa e dos hooks de memória
+python -m unittest discover -s tests/soulbeet -v              # regras dos plugins do beets (sem o contêiner)
 ```
 
 ## Princípios

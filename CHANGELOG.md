@@ -19,6 +19,11 @@ O **app desktop** e a **stack** (Docker Compose, scripts e configuração do bee
 
 ### Mudado
 
+- **Pastas da biblioteca (stack 1.3.0): uma pasta por artista e por gênero.**
+  - Faixa com vários artistas vai para a pasta do **primeiro**: `KUKO, 9inebro, NEUF` e `KUKO feat. NEUF` entram em `KUKO`, ao lado das outras faixas dele. O `&` não separa (`Above & Beyond` continua inteiro).
+  - O mesmo gênero escrito de vários jeitos vai para **uma pasta só**: `Hard Dance / Hardcore / Neo Rave`, `Hard Dance;Hardcore;Neo Rave` e `Hard Dance _ Hardcore _ Neo Rave` entram em `Hard Dance`; `Techno (Peak Time / Driving)` e `Techno (Hard)` em `Techno`; `psytrance`, `Psy Trance` e `Psy-Trance` em `Psy-Trance`; `Hip Hop` em `Hip-Hop`. Gêneros diferentes continuam separados (`Hard Techno` não vira `Techno`), e um site no lugar do gênero (`djsoundtop.com`) vai para `_Sem Genero`.
+  - Só o nome da pasta muda: as tags de gênero e de artista que o Rekordbox lê ficam como estão. Outras grafias podem ser juntadas em `pastas.apelidos` no `config.yaml`.
+  - Vale para o que for importado daqui em diante. Para arrumar o que já está na biblioteca, depois de atualizar, rode **Suas músicas → Cuidar da biblioteca → Reorganizar as pastas**: a prévia mostra quantos arquivos mudam de lugar, e as pastas que ficarem vazias somem.
 - **Biblioteca, nos dois modos:** a tela se chama **Suas músicas**; os indicadores viraram "Sem gênero" e "Esperando organizar"; a manutenção virou **Cuidar da biblioteca**, com cada tarefa explicada em palavras ("Calcular tom e BPM que faltam", "Atualizar depois de mexer nos arquivos"); o compartilhamento conta as músicas compartilhadas e o botão virou **Atualizar a lista**. O botão de abrir a pasta diz qual pasta abre ("Abrir DJ/Musics no Explorer"), e o tom aparece também na roda de Camelot ("8A Am").
 - **Início, nos dois modos:** Ligar e Desligar viraram um botão só, que alterna conforme a stack está ligada ou desligada, e **Reconstruir** passou a se chamar **Reiniciar** (faz o mesmo: refaz a imagem e recria os contêineres) e aparece também no Modo DJ.
 - **Configurações → Aplicativo, nos dois modos:** as preferências usam os textos mais simples ("Avisar quando um download terminar", "Abrir a busca, as transferências e o player").

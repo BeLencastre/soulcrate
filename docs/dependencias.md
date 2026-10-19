@@ -4,7 +4,7 @@
 
 Tudo de que o Soulcrate depende e **por que** depende. O mapa é refeito a partir dos manifestos pelo `scripts/dependencias.mjs` (os hooks do Claude Code rodam o script quando um manifesto muda, e o CI confere que ele está em dia). O motivo de cada item mora em [`dependencias.justificativas.json`](dependencias.justificativas.json); a política para adicionar uma dependência está no [`CLAUDE.md`](../CLAUDE.md#dependências).
 
-**50 dependências:** npm (app desktop) 35 · imagens docker 5 · fontes compiladas no build 2 · pacotes python 3 · github actions 3 · módulos do powershell 1 · ambiente 1.
+**51 dependências:** npm (app desktop) 35 · imagens docker 5 · fontes compiladas no build 2 · pacotes python 3 · github actions 4 · módulos do powershell 1 · ambiente 1.
 
 ## npm (app desktop)
 
@@ -87,6 +87,7 @@ Ações de terceiros usadas pelos workflows do CI e da release.
 | --- | --- | --- | --- | --- |
 | `actions/checkout` | v4 | ci | `.github/workflows/ci.yml`, `.github/workflows/release.yml` | Baixa o repositório nos jobs do CI e da release. Ação oficial do GitHub. |
 | `actions/setup-node` | v4 | ci | `.github/workflows/ci.yml`, `.github/workflows/release.yml` | Instala o Node.js da versão do app/.nvmrc e guarda o cache do npm no CI e na release. Ação oficial do GitHub. |
+| `actions/setup-python` | v5 | ci | `.github/workflows/ci.yml` | Instala o Python 3.11 (o mesmo da imagem do Soulbeet) no CI para rodar os testes das regras dos plugins do beets (tests/soulbeet), só com a biblioteca padrão. Ação oficial do GitHub. |
 | `actions/upload-artifact` | v4 | ci | `.github/workflows/ci.yml`, `.github/workflows/release.yml` | Guarda resultados do Pester, capturas do Playwright e o instalador gerado como artefatos do CI. Ação oficial do GitHub. |
 
 ## Módulos do PowerShell
