@@ -1,4 +1,4 @@
-// Processo principal do app Soulcrate (Electron): liga os serviços (§3.2), a janela, a bandeja e o IPC.
+// Processo principal do app Soulcrate (Electron): liga os serviços, a janela, a bandeja e o IPC.
 import { randomUUID } from 'node:crypto';
 import { existsSync, readFileSync, statSync } from 'node:fs';
 import { rm } from 'node:fs/promises';
@@ -389,7 +389,7 @@ async function principal(): Promise<void> {
     agora: Date.now,
     aoErro,
   });
-  /** Atualiza os arquivos da stack da pasta (§3.3). Espera, sem mexer em nada, um lote ou uma operação terminar. */
+  /** Atualiza os arquivos da stack da pasta. Espera, sem mexer em nada, um lote ou uma operação terminar. */
   let novaTentativaDaStack: NodeJS.Timeout | null = null;
   const atualizarArquivosDaStack = async (): Promise<void> => {
     const r = await stackAtualizacao.aplicar();
@@ -476,7 +476,7 @@ async function principal(): Promise<void> {
     return r.canceled || !r.filePath ? null : r.filePath;
   };
 
-  /** "Abrir com" e a linha de comando: um .txt/.csv vira uma lista na pasta do Soulcrate e abre no editor (§6.2) */
+  /** "Abrir com" e a linha de comando: um .txt/.csv vira uma lista na pasta do Soulcrate e abre no editor */
   const abrirListaDoArgv = (argv: readonly string[]): void => {
     const dir = projeto().dir;
     const arquivo = listaDoArgv(argv, existeArquivo);
@@ -548,7 +548,7 @@ async function principal(): Promise<void> {
   const idDoContents = win.webContents.id;
   log.info(`Pasta do Soulcrate: ${projeto().dir ?? '(não definida)'}`);
 
-  // fechar a janela minimiza para a bandeja (D7); a primeira vez mostra o aviso
+  // fechar a janela minimiza para a bandeja; a primeira vez mostra o aviso
   win.on('close', (e) => {
     if (saindo || SMOKE) return;
     if (!settings.get().minimizarParaBandeja) {
@@ -613,12 +613,12 @@ async function principal(): Promise<void> {
   health.iniciar();
   if (!SMOKE) {
     // um lote iniciado antes de o app fechar continua rodando: volta a acompanhá-lo (e a notificar quando terminar). Só
-    // depois disso vale atualizar os arquivos da stack da pasta (§3.3): com um lote rodando a atualização espera
+    // depois disso vale atualizar os arquivos da stack da pasta: com um lote rodando a atualização espera
     void lote
       .reconectar()
       .then(() => atualizarArquivosDaStack())
       .catch(aoErro);
-    // atualização do app (§5, Fase 7): alguns segundos depois de abrir e a cada 24 h. Com o dublê do atualizador, o
+    // atualização do app: alguns segundos depois de abrir e a cada 24 h. Com o dublê do atualizador, o
     // teste decide quando "a internet" é consultada (a agenda em si é testada à parte)
     if (process.env.SOULCRATE_DUBLE_ATUALIZADOR !== '1' || app.isPackaged) atualizador.iniciar();
   }

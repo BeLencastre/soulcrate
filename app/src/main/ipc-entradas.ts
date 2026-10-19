@@ -1,4 +1,4 @@
-// Validação do que o renderer envia ao main nos canais da Fase 2: o renderer não é confiável (§6.1), então cada
+// Validação do que o renderer envia ao main nos canais da Fase 2: o renderer não é confiável, então cada
 // entrada é conferida campo a campo, com tipo e tamanho, antes de chegar aos serviços.
 import { ehTarefaDeManutencao, type TarefaManutencao } from '@shared/biblioteca';
 import type { ConfigEntrada, EntradaPasta, LoginNavidrome, OpcoesSetup, PastasConfig } from '@shared/configuracao';

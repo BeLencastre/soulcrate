@@ -23,7 +23,6 @@ import { Botao, Cartao, Chip, Rotulo } from '../ui';
 
 function GrupoDeOpcoes<T extends string>({
   legenda,
-  dica,
   nome,
   valor,
   opcoes,
@@ -31,7 +30,6 @@ function GrupoDeOpcoes<T extends string>({
   desabilitado,
 }: {
   legenda: string;
-  dica?: string;
   nome: string;
   valor: T | undefined;
   opcoes: readonly { valor: T; rotulo: string }[];
@@ -41,7 +39,6 @@ function GrupoDeOpcoes<T extends string>({
   return (
     <fieldset className="m-0 flex flex-col gap-[10px] border-0 p-0" disabled={desabilitado}>
       <legend className="pb-[10px] font-bold">{legenda}</legend>
-      {dica ? <p className="hint m-0">{dica}</p> : null}
       <div className="flex flex-wrap gap-2">
         {opcoes.map((o) => (
           <label key={o.valor} className="rad">
@@ -61,7 +58,10 @@ function GrupoDeOpcoes<T extends string>({
   );
 }
 
-/** As preferências do app: interruptores, onde abrir as Web UIs e o tema. Gravam na hora (sem botão "Salvar"). */
+/**
+ * As preferências do app: interruptores, onde abrir as Web UIs e o tema. Gravam na hora (sem "Salvar"). Iguais nos
+ * dois modos; o modo se troca só na barra lateral (ou Ctrl+Shift+D).
+ */
 export function SecaoAplicativo() {
   const { data, isError, refetch } = useSettings();
   const mudar = useMudarSettings();
@@ -120,7 +120,6 @@ export function SecaoAplicativo() {
       />
       <GrupoDeOpcoes<TemaPreferido>
         legenda={t.tema.grupo}
-        dica={t.tema.dica}
         nome="tema"
         valor={data?.tema}
         desabilitado={desabilitado}

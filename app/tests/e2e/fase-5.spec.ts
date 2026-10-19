@@ -1,6 +1,6 @@
 // Fase 5, ponta a ponta: a Biblioteca no app de verdade (Electron), contra o dublê do `docker` com um "beets" que mexe
 // em arquivos reais da pasta de teste, e o slskd falso da suíte do script para o compartilhamento. Nada aqui toca em
-// Docker, na rede ou na sua biblioteca. Critérios de aceite (§5, Fase 5):
+// Docker, na rede ou na sua biblioteca. Critérios de aceite (Fase 5):
 //   - toda operação destrutiva tem pré-visualização e confirmação;
 //   - nenhuma roda sem a stack no ar.
 import { existsSync, mkdirSync, utimesSync, writeFileSync } from 'node:fs';
@@ -134,7 +134,7 @@ test('lê a biblioteca do beets: faixas, pasta, indicadores e o caminho para o R
   montarBiblioteca(amb, { parados: true });
   const janela = await abrirBiblioteca();
 
-  await expect(janela.getByRole('heading', { name: 'O caixote' })).toBeVisible();
+  await expect(janela.getByRole('heading', { name: 'Suas músicas' })).toBeVisible();
   await expect(janela.getByText(`${join(amb.projeto, 'music')} · 5 faixas`)).toBeVisible();
   await expect(linhas(janela)).toHaveCount(5);
   // ordenado como um caixote: artista, depois título
@@ -340,7 +340,7 @@ test('recalcular tom e BPM: só das faixas sem, com a saída ao vivo', async () 
   await expect(valor(janela, 'tom')).toHaveText('0');
 });
 
-test('uma tarefa longa continua ao fechar a janela e o cartão Manutenção a reencontra', async () => {
+test('uma tarefa longa continua ao fechar a janela e o cartão Cuidar da biblioteca a reencontra', async () => {
   amb = criarAmbiente({ mundo: { containers: TODOS_NO_AR } });
   // 1,5 s por faixa a calcular (são duas): dá tempo de fechar a janela no meio
   montarBiblioteca(amb, { atrasoMs: 1500 });
@@ -367,9 +367,9 @@ test('compartilhamento: mostra o que o slskd anuncia e pede a varredura', async 
   montarBiblioteca(amb);
   const janela = await abrirBiblioteca();
 
-  await expect(janela.getByTestId('compartilhamento-n')).toContainText('10 arquivos anunciados no Soulseek');
+  await expect(janela.getByTestId('compartilhamento-n')).toContainText('10 músicas compartilhadas no Soulseek');
   await janela.getByTestId('reescanear').click();
-  await expect(janela.getByText('Pedi a varredura ao slskd.')).toBeVisible();
+  await expect(janela.getByText('Atualizando. O número sobe conforme a lista é refeita.')).toBeVisible();
   await capturar(janela, '05-compartilhamento');
 });
 
@@ -381,11 +381,11 @@ test('compartilhamento: com o slskd fora do ar o cartão explica e a tabela segu
   const janela = aberto.janela;
   await menu(janela, 'Biblioteca').click();
   await expect(tabela(janela)).toBeVisible();
-  await expect(janela.getByTestId('compartilhamento-erro')).toContainText('slskd');
+  await expect(janela.getByTestId('compartilhamento-erro')).toContainText('Não consegui ver quantas músicas');
   await expect(linhas(janela)).toHaveCount(5);
 });
 
-test('"Mostrar no Explorer" abre o arquivo certo e "Abrir music" abre a pasta', async () => {
+test('"Mostrar no Explorer" abre o arquivo certo e "Abrir … no Explorer" abre a pasta music', async () => {
   amb = criarAmbiente({ mundo: { containers: TODOS_NO_AR } });
   montarBiblioteca(amb);
   const janela = await abrirBiblioteca();
@@ -404,6 +404,6 @@ test('"Mostrar no Explorer" abre o arquivo certo e "Abrir music" abre a pasta', 
     .poll(() => app.evaluate(() => (globalThis as unknown as { __reveladas: string[] }).__reveladas))
     .toEqual([join(amb.projeto, 'music', 'Hard Techno', 'Charlie Sparks', 'Tatakai.flac')]);
 
-  await janela.getByRole('button', { name: /Abrir music no Explorer/ }).click();
+  await janela.getByRole('button', { name: /^Abrir .*music no Explorer$/ }).click();
   await expect.poll(() => abertos(app)).toEqual([join(amb.projeto, 'music')]);
 });

@@ -195,3 +195,35 @@ export const IconeAlerta = (p: Props) => (
     <path d="M12 16h.01" />
   </Base>
 );
+
+// ---------------------------------------------------------------- Modo DJ e Modo Dev
+
+/** Fones: o Modo DJ e "Ouvir a biblioteca". */
+export const IconeFones = (p: Props) => (
+  <Base {...p}>
+    <path d="M3 18v-6a9 9 0 0 1 18 0v6" />
+    <path d="M21 19a2 2 0 0 1-2 2h-1v-6h3zM3 19a2 2 0 0 0 2 2h1v-6H3z" />
+  </Base>
+);
+/** `< >`: o Modo Dev. */
+export const IconeCodigo = (p: Props) => (
+  <Base {...p}>
+    <path d="m8 8-5 4 5 4" />
+    <path d="m16 8 5 4-5 4" />
+  </Base>
+);
+export const IconeBusca = (p: Props) => (
+  <Base {...p}>
+    <circle cx="11" cy="11" r="7" />
+    <path d="m20 20-3.5-3.5" />
+  </Base>
+);
+/** Setas para cima e para baixo: as transferências do Soulseek. */
+export const IconeTransferencias = (p: Props) => (
+  <Base {...p}>
+    <path d="M7 4v16" />
+    <path d="m3 8 4-4 4 4" />
+    <path d="M17 20V4" />
+    <path d="m21 16-4 4-4-4" />
+  </Base>
+);

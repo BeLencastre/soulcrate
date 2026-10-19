@@ -5,6 +5,8 @@ import { BarraLateral } from './components/BarraLateral';
 import { DialogoBandeja } from './components/DialogoBandeja';
 import { msg } from '@shared/mensagens';
 import { useLigarEventos } from './lib/estado';
+import { useAtalhoDoModo } from './lib/modo';
+import { useSettings } from './lib/preferencias';
 import { useRascunho } from './lib/lote-store';
 import { tituloDaJanela, tituloDaRota } from './lib/titulos';
 
@@ -14,7 +16,7 @@ export function Pagina({ children }: { children: ReactNode }) {
 }
 
 /**
- * Arrastar um .txt ou .csv para a janela importa a lista (§5, Fase 3). O renderer não enxerga o caminho do arquivo
+ * Arrastar um .txt ou .csv para a janela importa a lista. O renderer não enxerga o caminho do arquivo
  * (sandbox): manda os bytes ao main, que grava na pasta do Soulcrate. Devolve se há um arquivo sendo arrastado.
  */
 function useSoltarArquivos(navegar: (rota: string) => void): boolean {
@@ -96,6 +98,11 @@ export function App() {
   const principal = useRef<HTMLElement>(null);
   useFocoNaTrocaDeTela(principal);
   const { pathname } = useLocation();
+  // o assistente pergunta o modo na tela final; o atalho vale nas outras telas
+  useAtalhoDoModo(!noAssistente);
+  // as telas esperam a preferência do modo (uma leitura local, imediata): sem isso, quem usa o Modo DJ veria o Dev
+  // piscar ao abrir o app. Se a leitura falhar, segue no Modo Dev.
+  const preferenciasLidas = !useSettings().isPending;
 
   return (
     <div className="flex h-full min-h-0 bg-fundo text-texto">
@@ -110,7 +117,7 @@ export function App() {
       >
         {msg.acessibilidade.pularParaConteudo}
       </a>
-      {noAssistente ? null : <BarraLateral />}
+      {noAssistente || !preferenciasLidas ? null : <BarraLateral />}
       <main
         id="conteudo"
         ref={principal}
@@ -118,7 +125,7 @@ export function App() {
         aria-label={tituloDaRota(pathname)}
         className="min-w-0 flex-1 overflow-y-auto focus:outline-none"
       >
-        <Outlet />
+        {preferenciasLidas ? <Outlet /> : null}
       </main>
       <DialogoBandeja />
       {arrastando ? (

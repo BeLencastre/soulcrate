@@ -45,7 +45,7 @@ vi.mock('../../src/renderer/lib/api', () => ({ api }));
 
 const { Biblioteca } = await import('../../src/renderer/paginas/Biblioteca');
 const { chaveStatus, ligarEventos } = await import('../../src/renderer/lib/estado');
-const { useManutencao } = await import('../../src/renderer/lib/biblioteca');
+const { nomeCurtoDaPasta, useManutencao } = await import('../../src/renderer/lib/biblioteca');
 const { useRascunho } = await import('../../src/renderer/lib/lote-store');
 
 // ---------------------------------------------------------------- Montagem
@@ -195,7 +195,8 @@ describe('tabela, busca e indicadores', () => {
     expect(linhas()).toHaveLength(5);
     expect(screen.getByTestId('contagem')).toHaveTextContent('5 de 5');
     const primeira = celulas(linhas()[0] as HTMLElement).map((c) => c.textContent);
-    expect(primeira.slice(0, 6)).toEqual(['Azyr', 'No Escape', '150', 'F#m', 'Hard Techno', 'FLAC']);
+    // o tom na roda de Camelot, com o tom como o beets grava ao lado
+    expect(primeira.slice(0, 6)).toEqual(['Azyr', 'No Escape', '150', '11AF#m', 'Hard Techno', 'FLAC']);
   });
 
   it('BPM e tom ausentes aparecem como "sem" e o gênero vazio como _Sem Genero', async () => {
@@ -270,14 +271,14 @@ describe('tabela, busca e indicadores', () => {
     expect(await screen.findByRole('status')).toHaveTextContent('não está mais em music/');
   });
 
-  it('"Abrir music no Explorer" e "Atualizar"', async () => {
+  it('"Abrir Soulcrate/music no Explorer" (as duas últimas partes da pasta) e "Atualizar"', async () => {
     montar();
     await carregada();
     api.library.openMusicFolder.mockResolvedValue(undefined);
-    fireEvent.click(screen.getByRole('button', { name: /Abrir music no Explorer/ }));
+    fireEvent.click(screen.getByRole('button', { name: 'Abrir Soulcrate/music no Explorer' }));
     expect(api.library.openMusicFolder).toHaveBeenCalled();
     const antes = api.library.list.mock.calls.length;
-    fireEvent.click(screen.getByRole('button', { name: /Atualizar/ }));
+    fireEvent.click(screen.getByRole('button', { name: 'Atualizar' }));
     await waitFor(() => expect(api.library.list.mock.calls.length).toBeGreaterThan(antes));
   });
 });
@@ -331,25 +332,36 @@ describe('estados', () => {
 
 // ---------------------------------------------------------------- Compartilhamento e Rekordbox
 
+describe('nomeCurtoDaPasta (o botão "Abrir … no Explorer")', () => {
+  it('as duas últimas partes do caminho; com uma só, ela', () => {
+    expect(nomeCurtoDaPasta('C:\\DJ\\Musics')).toBe('DJ/Musics');
+    expect(nomeCurtoDaPasta('D:\\Musica\\Soulcrate\\music\\')).toBe('Soulcrate/music');
+    expect(nomeCurtoDaPasta('D:\\Musics')).toBe('Musics');
+    expect(nomeCurtoDaPasta('/mnt/dados/musicas')).toBe('dados/musicas');
+  });
+});
+
 describe('compartilhamento e Rekordbox', () => {
   it('mostra quantos arquivos o slskd anuncia', async () => {
     montar();
-    expect(await screen.findByTestId('compartilhamento-n')).toHaveTextContent('1.204 arquivos anunciados no Soulseek');
+    expect(await screen.findByTestId('compartilhamento-n')).toHaveTextContent(
+      '1.204 músicas compartilhadas no Soulseek',
+    );
   });
 
-  it('0 arquivos: avisa que quem não compartilha é despriorizado', async () => {
+  it('0 arquivos: avisa que quem não compartilha vai para o fim da fila', async () => {
     api.library.sharing.mockResolvedValue(compartilhando(0));
     montar();
-    expect(await screen.findByText(/anuncia 0 arquivos/)).toBeInTheDocument();
+    expect(await screen.findByText(/Nenhuma música compartilhada/)).toBeInTheDocument();
   });
 
-  it('Reescanear pede a varredura e mostra o resultado', async () => {
+  it('Atualizar a lista pede a varredura e mostra o resultado', async () => {
     api.library.rescanSharing.mockResolvedValue(compartilhando(1204, true));
     montar();
     await screen.findByTestId('compartilhamento-n');
     fireEvent.click(screen.getByTestId('reescanear'));
     await waitFor(() => expect(api.library.rescanSharing).toHaveBeenCalled());
-    expect(await screen.findByText('O slskd está varrendo a biblioteca…')).toBeInTheDocument();
+    expect(await screen.findByText('Atualizando a lista de músicas compartilhadas…')).toBeInTheDocument();
     expect(screen.getByTestId('reescanear')).toBeDisabled();
   });
 
@@ -360,7 +372,7 @@ describe('compartilhamento e Rekordbox', () => {
       servicos: s.servicos.map((x) => (x.id === 'slskd' ? { ...x, container: 'exited' as const } : x)),
     });
     await carregada();
-    expect(screen.getByText('Ligue a stack para ver o compartilhamento.')).toBeInTheDocument();
+    expect(screen.getByText('Ligue o Soulcrate para ver o compartilhamento.')).toBeInTheDocument();
     expect(api.library.sharing).not.toHaveBeenCalled();
     expect(screen.getByTestId('reescanear')).toBeDisabled();
   });
@@ -368,7 +380,9 @@ describe('compartilhamento e Rekordbox', () => {
   it('erro do slskd aparece no cartão, sem derrubar a tela', async () => {
     api.library.sharing.mockResolvedValue({ ok: false, erro: criarErro('servico.inacessivel', { servico: 'slskd' }) });
     montar();
-    expect(await screen.findByTestId('compartilhamento-erro')).toHaveTextContent('slskd');
+    expect(await screen.findByTestId('compartilhamento-erro')).toHaveTextContent(
+      'Não consegui ver quantas músicas estão compartilhadas.',
+    );
     expect(screen.getByTestId('tabela-biblioteca')).toBeInTheDocument();
   });
 
@@ -598,14 +612,14 @@ describe('manutenção', () => {
     await carregada();
     const card = screen.getByTestId('cartao-manutencao');
     for (const t of [
-      'Recalcular tom e BPM',
-      'Importar o que sobrou em downloads/',
-      'Sincronizar com o disco',
-      'Reorganizar pastas',
+      'Calcular tom e BPM que faltam',
+      'Organizar o que ficou em downloads',
+      'Atualizar depois de mexer nos arquivos',
+      'Reorganizar as pastas',
     ]) {
       expect(within(card).getByText(t)).toBeInTheDocument();
     }
-    expect(within(card).getByText('1 pasta parada desde ontem, 12:00')).toBeInTheDocument();
+    expect(within(card).getByText('1 pasta esperando desde ontem, 12:00.')).toBeInTheDocument();
   });
 
   it('update: mostra o que o beets faria; confirma só com o token da prévia', async () => {

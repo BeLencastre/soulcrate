@@ -1,11 +1,21 @@
-// Navegação lateral (protótipo "Componente navegação lateral"): logo, seis telas e o estado da stack.
+// Navegação lateral (protótipo "Componente navegação lateral"): logo, seis telas, o estado da stack e o alternador de
+// modo. No Modo DJ o estado vira uma frase ("Ligado · Pronto para baixar e ouvir"), sem os serviços e as portas.
 import type { ComponentType } from 'react';
 import { NavLink } from 'react-router';
 import { msg } from '@shared/mensagens';
+import { msgDj } from '@shared/mensagens-dj';
 import { SERVICOS } from '@shared/servicos';
-import { resumirStack, servicoSaudavel, type EstadoStack, type ServicoStatus } from '@shared/stack';
+import {
+  resumirStack,
+  servicoSaudavel,
+  type EstadoStack,
+  type ResumoStack,
+  type ServicoStatus,
+  type StackStatus,
+} from '@shared/stack';
 import { useStackStatus } from '../lib/estado';
 import { execucaoRodando, useExecucao } from '../lib/lote-store';
+import { useModoDj } from '../lib/modo';
 import {
   IconeBaixar,
   IconeBiblioteca,
@@ -15,6 +25,7 @@ import {
   IconeServicos,
   Logo,
 } from './icones';
+import { AlternadorDeModo } from './modo';
 import { Led, type CorLed } from './ui';
 
 const ITENS: { rota: string; rotulo: string; Icone: ComponentType<{ tamanho?: number }>; fim?: boolean }[] = [
@@ -47,6 +58,7 @@ function CartaoDoLote() {
   const rodando = useExecucao(execucaoRodando);
   const estado = useExecucao((s) => s.estado);
   const resumo = useExecucao((s) => s.resumo);
+  const dj = useModoDj();
   if (!rodando) return null;
   const total = estado.total || estado.faixas.length;
   const feitas = estado.contagem.concluidas;
@@ -57,7 +69,9 @@ function CartaoDoLote() {
       data-testid="cartao-lote"
       className="flex flex-col gap-2 rounded-md border border-borda bg-elevado p-3 text-texto no-underline hover:border-borda-hover"
     >
-      <span className="lbl !text-[10.5px] !text-chip-azul">{msg.lote.sidebar.rodando}</span>
+      <span className="lbl !text-[10.5px] !text-chip-azul">
+        {dj ? msgDj.barraLateral.baixando : msg.lote.sidebar.rodando}
+      </span>
       <span className="truncate font-mono text-[13px] font-bold">{estado.inicio?.list ?? resumo?.lista ?? '…'}</span>
       <span aria-hidden="true" className="block h-1 overflow-hidden rounded-sm bg-borda">
         <span
@@ -70,9 +84,53 @@ function CartaoDoLote() {
   );
 }
 
+function EstadoDev({ status, resumo }: { status: StackStatus; resumo: ResumoStack }) {
+  return (
+    <div
+      className="flex flex-col gap-[10px] border-t border-borda-fraca p-3"
+      role="status"
+      aria-label={`${msg.barraLateral.titulo}: ${msg.barraLateral.resumo(resumo)}`}
+    >
+      <span className="lbl !text-[10.5px]">{msg.barraLateral.titulo}</span>
+      <div className="flex items-center gap-2 text-[13px] font-bold">
+        <Led cor={LED_DO_ESTADO[resumo.estado]} tamanho={9} brilho />
+        <span data-testid="resumo-stack">{msg.barraLateral.resumo(resumo)}</span>
+      </div>
+      {SERVICOS.map((info) => {
+        const s = status.servicos.find((x) => x.id === info.id);
+        return (
+          <div key={info.id} className="flex items-center gap-2 text-[12.5px] text-texto-suave">
+            <Led cor={s ? ledDoServico(s) : 'cinza'} tamanho={6} />
+            <span>{info.nome}</span>
+            <span className="ml-auto font-mono text-[11.5px] text-texto-mudo">:{info.porta}</span>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+function EstadoDj({ resumo }: { resumo: ResumoStack }) {
+  const { titulo, detalhe } = msgDj.barraLateral.estado(resumo);
+  return (
+    <div
+      className="flex flex-col gap-[6px] border-t border-borda-fraca p-3"
+      role="status"
+      aria-label={`${titulo}: ${detalhe}`}
+    >
+      <div className="flex items-center gap-2 text-[13px] font-bold">
+        <Led cor={LED_DO_ESTADO[resumo.estado]} tamanho={9} brilho />
+        <span data-testid="resumo-stack">{titulo}</span>
+      </div>
+      <span className="text-[12.5px] leading-[1.4] text-texto-suave">{detalhe}</span>
+    </div>
+  );
+}
+
 export function BarraLateral() {
   const status = useStackStatus();
   const resumo = resumirStack(status);
+  const dj = useModoDj();
 
   return (
     <aside className="flex h-full w-[232px] shrink-0 flex-col gap-[26px] overflow-y-auto border-r border-borda-fraca bg-painel px-[14px] pt-[22px] pb-6">
@@ -110,29 +168,10 @@ export function BarraLateral() {
         ))}
       </nav>
 
-      <div className="mt-auto flex flex-col gap-[14px]">
+      <div className="mt-auto flex flex-col gap-4">
         <CartaoDoLote />
-        <div
-          className="flex flex-col gap-[10px] border-t border-borda-fraca p-3"
-          role="status"
-          aria-label={`${msg.barraLateral.titulo}: ${msg.barraLateral.resumo(resumo)}`}
-        >
-          <span className="lbl !text-[10.5px]">{msg.barraLateral.titulo}</span>
-          <div className="flex items-center gap-2 text-[13px] font-bold">
-            <Led cor={LED_DO_ESTADO[resumo.estado]} tamanho={9} brilho />
-            <span data-testid="resumo-stack">{msg.barraLateral.resumo(resumo)}</span>
-          </div>
-          {SERVICOS.map((info) => {
-            const s = status.servicos.find((x) => x.id === info.id);
-            return (
-              <div key={info.id} className="flex items-center gap-2 text-[12.5px] text-texto-suave">
-                <Led cor={s ? ledDoServico(s) : 'cinza'} tamanho={6} />
-                <span>{info.nome}</span>
-                <span className="ml-auto font-mono text-[11.5px] text-texto-mudo">:{info.porta}</span>
-              </div>
-            );
-          })}
-        </div>
+        {dj ? <EstadoDj resumo={resumo} /> : <EstadoDev status={status} resumo={resumo} />}
+        <AlternadorDeModo />
       </div>
     </aside>
   );

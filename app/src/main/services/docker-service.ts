@@ -1,15 +1,15 @@
-// DockerService (§3.2): detecta o Docker, abre o Docker Desktop e roda `docker compose`.
-// A ordem e os tempos vêm das investigações SP1 e SP2 (docs/spikes/).
+// DockerService: detecta o Docker, abre o Docker Desktop e roda `docker compose`.
+// A ordem e os tempos vêm de medições feitas com o Docker Desktop de verdade.
 import { join } from 'node:path';
 import type { AlvoLog } from '@shared/ipc';
 import type { DockerDesktopEstado, DockerInstalacao } from '@shared/stack';
 import { parseComposePs, parseDesktopStatus, type ContainerPs } from '../infra/docker-parsers';
 import type { Executor, OpcoesProcesso, ProcessoVivo, ResultadoProcesso } from '../infra/processos';
 
-/** Tempos medidos no SP1: 0,7–2 s para detectar; o primeiro `compose ps` a frio chegou a 14 s. */
+/** Tempos medidos com o Docker Desktop: 0,7–2 s para detectar; o primeiro `compose ps` a frio chegou a 14 s. */
 export const TIMEOUT_DETECCAO_MS = 10_000;
 export const TIMEOUT_PS_MS = 30_000;
-/** SP2: a engine pode levar mais de 1 min para subir depois de ligar o PC. */
+/** A engine pode levar mais de 1 min para subir depois de ligar o PC. */
 export const TIMEOUT_ABRIR_DOCKER_MS = 180_000;
 const INTERVALO_ENGINE_MS = 2_000;
 
@@ -47,7 +47,7 @@ export class DockerService {
   }
 
   /**
-   * SP1: `docker version` diz se há cliente (ENOENT = não instalado) e se a engine responde; o
+   * `docker version` diz se há cliente (ENOENT = não instalado) e se a engine responde; o
    * `docker desktop status` só entra quando a engine não responde, para separar "fechado" de "outro problema".
    */
   async detectar(): Promise<DeteccaoDocker> {
@@ -84,7 +84,7 @@ export class DockerService {
   }
 
   /**
-   * SP2: `docker desktop start --detach` (ou o executável, se a CLI não tiver o subcomando) e espera a engine
+   * `docker desktop start --detach` (ou o executável, se a CLI não tiver o subcomando) e espera a engine
    * responder, de 2 em 2 s, por até 3 min. `aoProgresso` recebe os segundos decorridos.
    */
   async abrirDockerDesktop(

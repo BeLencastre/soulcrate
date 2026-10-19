@@ -1,4 +1,4 @@
-// "Apagar execuções antigas…" (§5, Fase 4, "ações de manutenção dos relatórios"): escolhe o critério, mostra o que vai
+// "Apagar execuções antigas…" (ações de manutenção dos relatórios, Fase 4): escolhe o critério, mostra o que vai
 // sair (quantas execuções, arquivos e quanto espaço) e só então manda para a Lixeira. Tudo é pré-visualizado antes.
 import { useState } from 'react';
 import * as Dialog from '@radix-ui/react-dialog';

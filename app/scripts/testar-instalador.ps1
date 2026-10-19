@@ -1,6 +1,6 @@
 ﻿<#
 .SYNOPSIS
-  Critério de aceite da Fase 7 (§5): instalar, atualizar de uma versão para a seguinte e desinstalar sem perder o .env,
+  Critério de aceite da Fase 7: instalar, atualizar de uma versão para a seguinte e desinstalar sem perder o .env,
   as listas, os lotes/, a biblioteca nem as preferências do app.
 
 .DESCRIPTION

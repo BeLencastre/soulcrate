@@ -75,7 +75,7 @@ describe('HealthService', () => {
     ]);
     expect(s.atualizadoEm).toBe(1_000);
     expect(resumirStack(s).estado).toBe('no-ar');
-    // sonda cada Web UI no endpoint certo (D4)
+    // sonda cada Web UI no endpoint certo
     expect(mundo.sondar.mock.calls.map((c) => c[0]).sort()).toEqual([
       'http://127.0.0.1:4533/ping',
       'http://127.0.0.1:5030/health',
@@ -207,7 +207,7 @@ describe('HealthService', () => {
     expect(mundo.composePs.mock.calls.length).toBe(antes + 1);
   });
 
-  it('ritmo: 5 s com a janela visível e 30 s na bandeja (§6.4)', () => {
+  it('ritmo: 5 s com a janela visível e 30 s na bandeja', () => {
     expect(INTERVALO_VISIVEL_MS).toBe(5_000);
     expect(INTERVALO_OCULTO_MS).toBe(30_000);
   });

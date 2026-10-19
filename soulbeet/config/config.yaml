@@ -19,6 +19,7 @@ plugins:
   - chroma        # fingerprint AcoustID (bom para rips sem tag)
   - bandcamp      # beetcamp: muito catálogo de house/techno só existe lá
   - keepmix       # preserva "(Extended Mix)", "(Original Mix)", "(Dub Mix)"...
+  - pastas        # nome das pastas: 1º gênero (grafia unificada) e 1º artista
   - autobpm       # BPM automático (librosa)
   - keyfinder     # tom harmônico (keyfinder-cli) -> initial_key / TKEY
   - lastgenre     # gênero para a pasta raiz
@@ -90,12 +91,27 @@ max_filename_length: 200
 # =============================================================================
 #  Estrutura de pastas:  Gênero / Artista / Título
 # =============================================================================
-# beets >= 2.11 (versão da imagem Soulbeet) usa o campo multivalor "genres";
-# %first pega só o primeiro gênero para o nome da pasta.
+# Os campos $genero_pasta, $artista_pasta e $albumartista_pasta vêm do plugin
+# pastas.py (soulbeet/beets-plugins). Só o nome da pasta muda; as tags ficam.
+#   - Gênero: o primeiro da tag, sem o qualificador entre parênteses e na grafia
+#     canônica: "Hard Dance / Hardcore / Neo Rave" e "Hard Dance;Hardcore" -> Hard Dance,
+#     "Techno (Peak Time / Driving)" -> Techno, "psytrance" e "Psy Trance" -> Psy-Trance.
+#     Sem gênero (ou com o site de onde o arquivo veio no lugar dele): _Sem Genero.
+#   - Artista: o primeiro da faixa. "KUKO, 9inebro, NEUF" e "KUKO feat. NEUF" -> KUKO.
+#     "&" não separa ("Above & Beyond" é um artista só).
+# Depois de mudar esta seção, rode "Reorganizar as pastas" (beet move) no app.
 paths:
-  singleton: '%if{$genres,%first{$genres},_Sem Genero}/$artist/$title'
-  default:   '%if{$genres,%first{$genres},_Sem Genero}/$albumartist/$title'
-  comp:      '%if{$genres,%first{$genres},_Sem Genero}/Various Artists/$artist - $title'
+  singleton: '$genero_pasta/$artista_pasta/$title'
+  default:   '$genero_pasta/$albumartista_pasta/$title'
+  comp:      '$genero_pasta/Various Artists/$artist - $title'
+
+# Outras grafias que são o mesmo gênero, além das que o plugin já conhece
+# (veja GENEROS_CANONICOS em pastas.py). Formato:  'como vem na tag': 'pasta'
+pastas:
+  apelidos: {}
+  # apelidos:
+  #   'Psychedelic': 'Psy-Trance'
+  #   'Bouncy': 'Bounce'
 
 # =============================================================================
 #  Análise: BPM e Tom

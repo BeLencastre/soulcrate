@@ -1,6 +1,6 @@
-// WebUiService: o Soulbeet, o slskd e o Navidrome dentro do app, cada um numa WebContentsView (§5, Fase 1).
-// Partição de sessão própria por serviço (login persiste e um serviço não enxerga os cookies do outro; SP7),
-// sem preload, sandbox ligado e navegação presa à porta do próprio serviço (§6.1).
+// WebUiService: o Soulbeet, o slskd e o Navidrome dentro do app, cada um numa WebContentsView.
+// Partição de sessão própria por serviço (login persiste e um serviço não enxerga os cookies do outro),
+// sem preload, sandbox ligado e navegação presa à porta do próprio serviço.
 import { shell, WebContentsView, type BrowserWindow } from 'electron';
 import type { Limites, MainEvent, WebUiCarga, WebUiEstado } from '@shared/ipc';
 import { urlDoServico, type ServicoId } from '@shared/servicos';
@@ -73,7 +73,7 @@ export class WebUiService {
   encerrar(): void {
     for (const e of this.entradas.values()) {
       if (e.view.webContents.isDestroyed()) continue;
-      // grava o login (cookies e storage) no disco antes de fechar: ele precisa sobreviver ao app (SP7)
+      // grava o login (cookies e storage) no disco antes de fechar: ele precisa sobreviver ao app
       e.view.webContents.session.flushStorageData();
       void e.view.webContents.session.cookies.flushStore();
       e.view.webContents.close();

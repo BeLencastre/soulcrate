@@ -1,7 +1,9 @@
 // Tela Configurações (protótipo "Configurações", Fase 2): reaproveita as seções do assistente para editar depois.
 // As mudanças ficam num rascunho até gravar; "Aplicar e reiniciar" grava, recria os contêineres e refaz a
 // pós-configuração (o Soulbeet recebe a API key nova sozinho). Senhas nunca voltam do main.
-import { useMemo, useState } from 'react';
+// No Modo DJ só ficam as seções "Suas coisas" (Pastas, Conta Soulseek, Compartilhamento) e as do app; uma seção que
+// o modo não tem, pedida pelo endereço, cai na equivalente ou na inicial.
+import { useEffect, useMemo, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useNavigate, useSearchParams } from 'react-router';
 import {
@@ -12,7 +14,9 @@ import {
 } from '@shared/configuracao';
 import { erroInesperado, type AppError } from '@shared/erros';
 import { msg } from '@shared/mensagens';
-import type { AchadoConfig } from '@shared/stack';
+import { msgDj } from '@shared/mensagens-dj';
+import { ehSecaoConfig, secaoNoModo, SECOES_DO_MODO, type SecaoConfig } from '@shared/modo';
+import { servicoDe, servicoSaudavel, type AchadoConfig } from '@shared/stack';
 import { CartaoErro } from '../components/CartaoErro';
 import { ErroDeLeitura } from '../components/estados';
 import { ListaTarefas } from '../components/ListaTarefas';
@@ -20,6 +24,7 @@ import { SecaoAplicativo, SecaoSobre } from '../components/configuracoes/secoes-
 import {
   CartaoChave,
   SecaoAjustes,
+  SecaoCompartilhamento,
   SecaoPastas,
   SecaoRede,
   SecaoSoulseek,
@@ -31,12 +36,10 @@ import { seguro } from '../lib/acoes';
 import { api } from '../lib/api';
 import { useStackStatus, useUi } from '../lib/estado';
 import { useValidacao } from '../lib/formulario';
+import { useModo } from '../lib/modo';
 
-type Secao = 'conferencia' | 'pastas' | 'soulseek' | 'webui' | 'rede' | 'avancado' | 'app' | 'sobre';
-
-const SECOES_STACK: Secao[] = ['conferencia', 'pastas', 'soulseek', 'webui', 'rede', 'avancado'];
-const SECOES_APP: Secao[] = ['app', 'sobre'];
-const TODAS_AS_SECOES: readonly string[] = [...SECOES_STACK, ...SECOES_APP];
+/** Seções que não precisam da configuração lida para aparecer. */
+const SECOES_SEM_CONFIG: readonly SecaoConfig[] = ['conferencia', 'app', 'sobre'];
 
 const CHAVE_CONFIG = ['config', 'read'] as const;
 
@@ -80,12 +83,21 @@ export function Configuracoes() {
   const configStatus = status.configuracao;
 
   // a seção aberta fica na URL (`?secao=sobre`): o menu Ajuda e a bandeja levam direto a ela, e o voltar funciona
+  const modo = useModo();
+  const dj = modo === 'dj';
+  const secoes = SECOES_DO_MODO[modo];
   const [params, setParams] = useSearchParams();
   const doEndereco = params.get('secao');
-  const secao = TODAS_AS_SECOES.includes(doEndereco ?? '') ? (doEndereco as Secao) : null;
-  const setSecao = (s: Secao) => setParams({ secao: s }, { replace: true });
-  const secaoAtual: Secao =
-    secao ?? (configStatus.estado === 'valida' && configStatus.avisos === 0 ? 'pastas' : 'conferencia');
+  const pedida = ehSecaoConfig(doEndereco) ? doEndereco : null;
+  const secao = pedida ? secaoNoModo(pedida, modo) : null;
+  const setSecao = (s: SecaoConfig) => setParams({ secao: s }, { replace: true });
+  const secaoAtual: SecaoConfig =
+    secao ?? (dj || (configStatus.estado === 'valida' && configStatus.avisos === 0) ? 'pastas' : 'conferencia');
+
+  // trocou de modo com uma seção que o novo modo não tem: o endereço acompanha a seção que ficou aberta
+  useEffect(() => {
+    if (pedida && secao !== pedida) setParams(secao ? { secao } : {}, { replace: true });
+  }, [pedida, secao, setParams]);
 
   const [edicao, setEdicao] = useState<Partial<ConfigEntrada>>({});
   const base = useMemo(() => (config.data ? entradaDaConfig(config.data) : null), [config.data]);
@@ -104,6 +116,7 @@ export function Configuracoes() {
   const [erroPasta, setErroPasta] = useState<string | null>(null);
 
   const noAr = status.servicos.some((s) => s.container === 'running');
+  const slskdNoAr = servicoSaudavel(servicoDe(status, 'slskd'));
   const invalido = validacao !== null && !validacao.ok;
   const mudar = (parcial: Partial<ConfigEntrada>) => {
     setGravado(null);
@@ -161,7 +174,7 @@ export function Configuracoes() {
         <CabecalhoPagina
           rotulo={msg.configuracoes.rotulo}
           titulo={msg.configuracoes.titulo}
-          subtitulo={msg.configuracoes.subtitulo}
+          subtitulo={dj ? msgDj.configuracoes.subtitulo : msg.configuracoes.subtitulo}
         />
         <Cartao borda="vazio" className="flex flex-col gap-3 p-6" data-testid="sem-pasta">
           <h2 className="m-0 text-lg font-extrabold">{msg.configuracoes.sempastaTitulo}</h2>
@@ -301,6 +314,8 @@ export function Configuracoes() {
         );
       case 'rede':
         return entrada ? <SecaoRede entrada={entrada} aoMudar={mudar} /> : null;
+      case 'compartilhamento':
+        return entrada ? <SecaoCompartilhamento entrada={entrada} aoMudar={mudar} slskdNoAr={slskdNoAr} /> : null;
       case 'avancado':
         return propsSecao ? <SecaoAjustes {...propsSecao} /> : null;
       case 'app':
@@ -315,13 +330,30 @@ export function Configuracoes() {
       <CabecalhoPagina
         rotulo={msg.configuracoes.rotulo}
         titulo={msg.configuracoes.titulo}
-        subtitulo={msg.configuracoes.subtitulo}
+        subtitulo={dj ? msgDj.configuracoes.subtitulo : msg.configuracoes.subtitulo}
       />
+
+      {dj && configStatus.estado === 'invalida' ? (
+        <Cartao
+          borda="erro"
+          role="alert"
+          className="flex flex-wrap items-center gap-3 px-[18px] py-[14px]"
+          data-testid="configuracao-incompleta"
+        >
+          <span className="flex min-w-[260px] flex-1 flex-col gap-[2px]">
+            <span className="font-bold">{msgDj.configuracoes.incompleta.titulo}</span>
+            <span className="text-[13px] text-texto-claro">{msgDj.configuracoes.incompleta.corpo}</span>
+          </span>
+          <Botao variante="primario" pequeno onClick={() => navegar('/assistente')}>
+            {msg.configuracoes.abrirAssistente}
+          </Botao>
+        </Cartao>
+      ) : null}
 
       {aplicando && setup ? (
         <Cartao borda="azul" className="flex flex-col gap-4 p-5" data-testid="painel-aplicar">
           <div className="flex items-center justify-between gap-3">
-            <Rotulo>{msg.configuracoes.gravado.reiniciando}</Rotulo>
+            <Rotulo>{dj ? msgDj.configuracoes.reiniciando : msg.configuracoes.gravado.reiniciando}</Rotulo>
             {setup.terminou ? (
               <Botao variante="fantasma" pequeno onClick={() => setAplicando(false)}>
                 {msg.acoes.dispensar}
@@ -364,8 +396,8 @@ export function Configuracoes() {
               {invalido
                 ? msg.configuracoes.pendente.invalida
                 : noAr
-                  ? msg.configuracoes.pendente.corpoNoAr
-                  : msg.configuracoes.pendente.corpoDesligada}
+                  ? (dj ? msgDj.configuracoes.pendente : msg.configuracoes.pendente).corpoNoAr
+                  : (dj ? msgDj.configuracoes.pendente : msg.configuracoes.pendente).corpoDesligada}
             </span>
           </span>
           <Botao variante="fantasma" onClick={() => setEdicao({})} disabled={gravando}>
@@ -406,8 +438,10 @@ export function Configuracoes() {
           aria-label={msg.configuracoes.secoes.aria}
           className="flex max-w-[240px] min-w-[200px] flex-1 flex-col gap-[2px]"
         >
-          <span className="lbl px-3 pb-2">{msg.configuracoes.secoes.grupoStack}</span>
-          {SECOES_STACK.map((s) => (
+          <span className="lbl px-3 pb-2">
+            {dj ? msgDj.configuracoes.grupoSuasCoisas : msg.configuracoes.secoes.grupoStack}
+          </span>
+          {secoes.stack.map((s) => (
             <button
               key={s}
               type="button"
@@ -419,7 +453,7 @@ export function Configuracoes() {
             </button>
           ))}
           <span className="lbl px-3 pt-5 pb-2">{msg.configuracoes.secoes.grupoApp}</span>
-          {SECOES_APP.map((s) => (
+          {secoes.app.map((s) => (
             <button
               key={s}
               type="button"
@@ -437,11 +471,11 @@ export function Configuracoes() {
           aria-label={msg.configuracoes.secoes[secaoAtual]}
         >
           <h2 className="m-0 text-[22px] font-extrabold">{msg.configuracoes.secoes[secaoAtual]}</h2>
-          {config.isLoading && !['conferencia', 'app', 'sobre'].includes(secaoAtual) ? (
+          {config.isLoading && !SECOES_SEM_CONFIG.includes(secaoAtual) ? (
             <p role="status" className="hint m-0">
               {msg.configuracoes.carregando}
             </p>
-          ) : config.isError && !['conferencia', 'app', 'sobre'].includes(secaoAtual) ? (
+          ) : config.isError && !SECOES_SEM_CONFIG.includes(secaoAtual) ? (
             <ErroDeLeitura causa={config.error} aoTentarDeNovo={() => void config.refetch()} />
           ) : (
             conteudo

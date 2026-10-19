@@ -1,4 +1,4 @@
-// Web UIs integradas (SP7): a página de cada serviço abre numa WebContentsView, o login persiste entre aberturas
+// Web UIs integradas: a página de cada serviço abre numa WebContentsView, o login persiste entre aberturas
 // do app, um serviço não enxerga o cookie do outro e a view não sai da própria porta. Usa servidores HTTP locais
 // nas portas reais (5030, 9765): se alguma estiver ocupada (a stack de verdade no ar), os testes são pulados.
 import { createServer, type Server } from 'node:http';

@@ -1,4 +1,4 @@
-// "Reprocessar a lista do zero…" (§5, Fase 4): apaga a memória da lista (`estado-<lista>.tsv`), com confirmação. O
+// "Reprocessar a lista do zero…" (Fase 4): apaga a memória da lista (`estado-<lista>.tsv`), com confirmação. O
 // arquivo vai para a Lixeira; depois disso a próxima execução da lista não pula mais nada.
 import { useState } from 'react';
 import * as Dialog from '@radix-ui/react-dialog';

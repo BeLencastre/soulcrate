@@ -50,7 +50,7 @@ export function destinoDaExecucao(r: Pick<ExecucaoResumo, 'id' | 'fim'>, acompan
 /** As opções como no resumo da tela de Opções: `-Retentar -FilaMaxMin 10`; vazio quando é tudo padrão. */
 export const opcoesComoTexto = (opcoes: OpcoesLote): string => argumentosDasOpcoes(opcoes).join(' ');
 
-/** "Todas", "Com faixas que não vieram" */
+/** "Todos", "Com faixas que faltaram" */
 export type FiltroDoHistorico = 'todas' | 'faltas';
 
 export function filtrarExecucoes(execucoes: readonly ExecucaoResumo[], filtro: FiltroDoHistorico): ExecucaoResumo[] {
@@ -81,11 +81,33 @@ export function resumoDaLinha(r: ExecucaoResumo): string {
   return t.completo(c);
 }
 
-export function fonteDaLinha(r: Pick<ExecucaoResumo, 'fonte' | 'fim'>): string {
-  const f = msg.historico.fonte;
-  if (r.fonte === 'resultado') return f.resultado;
-  if (r.fonte === 'log') return f.log;
-  return r.fim === 'rodando' ? f.aoVivo : f.eventos;
+// ---------------------------------------------------------------- Modo DJ
+
+/** "set-sexta.txt" → "set-sexta": o Modo DJ mostra a lista pelo nome, sem a extensão do arquivo. */
+export const semExtensao = (nome: string): string => nome.replace(/\.(txt|csv)$/i, '');
+
+/** `nao-baixadas-<id>.txt`: a lista que "Tentar de novo" gera com as faixas que faltaram na execução `<id>`. */
+const LISTA_DE_TENTATIVA = /^nao-baixadas-(.+?)(?:\.txt)?$/;
+
+/**
+ * Esta execução é uma nova tentativa de outra? Devolve a execução de origem (para o Modo DJ mostrar "set-sexta ·
+ * Nova tentativa" em vez de "nao-baixadas-20261007-154809"), ou `null`. Sem a origem na lista, devolve `undefined`.
+ */
+export function origemDaTentativa(
+  r: Pick<ExecucaoResumo, 'lista'>,
+  todas: readonly ExecucaoResumo[],
+): ExecucaoResumo | null | undefined {
+  const id = r.lista ? LISTA_DE_TENTATIVA.exec(r.lista)?.[1] : undefined;
+  if (!id) return null;
+  return todas.find((x) => x.id === id);
+}
+
+/** `@@user\Music\Vendex - Dark Tower.flac` → nome "Vendex - Dark Tower" e formato "FLAC". */
+export function arquivoParecido(caminho: string): { nome: string; formato: string | null } {
+  const base = caminho.split(/[\\/]/).pop() ?? caminho;
+  const ponto = base.lastIndexOf('.');
+  if (ponto <= 0) return { nome: base, formato: null };
+  return { nome: base.slice(0, ponto), formato: base.slice(ponto + 1).toUpperCase() };
 }
 
 export function formatarBytes(bytes: number): string {

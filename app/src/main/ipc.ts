@@ -1,5 +1,5 @@
 // Handlers de IPC (main): um por canal de `IpcInvoke`. Todo canal confere quem chamou (só a janela principal,
-// só em páginas do app) e valida os argumentos: o renderer não é confiável (§6.1).
+// só em páginas do app) e valida os argumentos: o renderer não é confiável.
 import { mkdirSync, readFileSync } from 'node:fs';
 import { writeFile } from 'node:fs/promises';
 import { isAbsolute, join } from 'node:path';

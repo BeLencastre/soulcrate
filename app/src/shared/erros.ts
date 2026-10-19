@@ -1,4 +1,4 @@
-// Catálogo de erros conhecidos (§6.3): título, explicação em linguagem simples e a ação oferecida.
+// Catálogo de erros conhecidos: título, explicação em linguagem simples e a ação oferecida.
 // Erro inesperado nunca mostra só a pilha: sempre "Copiar detalhes" e "Abrir log".
 import type { MotivoFiltro } from './biblioteca.js';
 import { msg } from './mensagens.js';

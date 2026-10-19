@@ -1,6 +1,6 @@
 // Etapa 1 do lote (protótipo "Baixar lista · Lista"): editor da lista com a pré-visualização ao lado (gerada pelo
 // próprio baixar-lista.ps1, com debounce), importação (arquivo ou playlist de streaming), listas recentes, retomada e
-// o botão de iniciar.
+// o botão de iniciar. Igual nos dois modos (os textos do Modo DJ, os recursos do Modo Dev).
 import { useEffect, useState } from 'react';
 import * as Dialog from '@radix-ui/react-dialog';
 import { Link } from 'react-router';
@@ -222,13 +222,14 @@ function ListaVazia({ aoImportarPlaylist }: { aoImportarPlaylist(s: StreamingId)
   const criar = useRascunho((s) => s.criar);
   const importar = useRascunho((s) => s.importarArquivo);
   const t = msg.lote.lista;
+  const vazio = t.vazio;
   return (
     <div className="flex flex-col gap-6">
       <Cartao borda="vazio" className="flex max-w-[880px] flex-col gap-5 p-6" data-testid="lista-vazia">
         <div className="flex flex-col items-start gap-[10px]">
           <Rotulo>{msg.lote.rotulo}</Rotulo>
-          <h2 className="m-0 text-lg font-extrabold">{t.vazio.titulo}</h2>
-          <p className="m-0 max-w-[640px] text-sm leading-normal text-texto-claro">{t.vazio.corpo}</p>
+          <h2 className="m-0 text-lg font-extrabold">{vazio.titulo}</h2>
+          <p className="m-0 max-w-[640px] text-sm leading-normal text-texto-claro">{vazio.corpo}</p>
           <div className="mt-1 flex flex-wrap gap-2">
             <Botao variante="primario" onClick={() => void criar('exemplo')}>
               {t.novaDoExemplo}
@@ -579,7 +580,7 @@ export function Lista() {
                 data-testid="iniciar-lote"
               >
                 <IconePlay />
-                {iniciarLote.ocupado ? t.iniciando : t.iniciar}
+                {iniciarLote.ocupado ? t.iniciando : t.iniciar(analiseOk ? paraBaixar : 0)}
               </Botao>
             </div>
           </div>

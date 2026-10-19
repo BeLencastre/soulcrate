@@ -1,4 +1,4 @@
-// Dublê do `docker` para testar o app sem Docker de verdade (§7: "executáveis falsos que emitem saídas gravadas").
+// Dublê do `docker` para testar o app sem Docker de verdade (executáveis falsos que emitem saídas gravadas).
 // O app o chama como `electron docker-falso.mjs <args do docker>` (SOULCRATE_DOCKER_DUBLE, só fora do app empacotado).
 //
 // O "mundo" fica num JSON (SOULCRATE_DUBLE_ESTADO), que o teste lê e altera para simular o que acontece por fora

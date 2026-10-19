@@ -1,4 +1,4 @@
-// PastaService (passo 1 do assistente, §3.3): prepara a pasta do Soulcrate. Numa pasta nova, copia os recursos da
+// PastaService (passo 1 do assistente): prepara a pasta do Soulcrate. Numa pasta nova, copia os recursos da
 // stack (docker-compose.yml, scripts, modelos…) e guarda o hash do que instalou em `.soulcrate/manifesto.json`;
 // numa pasta que já existe (clone do Git, por exemplo), só confere e passa a gerenciá-la, sem copiar nada.
 // Arquivos do usuário nunca são sobrescritos: um arquivo que já existe e é diferente fica como está.
@@ -110,7 +110,7 @@ export class PastaService {
     this.fs = dep.fs ?? fsPastaReal;
   }
 
-  /** Padrão proposto para uma instalação nova: `Soulcrate` no perfil do usuário (D1). */
+  /** Padrão proposto para uma instalação nova: `Soulcrate` no perfil do usuário. */
   static pastaPadrao(home: string): string {
     return join(home, 'Soulcrate');
   }

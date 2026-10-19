@@ -1,6 +1,6 @@
-// LoteService (BatchService, §3.2): inicia o baixar-lista.ps1 destacado, acompanha o arquivo de eventos e o log de
+// LoteService (BatchService): inicia o baixar-lista.ps1 destacado, acompanha o arquivo de eventos e o log de
 // saída, para o lote com segurança (arquivo-sinal) e se reconecta a execuções que continuam vivas (trava P8).
-// O lote NÃO é filho do app: fechar o app não o mata (§3.4). O app só lê os arquivos que ele grava.
+// O lote NÃO é filho do app: fechar o app não o mata. O app só lê os arquivos que ele grava.
 import { existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from 'node:fs';
 import { join, resolve, sep } from 'node:path';
 import { criarErro } from '@shared/erros';
@@ -79,7 +79,7 @@ export interface DepsLoteService {
   agora(): number;
   processoVivo(pid: number): boolean;
   aoErro(e: unknown): void;
-  /** intervalo da leitura dos arquivos (SP4: 500 ms) */
+  /** intervalo da leitura dos arquivos (500 ms) */
   intervaloMs?: number;
   /** quanto esperar o primeiro sinal do lote antes de dar a execução por perdida */
   semSinalMs?: number;

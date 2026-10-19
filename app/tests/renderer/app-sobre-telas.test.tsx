@@ -55,6 +55,7 @@ const SETTINGS: AppSettings = {
   abrirWebUi: 'app',
   avisarFimDoLote: true,
   avisarBuscasPausadas: true,
+  modo: null,
 };
 
 const INFO: InfoSobre = {
@@ -128,7 +129,7 @@ describe('Configurações → Aplicativo', () => {
     await waitFor(() => expect(iniciar).toBeEnabled());
     expect(iniciar).not.toBeChecked();
     expect(screen.getByRole('switch', { name: /Fechar a janela minimiza/ })).toBeChecked();
-    expect(screen.getByRole('switch', { name: /Avisar quando um lote terminar/ })).toBeChecked();
+    expect(screen.getByRole('switch', { name: /Avisar quando um download terminar/ })).toBeChecked();
     expect(screen.getByRole('radio', { name: 'Dentro do app' })).toBeChecked();
     expect(screen.getByRole('radio', { name: 'Escuro' })).toBeChecked();
 
@@ -146,6 +147,23 @@ describe('Configurações → Aplicativo', () => {
     fireEvent.click(screen.getByRole('switch', { name: /Avisar quando as buscas forem pausadas/ }));
     await waitFor(() => expect(api.app.setSettings).toHaveBeenCalledWith({ avisarBuscasPausadas: false }));
   });
+
+  it.each(['dev', 'dj'] as const)(
+    'Modo %s: a mesma tela, sem escolha de modo (que fica na barra lateral)',
+    async (modo) => {
+      api.app.getSettings.mockResolvedValue({ ...SETTINGS, modo });
+      montar(<SecaoAplicativo />);
+      await waitFor(() => expect(screen.getByRole('switch', { name: /Iniciar com o Windows/ })).toBeEnabled());
+      expect(screen.queryByRole('group', { name: 'Modo da interface' })).toBeNull();
+      expect(screen.queryByRole('radio', { name: /Modo DJ/ })).toBeNull();
+      expect(
+        screen.getByText('O download continua de qualquer forma; isto só decide se o app sai junto.'),
+      ).toBeInTheDocument();
+      expect(screen.getByText('Notificação do Windows com quantas faixas chegaram.')).toBeInTheDocument();
+      expect(screen.getByRole('group', { name: 'Abrir a busca, as transferências e o player' })).toBeInTheDocument();
+      expect(screen.queryByText(/Vale para o app inteiro/)).toBeNull();
+    },
+  );
 
   it('o tema tem as três opções do protótipo, com rótulo', async () => {
     montar(<SecaoAplicativo />);

@@ -101,7 +101,7 @@ services:
     volumes:
       - ./soulbeet/data:/data
       - ./soulbeet/config:/config                          # config.yaml do beets
-      - ./soulbeet/beets-plugins:/data/beets-plugins:ro    # plugin keepmix.py
+      - ./soulbeet/beets-plugins:/data/beets-plugins:ro    # plugins keepmix.py e pastas.py
       - *downloads-volume                                  # IDÊNTICO ao slskd
       - *music-volume                                      # IDÊNTICO ao slskd
     depends_on:

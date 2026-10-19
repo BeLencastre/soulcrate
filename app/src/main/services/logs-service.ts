@@ -1,5 +1,5 @@
 // LogsService: `docker compose logs -f --tail 200` de um contêiner (ou de todos) em tempo real para o renderer.
-// Cada assinatura é um processo; todos são encerrados quando o renderer cancela, a janela fecha ou o app sai (§6.2).
+// Cada assinatura é um processo; todos são encerrados quando o renderer cancela, a janela fecha ou o app sai.
 import type { AlvoLog, LinhaLog, MainEvent, SubscriptionId } from '@shared/ipc';
 import { parseLinhaLog } from '../infra/docker-parsers';
 import type { ProcessoVivo } from '../infra/processos';

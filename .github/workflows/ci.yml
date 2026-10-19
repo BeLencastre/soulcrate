@@ -60,6 +60,13 @@ jobs:
       - name: Testes do mapa e dos hooks de memória
         run: node --test "scripts/*.test.mjs" ".claude/hooks/*.test.mjs"
 
+      # as regras dos plugins do beets são Python puro: rodam sem o contêiner (mesma versão do Python da imagem)
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Testes dos plugins do beets
+        run: python -m unittest discover -s tests/soulbeet -v
+
   app:
     name: App (lint, tipos, testes e ponta a ponta)
     runs-on: windows-latest

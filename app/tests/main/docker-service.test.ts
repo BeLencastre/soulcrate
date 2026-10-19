@@ -32,7 +32,7 @@ const ENGINE_OK: Respondedor = (_c, args) => {
   return undefined;
 };
 
-describe('DockerService.detectar (SP1)', () => {
+describe('DockerService.detectar', () => {
   it('engine de pé: instalado, aberto, versões lidas, sem chamar o `docker desktop`', async () => {
     const { docker, executor } = criar(ENGINE_OK);
     expect(await docker.detectar()).toEqual({
@@ -86,7 +86,7 @@ describe('DockerService.detectar (SP1)', () => {
   });
 });
 
-describe('DockerService.abrirDockerDesktop (SP2)', () => {
+describe('DockerService.abrirDockerDesktop', () => {
   it('já está aberto: não faz nada', async () => {
     const { docker, executor } = criar(ENGINE_OK);
     expect(await docker.abrirDockerDesktop()).toBe('pronto');

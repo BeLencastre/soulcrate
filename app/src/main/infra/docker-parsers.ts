@@ -103,7 +103,7 @@ export function servicosDoPs(ps: readonly ContainerPs[]): ServicoStatus[] {
 
 /**
  * Saída de `docker desktop status --format json` ({"Status":"running"}). Texto que não é JSON (o subcomando não
- * existe, ou a CLI reclamou) é "desconhecido": quem decide é a engine ([SP1](docs/spikes/sp1-deteccao-docker.md)).
+ * existe, ou a CLI reclamou) é "desconhecido": quem decide é a engine.
  */
 export function parseDesktopStatus(texto: string): DockerDesktopEstado {
   try {

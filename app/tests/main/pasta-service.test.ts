@@ -42,12 +42,13 @@ describe('lista dos arquivos da stack', () => {
     expect(ARQUIVOS_DA_STACK).not.toContain('slskd/slskd.yml');
   });
 
-  it('o compose referencia o que a lista traz (Dockerfile, config do beets, plugin)', () => {
+  it('o compose referencia o que a lista traz (Dockerfile, config do beets, plugins)', () => {
     for (const a of [
       'docker-compose.yml',
       'soulbeet/Dockerfile',
       'soulbeet/config/config.yaml',
       'soulbeet/beets-plugins/keepmix.py',
+      'soulbeet/beets-plugins/pastas.py',
     ]) {
       expect(ARQUIVOS_DA_STACK).toContain(a);
     }

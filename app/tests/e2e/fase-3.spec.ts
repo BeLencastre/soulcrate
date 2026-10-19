@@ -1,6 +1,6 @@
 // Fase 3, ponta a ponta: o download em lote no app de verdade (Electron), com o baixar-lista.ps1 de verdade e o PowerShell
 // de verdade, contra um slskd falso (o mesmo da suíte Pester) e o dublê do docker. Nada aqui toca em Docker, na rede
-// ou nos dados do usuário. Critérios de aceite (§5, Fase 3):
+// ou nos dados do usuário. Critérios de aceite (Fase 3):
 //   - uma lista de 30 faixas roda do começo ao fim pelo app com o mesmo resultado que pelo script (.bat);
 //   - fechar o app no meio não interrompe o lote; reabrir mostra o progresso correto;
 //   - parar pelo botão sempre gera resultado-*.txt e nao-baixadas-*.txt;
@@ -189,7 +189,7 @@ test('uma lista de 30 faixas roda do começo ao fim pelo app com o mesmo resulta
   await abrirListaDosRecentes(janela, 'set.txt');
   await expect(janela.getByTestId('editor-lista')).toHaveValue(lista.replace(/\r\n/g, '\n'));
   const previa = janela.getByRole('region', { name: 'Pré-visualização' });
-  await expect(previa).toContainText('30 para baixar', { timeout: 60_000 });
+  await expect(previa).toContainText('30 faixas', { timeout: 60_000 });
   await expect(janela.getByTestId('rodape-contagem')).toContainText('30 faixas para baixar');
   await expect(janela.getByTestId('previa-lista')).toContainText('Alfa');
   await capturar(janela, 'f3-01-lista');
@@ -201,7 +201,7 @@ test('uma lista de 30 faixas roda do começo ao fim pelo app com o mesmo resulta
   await expect(janela.getByTestId('comando-equivalente')).toHaveText(
     'baixar-lista.bat set.txt -BuscasPorJanela 60 -SemCatalogo -SemBeets',
   );
-  await expect(janela.getByTestId('resumo-opcoes')).toContainText('3 opções diferentes do padrão do script');
+  await expect(janela.getByTestId('resumo-opcoes')).toContainText('3 ajustes diferentes do padrão do script');
   await capturar(janela, 'f3-02-opcoes');
 
   // 3. execução: do começo ao fim, com o painel ao vivo
@@ -217,7 +217,7 @@ test('uma lista de 30 faixas roda do começo ao fim pelo app com o mesmo resulta
   await expect(contador(janela, 'naoAchadas')).toHaveText('3');
   await expect(contador(janela, 'falhas')).toHaveText('0');
   await expect(janela.getByTestId('cartao-lote')).toHaveCount(0); // terminou: sai da barra lateral
-  await expect(janela.getByText('Lote concluído', { exact: true })).toBeVisible();
+  await expect(janela.getByText('Download concluído', { exact: true })).toBeVisible();
 
   // a tabela mostra cada faixa com seu status, e o filtro "Atenção" só as que não vieram
   await janela.locator('[data-filtro="atencao"]').click();
@@ -280,7 +280,7 @@ test('fechar o app no meio não interrompe o lote; reabrir mostra o progresso; p
   // inicia pelo app
   let sessao = (aberto = await abrirApp(amb, extras));
   await abrirListaDosRecentes(sessao.janela, 'set.txt');
-  await expect(sessao.janela.getByRole('region', { name: 'Pré-visualização' })).toContainText('5 para baixar', {
+  await expect(sessao.janela.getByRole('region', { name: 'Pré-visualização' })).toContainText('5 faixas', {
     timeout: 60_000,
   });
   await opcoesDeTeste(sessao.janela);
@@ -296,7 +296,7 @@ test('fechar o app no meio não interrompe o lote; reabrir mostra o progresso; p
   await capturar(sessao.janela, 'f3-05-execucao-na-fila');
   const runId = (
     await sessao.janela
-      .locator('.lbl', { hasText: /execução \d{8}-\d{6}/ })
+      .locator('.lbl', { hasText: /download \d{8}-\d{6}/ })
       .first()
       .innerText()
   ).match(/\d{8}-\d{6}(-\d+)?/)?.[0] as string;
@@ -334,8 +334,11 @@ test('fechar o app no meio não interrompe o lote; reabrir mostra o progresso; p
   expect(pelaLinhaDeComando.status).toBe(5); // "esta lista já está sendo baixada por outro processo"
   expect(pelaLinhaDeComando.stdout + pelaLinhaDeComando.stderr).toMatch(/ja esta sendo baixada/);
   // e a tela da lista avisa e não deixa iniciar
-  await sessao.janela.getByRole('navigation', { name: 'Etapas do lote' }).getByRole('link', { name: /Lista/ }).click();
-  await expect(sessao.janela.getByText('Esta lista está rodando agora.')).toBeVisible();
+  await sessao.janela
+    .getByRole('navigation', { name: 'Etapas do download' })
+    .getByRole('link', { name: /Lista/ })
+    .click();
+  await expect(sessao.janela.getByText('Esta lista está baixando agora.')).toBeVisible();
   await expect(sessao.janela.getByTestId('iniciar-lote')).toBeDisabled();
 
   // fecha o app no meio: o lote continua (a trava segue de pé e o processo, vivo)
@@ -381,8 +384,11 @@ test('fechar o app no meio não interrompe o lote; reabrir mostra o progresso; p
   // a notificação de "parado" saiu pelo app que reconectou (o que iniciou o lote já estava fechado)
   expect((await notificacoes(sessao.app)).map((n) => n.titulo)).toEqual(['Lote parado']);
   // sem lote rodando, a mesma lista pode ser iniciada de novo
-  await sessao.janela.getByRole('navigation', { name: 'Etapas do lote' }).getByRole('link', { name: /Lista/ }).click();
-  await expect(sessao.janela.getByText('Esta lista está rodando agora.')).toHaveCount(0);
+  await sessao.janela
+    .getByRole('navigation', { name: 'Etapas do download' })
+    .getByRole('link', { name: /Lista/ })
+    .click();
+  await expect(sessao.janela.getByText('Esta lista está baixando agora.')).toHaveCount(0);
 });
 
 // ---------------------------------------------------------------- Editor, importação e arrastar e soltar
@@ -411,8 +417,8 @@ test('editor: digitar salva e atualiza a pré-visualização; criar do exemplo; 
   await editor.fill([faixa(0), faixa(1), faixa(0), 'Sem traço aqui', '01. Charlie – Bronze 3:45'].join('\n'));
   await expect(janela.getByTestId('estado-salvamento')).toContainText('alterações não salvas');
   const previa = janela.getByRole('region', { name: 'Pré-visualização' });
-  await expect(previa).toContainText('4 para baixar', { timeout: 60_000 });
-  await expect(previa).toContainText('1 duplicada');
+  await expect(previa).toContainText('4 faixas', { timeout: 60_000 });
+  await expect(previa).toContainText('1 repetida');
   await expect(janela.getByTestId('previa-lista')).toContainText('Duplicada · linha 1');
   await expect(janela.getByTestId('previa-lista')).toContainText('Falta o " - "');
   await expect(janela.getByTestId('estado-salvamento')).not.toContainText('não salvas');
@@ -458,7 +464,7 @@ test('editor: digitar salva e atualiza a pré-visualização; criar do exemplo; 
   expect(existsSync(join(amb.projeto, 'foto.png'))).toBe(false);
 
   // as listas recentes mostram as três
-  await janela.getByRole('button', { name: 'Listas recentes' }).click();
+  await janela.getByRole('button', { name: 'Minhas listas' }).click();
   const recentes = janela.getByTestId('dialogo-recentes');
   await expect(recentes).toContainText('spotify do dj.csv');
   await expect(recentes).toContainText(nome);
@@ -475,7 +481,7 @@ test('stack desligada: pergunta, liga a stack, espera ficar saudável e começa 
   const { janela } = (aberto = await abrirApp(amb, ambienteDoLote(amb, slskd)));
 
   await abrirListaDosRecentes(janela, 'pequena.txt');
-  await expect(janela.getByRole('region', { name: 'Pré-visualização' })).toContainText('2 para baixar', {
+  await expect(janela.getByRole('region', { name: 'Pré-visualização' })).toContainText('2 faixas', {
     timeout: 60_000,
   });
   await opcoesDeTeste(janela);

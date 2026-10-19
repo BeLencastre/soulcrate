@@ -1,4 +1,4 @@
-// HealthService (§3.2 e §6.2): sonda o Docker, os contêineres e os endpoints HTTP e publica o estado da stack.
+// HealthService: sonda o Docker, os contêineres e os endpoints HTTP e publica o estado da stack.
 // Sobrevive ao Docker reiniciar, ao slskd cair e à suspensão do PC: cada ciclo recomeça do que consegue medir.
 import { SERVICOS, type ServicoInfo } from '@shared/servicos';
 import {
@@ -14,7 +14,7 @@ import {
 import { servicosDoPs, type ContainerPs } from '../infra/docker-parsers';
 import type { DeteccaoDocker, DockerService } from './docker-service';
 
-/** §6.4: a cada 5 s com a janela visível e a cada 30 s quando está minimizada ou na bandeja. */
+/** A cada 5 s com a janela visível e a cada 30 s quando está minimizada ou na bandeja. */
 export const INTERVALO_VISIVEL_MS = 5_000;
 export const INTERVALO_OCULTO_MS = 30_000;
 const TIMEOUT_HTTP_MS = 2_500;

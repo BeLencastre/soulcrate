@@ -1,4 +1,4 @@
-// Estado do renderer (§3.1): TanStack Query guarda o que vem do main (o main é a fonte da verdade) e
+// Estado do renderer: TanStack Query guarda o que vem do main (o main é a fonte da verdade) e
 // Zustand guarda só estado de interface (painel do log aberto, operação em curso, diálogos).
 import { useEffect, useState } from 'react';
 import { useQuery, useQueryClient, type QueryClient } from '@tanstack/react-query';
@@ -163,7 +163,7 @@ export function ligarEventos(qc: QueryClient, navegar: (rota: string) => void): 
 export function useLigarEventos(navegar: (rota: string) => void): void {
   const qc = useQueryClient();
   useEffect(() => ligarEventos(qc, navegar), [qc, navegar]);
-  // um lote iniciado antes de o app fechar continua rodando: volta a mostrá-lo no painel (§5, Fase 3, "Reconexão")
+  // um lote iniciado antes de o app fechar continua rodando: volta a mostrá-lo no painel (Fase 3, "Reconexão")
   useEffect(() => {
     void useExecucao.getState().reconectar();
     void useManutencao.getState().reconectar();
