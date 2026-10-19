@@ -6,6 +6,10 @@ O **app desktop** e a **stack** (Docker Compose, scripts e configuração do bee
 
 ## Não lançado
 
+## App 1.2.0 (2026-10-19)
+
+Traz o Modo DJ e o Modo Dev, as telas reorganizadas nos dois modos e a stack 1.3.0 (uma pasta por artista e por gênero na biblioteca).
+
 ### Adicionado
 
 - **Modo DJ e Modo Dev.** O Modo DJ mostra só o que importa para baixar, organizar e ouvir, sem termos técnicos; o Modo Dev é o app de sempre, com as etapas do ambiente, os logs, as portas, as opções do script e a configuração completa da stack. Troque pelo alternador no rodapé da barra lateral, ou pelo atalho **Ctrl+Shift+D**. A troca muda só o que aparece: a tela atual fica onde está, nada é apagado e um download em andamento continua.
