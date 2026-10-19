@@ -12,7 +12,7 @@ beforeEach(() => {
 });
 afterEach(() => rmSync(dir, { recursive: true, force: true }));
 
-describe('LeitorIncremental (SP4)', () => {
+describe('LeitorIncremental', () => {
   it('arquivo que ainda não existe: nada para ler', async () => {
     expect(await new LeitorIncremental(arquivo).lerNovas()).toEqual([]);
   });

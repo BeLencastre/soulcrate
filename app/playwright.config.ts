@@ -1,6 +1,6 @@
 import { defineConfig } from '@playwright/test';
 
-// Testes ponta a ponta do app Electron (§7). Rodam contra o build (`npm run build`) e um dublê do `docker`:
+// Testes ponta a ponta do app Electron. Rodam contra o build (`npm run build`) e um dublê do `docker`:
 // nada aqui toca na stack real. Veja tests/e2e/ajudantes.ts.
 export default defineConfig({
   testDir: 'tests/e2e',

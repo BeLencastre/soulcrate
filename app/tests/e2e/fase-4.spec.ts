@@ -1,6 +1,6 @@
 // Fase 4, ponta a ponta: o histórico e o diagnóstico no app de verdade (Electron), com o baixar-lista.ps1 de verdade e o
 // PowerShell de verdade, contra um slskd falso (o mesmo da suíte Pester) e o dublê do docker. Nada aqui toca em Docker,
-// na rede, na Lixeira ou nos dados do usuário. Critérios de aceite (§5, Fase 4):
+// na rede, na Lixeira ou nos dados do usuário. Critérios de aceite (Fase 4):
 //   - para cada motivo da tabela do README, o app mostra a ação correspondente (conferido por tabela em
 //     tests/shared/motivos.test.ts; aqui, o motivo real de um lote real);
 //   - corrigir um título pela sugestão e tentar de novo baixa a faixa sem editar arquivo à mão.

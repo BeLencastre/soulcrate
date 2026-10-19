@@ -1,4 +1,4 @@
-// SlskdService (§3.2): as chamadas do app à API do slskd. Na Fase 5 é só o compartilhamento: quantos arquivos o slskd
+// SlskdService: as chamadas do app à API do slskd. Na Fase 5 é só o compartilhamento: quantos arquivos o slskd
 // anuncia no Soulseek e o pedido de nova varredura de `music/`, a mesma lógica do baixar-lista.ps1 (que reescaneia
 // quando o slskd anuncia 0 arquivos). A API key vem do `.env` (ou do `slskd.yml`) e nunca sai do main.
 import { join } from 'node:path';

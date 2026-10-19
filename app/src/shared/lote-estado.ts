@@ -17,7 +17,7 @@ export interface InfoStatus {
 /** Os rótulos dos status (o Modo DJ passa os seus, com as mesmas chaves). */
 export type TextosDoStatus = Record<keyof typeof msg.lote.status, string>;
 
-/** Apêndice B da especificação: status do script → rótulo, grupo e cor. */
+/** Status do script → rótulo, grupo e cor. */
 export function infoDoStatus(
   status: string,
   naFilaDoUsuario = false,

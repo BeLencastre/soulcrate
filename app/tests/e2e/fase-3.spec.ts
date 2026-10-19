@@ -1,6 +1,6 @@
 // Fase 3, ponta a ponta: o download em lote no app de verdade (Electron), com o baixar-lista.ps1 de verdade e o PowerShell
 // de verdade, contra um slskd falso (o mesmo da suíte Pester) e o dublê do docker. Nada aqui toca em Docker, na rede
-// ou nos dados do usuário. Critérios de aceite (§5, Fase 3):
+// ou nos dados do usuário. Critérios de aceite (Fase 3):
 //   - uma lista de 30 faixas roda do começo ao fim pelo app com o mesmo resultado que pelo script (.bat);
 //   - fechar o app no meio não interrompe o lote; reabrir mostra o progresso correto;
 //   - parar pelo botão sempre gera resultado-*.txt e nao-baixadas-*.txt;

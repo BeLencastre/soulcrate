@@ -1,6 +1,6 @@
 // Fase 0 e 1, ponta a ponta: o app de verdade (Electron) contra o dublê do docker.
 // Cobre os critérios de aceite: Docker fechado → abrir com um clique; ligar, desligar e reconstruir refletindo o estado
-// real; contêiner derrubado por fora aparecendo como erro; e a segurança de base do renderer (§6.1).
+// real; contêiner derrubado por fora aparecendo como erro; e a segurança de base do renderer.
 import { expect, test, type Page } from '@playwright/test';
 import {
   abertosFora,
@@ -56,7 +56,7 @@ test('abre com a navegação lateral e o Início', async () => {
   await capturar(janela, '02-biblioteca-stack-desligada');
 });
 
-test('Docker lento: mostra "Verificando" em vez de um alarme falso de Docker fechado (§6.4)', async () => {
+test('Docker lento: mostra "Verificando" em vez de um alarme falso de Docker fechado', async () => {
   // o docker leva 6 s para responder cada comando: dá tempo de ver a tela antes da primeira sondagem, mesmo numa máquina lenta
   amb = criarAmbiente({ mundo: { atrasoMs: 6000 } });
   aberto = await abrirApp(amb);
@@ -129,7 +129,7 @@ test('contêiner derrubado por fora aparece como erro na tela', async () => {
 
   // docker stop slskd
   amb.mudarMundo((m) => ({ containers: { ...m.containers, slskd: { estado: 'exited' } } }));
-  // §5 Fase 1: "refletem o estado real em até 5 s" (um ciclo de sondagem + o tempo do compose ps)
+  // Fase 1: "refletem o estado real em até 5 s" (um ciclo de sondagem + o tempo do compose ps)
   await expect(resumo(janela)).toHaveText('slskd parou', { timeout: 10_000 });
   await expect(titulo(janela)).toHaveText('Há serviços parados');
   await capturar(janela, '07-slskd-parou');
@@ -253,7 +253,7 @@ test('fechar a janela vai para a bandeja, com aviso na primeira vez', async () =
   await expect.poll(visivel).toBe(false);
 });
 
-test.describe('segurança do renderer (§6.1)', () => {
+test.describe('segurança do renderer', () => {
   test('sem Node, sem ipcRenderer cru, com CSP e navegação bloqueada', async () => {
     amb = criarAmbiente();
     aberto = await abrirApp(amb);

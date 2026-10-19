@@ -1,6 +1,6 @@
 // Fase 2, ponta a ponta: o assistente de configuração e a tela Configurações no app de verdade (Electron), contra o
-// dublê do docker e um Navidrome e um Soulbeet falsos (as rotas dos spikes SP5 e SP6). Nada toca na stack real.
-// Critérios de aceite (§5, Fase 2): da instalação à stack no ar sem abrir arquivo; um .env com valores de exemplo mostra
+// dublê do docker e um Navidrome e um Soulbeet falsos (as rotas de docs/apis-da-stack.md). Nada toca na stack real.
+// Critérios de aceite (Fase 2): da instalação à stack no ar sem abrir arquivo; um .env com valores de exemplo mostra
 // exatamente o que falta; os arquivos gerados passam na conferência do subir.bat (essa parte está em
 // tests/main/config-powershell.test.ts).
 import { existsSync, readFileSync } from 'node:fs';

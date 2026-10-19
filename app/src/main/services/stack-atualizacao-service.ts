@@ -1,7 +1,7 @@
-// StackAtualizacaoService (§3.3, Fase 7): mantém em dia os arquivos da stack que o app instalou na pasta do Soulcrate
+// StackAtualizacaoService (Fase 7): mantém em dia os arquivos da stack que o app instalou na pasta do Soulcrate
 // (docker-compose.yml, scripts, Dockerfile, config do beets…) quando o app novo traz versões novas deles.
 //
-// A regra é a da §3.3 e o app nunca sobrescreve o que não sabe de onde veio:
+// A regra: o app nunca sobrescreve o que não sabe de onde veio:
 //   - o arquivo da pasta é igual ao que o app instalou antes (ninguém o editou) → substitui;
 //   - o usuário o editou (ou o manifesto não o conhece) → mantém o dele, grava o novo ao lado como `<arquivo>.novo` e avisa;
 //   - nunca toca em `.env`, `slskd.yml`, listas, `lotes/`, `music/`… (a lista fechada é `ARQUIVOS_DA_STACK`).

@@ -1,4 +1,4 @@
-// Escritor de .zip mínimo (formato ZIP clássico, sem ZIP64): o suficiente para o pacote de suporte (§5, Fase 6), que
+// Escritor de .zip mínimo (formato ZIP clássico, sem ZIP64): o suficiente para o pacote de suporte, que
 // junta alguns arquivos de texto pequenos. Sem dependência nova: só `node:zlib` (deflate cru + CRC-32).
 // Nomes em UTF-8 (bit 11 das flags), então o Explorer e o `Expand-Archive` abrem "relatório.txt" sem estragar o acento.
 import { crc32, deflateRawSync } from 'node:zlib';

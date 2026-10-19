@@ -299,7 +299,7 @@ export type ResultadoRemocao = { ok: true; remocao: RemocaoFeita } | { ok: false
 // ---------------------------------------------------------------- Manutenção
 
 /**
- * As tarefas de manutenção que o app sabe pedir ao beets (o §5 da especificação: sem comando livre na v1):
+ * As tarefas de manutenção que o app sabe pedir ao beets (sem comando livre na v1):
  * `update`, `move`, `keyfinder` + `autobpm` das faixas sem, e `import -q -s` do que sobrou em `downloads/`.
  */
 export type TarefaManutencao = 'update' | 'move' | 'tomEBpm' | 'importLeftovers';

@@ -1,4 +1,4 @@
-// "Iniciar lote" (§5, Fase 3): confere a stack antes e oferece ligá-la. Se o slskd já responde, inicia na hora; se não,
+// "Iniciar lote" (Fase 3): confere a stack antes e oferece ligá-la. Se o slskd já responde, inicia na hora; se não,
 // pergunta e, ao ligar, espera os serviços ficarem saudáveis e começa sozinho. Salva a lista antes de iniciar.
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import * as Dialog from '@radix-ui/react-dialog';

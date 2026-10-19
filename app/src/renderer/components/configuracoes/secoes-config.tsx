@@ -1,5 +1,5 @@
 // As seções do formulário de configuração. O assistente (um passo por seção) e a tela Configurações (uma aba por
-// seção) usam as mesmas peças: "Tela Configurações reaproveita os passos do assistente para editar depois" (§5, Fase 2).
+// seção) usam as mesmas peças: "Tela Configurações reaproveita os passos do assistente para editar depois" (Fase 2).
 import { useState } from 'react';
 import {
   formatarEspaco,

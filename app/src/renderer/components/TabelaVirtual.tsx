@@ -1,4 +1,4 @@
-// Tabela com virtualização (§6.4: "tabela de faixas fluida com 1.000 linhas"): só as linhas visíveis (mais uma folga)
+// Tabela com virtualização (a tabela de faixas precisa ficar fluida com 1.000 linhas): só as linhas visíveis (mais uma folga)
 // vão para o DOM. Linhas de altura fixa, posicionadas pelo índice; o cabeçalho fica fixo no topo.
 import { useCallback, useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
 

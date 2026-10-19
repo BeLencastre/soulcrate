@@ -1,4 +1,4 @@
-// Navidrome e Soulbeet de mentira, só com as rotas que o assistente usa (as gravadas nos spikes SP5 e SP6).
+// Navidrome e Soulbeet de mentira, só com as rotas que o assistente usa (as de docs/apis-da-stack.md).
 // Sobem num servidor HTTP local, em porta livre, e guardam o que receberam. Servem aos testes dos serviços e aos
 // testes ponta a ponta: nada aqui toca na stack de verdade.
 import { createServer, type IncomingMessage, type Server, type ServerResponse } from 'node:http';

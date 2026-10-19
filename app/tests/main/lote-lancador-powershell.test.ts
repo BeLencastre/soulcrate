@@ -1,4 +1,4 @@
-// O lançador de verdade (SP3), com o PowerShell de verdade e um baixar-lista.ps1 de brinquedo: confere que aspas, espaços,
+// O lançador de verdade, com o PowerShell de verdade e um baixar-lista.ps1 de brinquedo: confere que aspas, espaços,
 // acentos e apóstrofos chegam intactos ao script, que a saída vai para arquivos e que o lote continua rodando depois que
 // o lançador sai (é isso que deixa o app fechar sem matar o lote).
 import { spawnSync } from 'node:child_process';

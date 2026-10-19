@@ -1,6 +1,6 @@
 // Fase 5, ponta a ponta: a Biblioteca no app de verdade (Electron), contra o dublê do `docker` com um "beets" que mexe
 // em arquivos reais da pasta de teste, e o slskd falso da suíte do script para o compartilhamento. Nada aqui toca em
-// Docker, na rede ou na sua biblioteca. Critérios de aceite (§5, Fase 5):
+// Docker, na rede ou na sua biblioteca. Critérios de aceite (Fase 5):
 //   - toda operação destrutiva tem pré-visualização e confirmação;
 //   - nenhuma roda sem a stack no ar.
 import { existsSync, mkdirSync, utimesSync, writeFileSync } from 'node:fs';

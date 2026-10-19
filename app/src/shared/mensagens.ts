@@ -1,4 +1,4 @@
-// Textos da interface em português do Brasil, num só lugar (§6.5 da especificação), prontos para i18n.
+// Textos da interface em português do Brasil, num só lugar, prontos para i18n.
 // Vocabulário do README: "lista", "lote", "biblioteca", "faixa", "stack".
 import type { ErroCodigo } from './erros.js';
 import type { TarefaEstado, TarefaSetupId } from './configuracao.js';
@@ -1649,7 +1649,7 @@ export const msg = {
     },
   },
 
-  /** Os arquivos da stack que o app instalou na pasta do Soulcrate (Fase 7, §3.3) */
+  /** Os arquivos da stack que o app instalou na pasta do Soulcrate (Fase 7) */
   arquivosDaStack: {
     aviso: {
       titulo: 'Os arquivos da stack foram atualizados',

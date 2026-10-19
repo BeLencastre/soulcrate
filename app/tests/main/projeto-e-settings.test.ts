@@ -70,7 +70,7 @@ describe('AppSettingsService', () => {
     return join(d, 'dados', 'settings.json');
   };
 
-  it('sem arquivo: o padrão (minimizar para a bandeja, D7; tema escuro; avisos ligados; nada ao iniciar o PC)', () => {
+  it('sem arquivo: o padrão (minimizar para a bandeja; tema escuro; avisos ligados; nada ao iniciar o PC)', () => {
     const s = new AppSettingsService(novo());
     expect(s.get()).toEqual(SETTINGS_PADRAO);
     expect(s.get()).toMatchObject({

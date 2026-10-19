@@ -1,4 +1,4 @@
-// AppSettings (§3.2): preferências do app (não da stack), em um JSON na pasta userData.
+// AppSettings: preferências do app (não da stack), em um JSON na pasta userData.
 import { mkdirSync, readFileSync, renameSync, writeFileSync } from 'node:fs';
 import { dirname } from 'node:path';
 import type { AppSettings, ModoInterface, OndeAbrirWebUi, TemaPreferido } from '@shared/ipc';

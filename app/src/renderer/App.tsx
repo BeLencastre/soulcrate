@@ -16,7 +16,7 @@ export function Pagina({ children }: { children: ReactNode }) {
 }
 
 /**
- * Arrastar um .txt ou .csv para a janela importa a lista (§5, Fase 3). O renderer não enxerga o caminho do arquivo
+ * Arrastar um .txt ou .csv para a janela importa a lista. O renderer não enxerga o caminho do arquivo
  * (sandbox): manda os bytes ao main, que grava na pasta do Soulcrate. Devolve se há um arquivo sendo arrastado.
  */
 function useSoltarArquivos(navegar: (rota: string) => void): boolean {

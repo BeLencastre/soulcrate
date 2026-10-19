@@ -1,4 +1,4 @@
-// BibliotecaService (§3.2, Fase 5): o beets visto pelo app. Encapsula o prefixo `BEET` do README
+// BibliotecaService: o beets visto pelo app. Encapsula o prefixo `BEET` do README
 // (`docker compose exec -T -w /data soulbeet python3 -c "…main(sys.argv[1:])" -c /config/config.yaml -l …`) e só monta
 // comandos de uma lista fechada: `ls`, `remove -d -f`, `update`, `move`, `keyfinder`, `autobpm` e `import -q -s`.
 // Não existe comando livre na v1. O único texto do usuário que chega a um comando é o filtro de `ls` e `remove`, e ele
@@ -392,7 +392,7 @@ export class BibliotecaService {
     if (!status.docker.engine) return criarErro('docker.fechado');
     const dir = this.dep.projeto().dir;
     if (!dir) return criarErro('projeto.ausente');
-    // nenhuma operação sem a stack no ar (§5, Fase 5): o beets mora no contêiner do Soulbeet
+    // nenhuma operação sem a stack no ar: o beets mora no contêiner do Soulbeet
     if (servicoDe(status, 'soulbeet').container !== 'running') return criarErro('biblioteca.stack-fora');
     if (escrita && (await this.dep.loteRodando())) return criarErro('biblioteca.ocupada');
     return { dir };

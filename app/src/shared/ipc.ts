@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-invalid-void-type -- `void` é o resultado dos canais que não devolvem nada */
-// Contrato de IPC entre o renderer e o main (Apêndice C da especificação), tipado nos dois lados.
+// Contrato de IPC entre o renderer e o main, tipado nos dois lados.
 // O renderer só enxerga `window.soulcrate` (preload, via contextBridge). Segredos nunca atravessam este contrato.
 import type {
   ResultadoCompartilhamento,
@@ -87,7 +87,7 @@ export type ModoInterface = 'dj' | 'dev';
 
 /** Preferências do app (não da stack), guardadas em userData. */
 export interface AppSettings {
-  /** fechar a janela esconde o app na bandeja em vez de sair (D7) */
+  /** fechar a janela esconde o app na bandeja em vez de sair */
   minimizarParaBandeja: boolean;
   /** o aviso "O Soulcrate continua na bandeja" já foi mostrado e dispensado */
   avisoBandejaDispensado: boolean;

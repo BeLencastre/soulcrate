@@ -1,4 +1,4 @@
-// Execução de processos externos (§6.1 e §6.2): sempre com lista de argumentos, nunca com string de shell;
+// Execução de processos externos: sempre com lista de argumentos, nunca com string de shell;
 // timeout em tudo; todo filho fica registrado e é encerrado, com a árvore inteira, quando o app sai.
 import { spawn, type ChildProcess } from 'node:child_process';
 
@@ -189,7 +189,7 @@ export interface ResultadoLancamento {
   erroSpawn: NodeJS.ErrnoException | null;
 }
 
-/** Inicia o lançador de um processo destacado e espera só o lançador sair (SP3). */
+/** Inicia o lançador de um processo destacado e espera só o lançador sair. */
 export interface Lancador {
   lancar(comando: string, args: readonly string[], opcoes: OpcoesLancamento): Promise<ResultadoLancamento>;
 }
@@ -197,7 +197,7 @@ export interface Lancador {
 /**
  * O lançador roda sem pipe nenhum (`stdio: 'ignore'`) e a espera é pelo evento `exit`, não por `close`: o processo que
  * ele cria com `Start-Process` herda os handles do lançador, e um pipe de saída só fecharia quando o lote terminasse
- * (SP3, "Armadilha encontrada: handles herdados"). Não entra em `ExecutorReal.vivos` de propósito: o lote não é filho
+ * (armadilha dos handles herdados). Não entra em `ExecutorReal.vivos` de propósito: o lote não é filho
  * do app e não deve ser encerrado junto com ele.
  */
 export class LancadorReal implements Lancador {

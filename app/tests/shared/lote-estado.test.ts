@@ -255,7 +255,7 @@ describe('detalhes do protocolo', () => {
   });
 });
 
-describe('mapa de status (Apêndice B)', () => {
+describe('mapa de status', () => {
   it('todo status do protocolo tem rótulo, grupo e cor', () => {
     for (const s of [...STATUS_EM_ANDAMENTO, ...STATUS_FINAIS]) {
       const i = infoDoStatus(s);

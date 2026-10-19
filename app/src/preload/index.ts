@@ -1,4 +1,4 @@
-// Preload: expõe `window.soulcrate` (API mínima e tipada, §3.2). Nenhum `ipcRenderer` cru chega ao renderer:
+// Preload: expõe `window.soulcrate` (API mínima e tipada). Nenhum `ipcRenderer` cru chega ao renderer:
 // só as funções abaixo, cada uma ligada a um canal conhecido de `IpcInvoke`.
 import { contextBridge, ipcRenderer, type IpcRendererEvent } from 'electron';
 import { CANAL_EVENTOS, type CanalIpc, type IpcInvoke, type MainEvent, type SoulcrateApi } from '../shared/ipc';

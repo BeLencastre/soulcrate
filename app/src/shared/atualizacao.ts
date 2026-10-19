@@ -1,4 +1,4 @@
-// Atualização do app (§5, Fase 7): o estado que o `electron-updater` leva à tela Sobre e ao Início. Só tipos.
+// Atualização do app (Fase 7): o estado que o `electron-updater` leva à tela Sobre e ao Início. Só tipos.
 import type { AppError } from './erros.js';
 
 export type MotivoIndisponivel =

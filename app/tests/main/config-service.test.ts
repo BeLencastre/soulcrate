@@ -461,7 +461,7 @@ function fsFalso(existentes: string[], livre = 400 * 1024 ** 3): FsConfig {
   };
 }
 
-describe('validar: discos, OneDrive e rede (SP8)', () => {
+describe('validar: discos, OneDrive e rede', () => {
   const base = 'C:\\Projeto';
   const discos = [
     'C:',

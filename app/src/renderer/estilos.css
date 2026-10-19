@@ -342,7 +342,7 @@
     color: var(--color-texto-mudo);
   }
 
-  /* chip de estado: texto + quadradinho da cor (a cor nunca é a única informação, Apêndice B) */
+  /* chip de estado: texto + quadradinho da cor (a cor nunca é a única informação) */
   .st {
     display: inline-flex;
     align-items: center;
