@@ -16,7 +16,7 @@ O Soulcrate é um app desktop para Windows (Electron, React e TypeScript, em `ap
 | `app/src/preload/` | `window.soulcrate`, a única API que o renderer enxerga |
 | `app/src/renderer/` | Interface: `paginas/`, `components/`, `lib/` |
 | `tests/`, `app/tests/` | Pester, Vitest, Playwright, dublês e fixtures. A pasta de teste espelha `src/`. |
-| `docs/` | Especificação (`interface-electron.md`), distribuição, protocolo de eventos, spikes, ADRs, [mapa de dependências](docs/dependencias.md) |
+| `docs/` | Distribuição, protocolo de eventos, validação da configuração, rotas do Navidrome e do Soulbeet, roteiro de teste manual, [ADRs](docs/adr/README.md), [mapa de dependências](docs/dependencias.md) |
 
 ## Comandos
 
@@ -110,7 +110,7 @@ Toda dependência é código de terceiros que passa a ser problema nosso. Antes 
 
 ## Como o Claude trabalha aqui
 
-- **Entenda antes de mudar.** Leia o código e os testes vizinhos, a especificação (`docs/interface-electron.md`) e os aprendizados. Mudança grande ou ambígua começa com um plano.
+- **Entenda antes de mudar.** Leia o código e os testes vizinhos, os ADRs (`docs/adr/`) e os aprendizados. Mudança grande ou ambígua começa com um plano.
 - **Verifique de verdade.** Rode os testes relevantes e diga quais rodou. Não declare pronto sem evidência.
 - **Pergunte só o que é do usuário:** produto, UX, quebra de compatibilidade e release. No resto, escolha o padrão sensato e diga qual escolheu.
 - **No Windows,** o Git Bash e o Windows PowerShell 5.1 convivem. `.ps1` com acento precisa de BOM, e `.bat` aceita só ASCII.

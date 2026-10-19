@@ -1,6 +1,6 @@
 # Roteiro de teste manual (antes de cada release)
 
-> Complementa os testes automáticos ([§7 da especificação](interface-electron.md#7-estratégia-de-testes)). Os testes automáticos usam dublês do Docker e um slskd falso; este roteiro confere o que só se vê com **a stack de verdade, a rede Soulseek e um Windows de verdade**. Rode antes de publicar a release (passo 4 de [`distribuicao.md`](distribuicao.md#7-publicar-uma-versão)) e anote o resultado no [registro](#registro-de-execuções).
+> Complementa os testes automáticos (veja o fim deste documento). Os testes automáticos usam dublês do Docker e um slskd falso; este roteiro confere o que só se vê com **a stack de verdade, a rede Soulseek e um Windows de verdade**. Rode antes de publicar a release (passo 4 de [`distribuicao.md`](distribuicao.md#7-publicar-uma-versão)) e anote o resultado no [registro](#registro-de-execuções).
 
 **Quanto tempo leva:** de 2 a 3 horas na primeira vez (a primeira subida da stack leva de 5 a 10 minutos, e o lote real de 10 a 30 faixas depende da rede).
 
@@ -80,7 +80,7 @@
 
 ### G. Atualização
 
-- [ ] Com a release **1.0.0 já publicada**, publique uma segunda (por exemplo `1.0.1`, só com uma mudança mínima), instale a 1.0.0 e confira que o app **acha, baixa e aplica** a atualização ao reiniciar. Este é o único teste que precisa do GitHub Releases de verdade.
+- [ ] Instale a **última versão publicada**, publique a nova (o rascunho da release precisa estar publicado) e confira que o app **acha, baixa e aplica** a atualização ao reiniciar. Este é o único teste que precisa do GitHub Releases de verdade.
 - [ ] Com um **lote em andamento**, o botão "Reiniciar e atualizar" fica desligado ("a atualização espera ele terminar"), e sair do app não instala nada.
 - [ ] Se a nova versão traz arquivos da stack diferentes: o que você **não** editou é trocado, o que você **editou** fica como está e ganha um `.novo` ao lado, com um aviso só uma vez; o Início oferece **Reconstruir a stack** quando o compose ou o Soulbeet mudaram.
 - [ ] `.env`, listas, `lotes/` e biblioteca ficam **idênticos** (compare antes e depois).

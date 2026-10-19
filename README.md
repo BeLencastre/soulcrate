@@ -407,7 +407,7 @@ As mesmas seções do assistente em abas (Pastas, Conta Soulseek, Web UI do slsk
 - **Os arquivos da stack** (`docker-compose.yml`, scripts, `Dockerfile` do Soulbeet, config do beets) vêm junto com o app. Numa versão nova, ele troca o que você não editou e, para o que você editou, **mantém o seu e grava o novo ao lado como `.novo`**. Nunca toca no `.env`, no `slskd.yml`, nas listas, em `lotes/` nem na biblioteca.
 - **Desinstalar nunca apaga a pasta do Soulcrate**. O desinstalador só pergunta (padrão: manter) se remove as preferências e os logs do app.
 
-Mais detalhes em [`docs/distribuicao.md`](docs/distribuicao.md) (instalar, atualizar, desinstalar e publicar), [`docs/interface-electron.md`](docs/interface-electron.md) (especificação) e [`app/README.md`](app/README.md) (desenvolvimento).
+Mais detalhes em [`docs/distribuicao.md`](docs/distribuicao.md) (instalar, atualizar, desinstalar e publicar), [`app/README.md`](app/README.md) (desenvolvimento do app). As decisões de arquitetura estão em [`docs/adr/`](docs/adr/README.md).
 
 ## Uso no dia a dia
 
@@ -712,8 +712,8 @@ soulcrate/                      # repositório (código)
 │   ├── fix-metadata.py         # corrige metadados de pacotes da imagem base (lastgenre)
 │   ├── config/config.yaml      # configuração do beets (perfil DJ)
 │   └── beets-plugins/keepmix.py
-├── docs/                       # especificação do app, distribuição, roteiro de teste manual, protocolo do lote, validação da
-│   │                           #   configuração, spikes e img/ (as capturas de tela do README)
+├── docs/                       # distribuição, roteiro de teste manual, protocolo do lote, validação da configuração,
+│   │                           #   rotas do Navidrome e do Soulbeet, ADRs e img/ (as capturas de tela do README)
 ├── tests/                      # testes (Pester) e o slskd falso usado por eles
 ├── .github/                    # workflows (CI e release do instalador) e modelos de issue
 └── app/                        # app desktop (Electron, React, TypeScript), versão 1.1.1
@@ -1150,7 +1150,7 @@ O Soulseek é uma rede de compartilhamento P2P. Baixe apenas o que você tem dir
 
 ## Contribuindo
 
-Como rodar os testes, convenções de commit e de codificação dos arquivos: [`CONTRIBUTING.md`](CONTRIBUTING.md). O app desktop tem a especificação em [`docs/interface-electron.md`](docs/interface-electron.md) e o guia de desenvolvimento em [`app/README.md`](app/README.md). Antes de cada release, rode o [roteiro de teste manual](docs/roteiro-manual.md); o passo a passo de publicar está em [`docs/distribuicao.md`](docs/distribuicao.md#7-publicar-uma-versão). Problemas e ideias: [abra uma issue](https://github.com/BeLencastre/soulcrate/issues/new/choose).
+Como rodar os testes, convenções de commit e de codificação dos arquivos: [`CONTRIBUTING.md`](CONTRIBUTING.md). O guia de desenvolvimento do app desktop está em [`app/README.md`](app/README.md), e as decisões de arquitetura, em [`docs/adr/`](docs/adr/README.md). Antes de cada release, rode o [roteiro de teste manual](docs/roteiro-manual.md); o passo a passo de publicar está em [`docs/distribuicao.md`](docs/distribuicao.md#7-publicar-uma-versão). Problemas e ideias: [abra uma issue](https://github.com/BeLencastre/soulcrate/issues/new/choose).
 
 ## Licença
 
