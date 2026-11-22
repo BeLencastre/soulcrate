@@ -25,6 +25,15 @@ export function useOrganizacao() {
   return useQuery({ queryKey: CHAVE_ORGANIZACAO, queryFn: () => api.library.organization(), retry: false });
 }
 
+/** As abas da lateral da Biblioteca, na ordem em que aparecem; a aberta fica no endereço (`?painel=`). */
+export const PAINEIS = ['cuidar', 'organizacao', 'rekordbox', 'compartilhar'] as const;
+export type PainelBiblioteca = (typeof PAINEIS)[number];
+export const PAINEL_PADRAO: PainelBiblioteca = 'cuidar';
+
+export function ehPainel(valor: unknown): valor is PainelBiblioteca {
+  return typeof valor === 'string' && (PAINEIS as readonly string[]).includes(valor);
+}
+
 /** Enquanto o slskd varre a pasta, a tela relê o número a cada tanto. */
 const RELER_VARREDURA_MS = 3000;
 

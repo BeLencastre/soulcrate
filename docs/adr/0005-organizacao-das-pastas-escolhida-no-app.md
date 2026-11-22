@@ -13,7 +13,7 @@ O `config.yaml` é um arquivo da stack: o app o atualiza e, se a pessoa o editou
 
 ## Decisão
 
-- São **duas escolhas independentes**, cada uma entre só gênero (`genero`) e gênero e artista (`genero-artista`): uma para o disco e outra para o Rekordbox. Na tela, o cartão **Organização** de Suas músicas tem os dois grupos.
+- São **duas escolhas independentes**, cada uma entre só gênero (`genero`) e gênero e artista (`genero-artista`): uma para o disco e outra para o Rekordbox. Na tela, a aba **Organizar** de Suas músicas tem os dois grupos.
 - As duas ficam em `soulbeet/data/pastas.json` (`{"disco": "...", "rekordbox": "..."}`), que o contêiner vê como `/data/pastas.json`. É dado do usuário, como o resto de `soulbeet/data/`: a atualização da stack não toca nele.
 - **Disco.** O plugin `pastas.py` lê só `disco`, uma vez por comando, e entrega `$organizar_por_artista` (`1` ou `0`). O `paths:` do `config.yaml` usa `%if{$organizar_por_artista,...}`:
   - gênero e artista: `Hard Techno/Azyr/No Escape`;

@@ -15,7 +15,7 @@ O plugin oferece quatro campos para o `paths:` do config.yaml:
   $organizar_por_artista  "1" quando cada artista tem a sua pasta dentro do gênero,
                           "0" quando as faixas ficam direto na pasta do gênero
 
-A organização é escolhida no app (Suas músicas → Organização), que a grava em
+A organização é escolhida no app (Suas músicas → Organizar), que a grava em
 /data/pastas.json: {"disco": "genero-artista" | "genero", "rekordbox": ...}. O plugin
 só usa "disco"; "rekordbox" é do app (a árvore de playlists do Rekordbox).
 Sem o arquivo, ou com ele ilegível, vale "genero-artista" (o jeito de sempre).

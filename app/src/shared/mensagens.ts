@@ -1464,6 +1464,11 @@ export const msg = {
       },
       move: { titulo: 'Reorganizar as pastas', descricao: 'Depois de mudar o jeito de nomear as pastas.' },
     },
+    painel: {
+      rotulo: 'Ferramentas da biblioteca',
+      abas: { cuidar: 'Cuidar', organizacao: 'Organizar', rekordbox: 'Rekordbox', compartilhar: 'Compartilhar' },
+      rodando: 'uma tarefa está rodando',
+    },
     organizacao: {
       titulo: 'Organização',
       explicacao: 'Escolha à parte como organizar as pastas no disco e as playlists no Rekordbox.',
@@ -1522,7 +1527,7 @@ export const msg = {
     rekordbox: {
       titulo: 'Rekordbox',
       explicacao:
-        'Suas músicas viram playlists no Rekordbox, dentro da pasta Soulcrate: por gênero (do jeito escolhido em Organização) e uma por lista baixada.',
+        'Suas músicas viram playlists no Rekordbox, dentro da pasta Soulcrate: por gênero (do jeito escolhido em Organizar) e uma por lista baixada.',
       criar: 'Criar as playlists',
       atualizar: 'Atualizar agora',
       gerando: 'Montando as playlists…',

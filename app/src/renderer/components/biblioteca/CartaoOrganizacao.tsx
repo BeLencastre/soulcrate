@@ -1,4 +1,4 @@
-// O cartão "Organização" na Biblioteca: duas escolhas independentes entre só gênero e gênero e artista, uma para as
+// O cartão "Organização" (aba Organizar) na Biblioteca: duas escolhas independentes entre só gênero e gênero e artista, uma para as
 // pastas no disco e outra para as playlists do Rekordbox. A do disco vale para as próximas importações do beets; para
 // mover o que já está no disco, o cartão oferece "Reorganizar as pastas", o mesmo diálogo (com prévia) de Cuidar da
 // biblioteca. A do Rekordbox refaz o arquivo de playlists, se ele já existe. O texto é o mesmo nos dois modos.

@@ -138,12 +138,15 @@ function Local() {
   return <div data-testid="local">{l.pathname}</div>;
 }
 
+/** a aba da lateral aberta ao montar (o `?painel=` do endereço); null: a padrão, Cuidar */
+let painelInicial: string | null = null;
+
 function montar(s: StackStatus = stack()) {
   const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   qc.setQueryData(chaveStatus, s);
   const r = render(
     <QueryClientProvider client={qc}>
-      <MemoryRouter initialEntries={['/biblioteca']}>
+      <MemoryRouter initialEntries={[painelInicial ? `/biblioteca?painel=${painelInicial}` : '/biblioteca']}>
         <Routes>
           <Route path="/biblioteca" element={<Biblioteca />} />
           <Route path="/lista" element={<Local />} />
@@ -192,6 +195,7 @@ beforeEach(() => {
     configAtende: true,
   });
   useManutencao.setState({ operacao: null });
+  painelInicial = null;
   useRascunho.setState({ lista: null, texto: '', textoSalvo: '', erro: null });
 });
 afterEach(() => {
@@ -361,6 +365,10 @@ describe('nomeCurtoDaPasta (o botão "Abrir … no Explorer")', () => {
 });
 
 describe('compartilhamento e Rekordbox', () => {
+  beforeEach(({ task }) => {
+    painelInicial = task.name.startsWith('Rekordbox') ? 'rekordbox' : 'compartilhar';
+  });
+
   it('mostra quantos arquivos o slskd anuncia', async () => {
     montar();
     expect(await screen.findByTestId('compartilhamento-n')).toHaveTextContent(
@@ -409,7 +417,7 @@ describe('compartilhamento e Rekordbox', () => {
     montar();
     expect(await screen.findByTestId('rekordbox-situacao')).toHaveTextContent('Ainda não criadas.');
     const cartao = screen.getByTestId('cartao-rekordbox');
-    expect(cartao).toHaveTextContent('por gênero (do jeito escolhido em Organização) e uma por lista baixada');
+    expect(cartao).toHaveTextContent('por gênero (do jeito escolhido em Organizar) e uma por lista baixada');
     expect(screen.getByTestId('gerar-rekordbox')).toHaveTextContent('Criar as playlists');
     expect(screen.queryByTestId('arquivo-rekordbox')).toBeNull();
     // o Rekordbox 7 não tem pasta monitorada: o caminho é o rekordbox xml (Imported Library)
@@ -956,6 +964,10 @@ describe('eventos do main', () => {
 // ---------------------------------------------------------------- Organização (disco e Rekordbox)
 
 describe('organização no disco e no Rekordbox', () => {
+  beforeEach(() => {
+    painelInicial = 'organizacao';
+  });
+
   const opcao = (alvo: string, o: string) =>
     document.querySelector(`[data-alvo="${alvo}"] [data-organizacao="${o}"] input`) as HTMLInputElement;
   const estadoOrg = (extra: object = {}) => ({
@@ -1044,5 +1056,92 @@ describe('organização no disco e no Rekordbox', () => {
     await carregada();
     await waitFor(() => expect(opcao('disco', 'genero')).toBeDisabled());
     expect(opcao('rekordbox', 'genero')).not.toBeDisabled();
+  });
+});
+
+// ---------------------------------------------------------------- Abas da lateral
+
+describe('abas da lateral', () => {
+  const aba = (nome: string) => screen.getByRole('tab', { name: new RegExp(`^${nome}`) });
+
+  it('quatro abas, com Cuidar aberta: um cartão por vez', async () => {
+    montar();
+    await carregada();
+    const lista = screen.getByRole('tablist', { name: 'Ferramentas da biblioteca' });
+    expect(
+      within(lista)
+        .getAllByRole('tab')
+        .map((a) => a.textContent),
+    ).toEqual(['Cuidar', 'Organizar', 'Rekordbox', 'Compartilhar']);
+    expect(aba('Cuidar')).toHaveAttribute('aria-selected', 'true');
+    expect(screen.getByRole('tabpanel')).toHaveAttribute('aria-labelledby', aba('Cuidar').id);
+    expect(screen.getByTestId('cartao-manutencao')).toBeInTheDocument();
+    for (const outro of ['cartao-organizacao', 'cartao-rekordbox', 'cartao-compartilhamento']) {
+      expect(screen.queryByTestId(outro)).toBeNull();
+    }
+  });
+
+  it('clicar troca o cartão; as setas, Home e End andam entre as abas e levam o foco', async () => {
+    montar();
+    await carregada();
+    fireEvent.click(aba('Rekordbox'));
+    expect(await screen.findByTestId('cartao-rekordbox')).toBeInTheDocument();
+    expect(screen.queryByTestId('cartao-manutencao')).toBeNull();
+    fireEvent.keyDown(aba('Rekordbox'), { key: 'ArrowRight' });
+    expect(await screen.findByTestId('cartao-compartilhamento')).toBeInTheDocument();
+    expect(document.activeElement).toBe(aba('Compartilhar'));
+    fireEvent.keyDown(aba('Compartilhar'), { key: 'ArrowRight' });
+    expect(await screen.findByTestId('cartao-manutencao')).toBeInTheDocument();
+    fireEvent.keyDown(aba('Cuidar'), { key: 'ArrowLeft' });
+    expect(await screen.findByTestId('cartao-compartilhamento')).toBeInTheDocument();
+    fireEvent.keyDown(aba('Compartilhar'), { key: 'Home' });
+    expect(await screen.findByTestId('cartao-manutencao')).toBeInTheDocument();
+    fireEvent.keyDown(aba('Cuidar'), { key: 'End' });
+    expect(await screen.findByTestId('cartao-compartilhamento')).toBeInTheDocument();
+    // só a aba aberta entra no Tab; as outras ficam nas setas
+    expect(aba('Compartilhar')).toHaveAttribute('tabindex', '0');
+    expect(aba('Cuidar')).toHaveAttribute('tabindex', '-1');
+  });
+
+  it('abre na aba do endereço; um painel desconhecido cai em Cuidar', async () => {
+    painelInicial = 'organizacao';
+    montar();
+    await carregada();
+    expect(await screen.findByTestId('cartao-organizacao')).toBeInTheDocument();
+    cleanup();
+    painelInicial = 'nada';
+    montar();
+    await carregada();
+    expect(screen.getByTestId('cartao-manutencao')).toBeInTheDocument();
+  });
+
+  it('com uma tarefa de Cuidar rodando, a aba Cuidar avisa mesmo com outra aba aberta', async () => {
+    painelInicial = 'rekordbox';
+    montar();
+    await carregada();
+    expect(screen.queryByTestId('aba-cuidar-rodando')).toBeNull();
+    act(() => {
+      useManutencao.setState({ operacao: { id: 'op', tarefa: 'update', linhas: [], terminou: false, erro: null } });
+    });
+    expect(await screen.findByTestId('aba-cuidar-rodando')).toBeInTheDocument();
+    expect(aba('Cuidar').textContent).toBe('Cuidar, uma tarefa está rodando');
+  });
+
+  it('Reorganizar as pastas, na aba Organizar, abre o diálogo mesmo fora da aba Cuidar', async () => {
+    painelInicial = 'organizacao';
+    api.library.setOrganization.mockResolvedValue({
+      ok: true,
+      estado: { disco: 'genero', rekordbox: 'genero-artista', configAtende: true },
+    });
+    api.library.previewMaintenance.mockResolvedValue(previaManutencao({ tarefa: 'move', afetadas: 1 }));
+    montar();
+    await carregada();
+    const opcaoDisco = () =>
+      document.querySelector('[data-alvo="disco"] [data-organizacao="genero"] input') as HTMLInputElement | null;
+    await waitFor(() => expect(opcaoDisco()?.checked).toBe(false));
+    const disco = opcaoDisco() as HTMLInputElement;
+    fireEvent.click(disco);
+    fireEvent.click(await screen.findByTestId('organizacao-reorganizar'));
+    expect(await screen.findByTestId('dialogo-manutencao')).toBeInTheDocument();
   });
 });

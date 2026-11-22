@@ -74,7 +74,7 @@ Com o Rekordbox instalado e um backup da biblioteca dele (**Arquivo → Bibliote
 - [ ] Depois de um lote, o cartão diz que as playlists foram atualizadas sozinhas; atualizar *rekordbox xml* e importar `Soulcrate` de novo traz as faixas novas **sem duplicar** as playlists e **sem perder** a análise nem os cues das faixas antigas.
 - [ ] Exportar `Soulcrate` para o pendrive mantém as pastas e as playlists no CDJ/XDJ.
 - [ ] Nada disso exige fechar o Rekordbox.
-- [ ] Em **Suas músicas → Organização → No disco**, trocar para **Só por gênero** e rodar **Reorganizar as pastas**: a prévia mostra os arquivos indo para `Gênero/Artista - Título` e as pastas de artista vazias somem. O *rekordbox xml* não muda de desenho.
+- [ ] Em **Suas músicas → Organizar → No disco**, trocar para **Só por gênero** e rodar **Reorganizar as pastas**: a prévia mostra os arquivos indo para `Gênero/Artista - Título` e as pastas de artista vazias somem. O *rekordbox xml* não muda de desenho.
 - [ ] Com o disco só por gênero, **No Rekordbox → Por gênero e artista**: o *rekordbox xml* tem uma pasta por gênero com `Todas` e uma playlist por artista (o artista do começo do nome do arquivo). **No Rekordbox → Só por gênero**: uma playlist por gênero. As pastas do disco não mudam.
 - [ ] Depois de reorganizar, uma faixa que já estava na Coleção do Rekordbox aparece como não encontrada, como o cartão avisa (confira como apontar o lugar novo no Rekordbox instalado).
 - [ ] Um download feito pelo próprio Soulbeet (sem o app) cai na pasta da organização escolhida.

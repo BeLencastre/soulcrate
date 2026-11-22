@@ -28,8 +28,11 @@ Formato: `- AAAA-MM-DD · o aprendizado. **Por quê:** o motivo ou a consequênc
 - 2026-10-19 · Em teste do renderer, mudar um store Zustand fora de um evento (`useRascunho.getState().definirOpcoes(...)`) e logo depois dar `fireEvent.click` usa o `onClick` da renderização anterior, com o estado velho: envolva a mudança em `act(() => ...)`. **Por quê:** sem o `act`, o React ainda não renderizou de novo e o teste confere o valor errado sem erro nenhum.
 - 2026-10-19 · Em `lote-service.test.ts`, teste que escreve um `run.start` (ele traz o `pid`) precisa pôr o pid em `vivos` enquanto espera novos eventos. **Por quê:** a sondagem roda a cada 15 ms; com a suíte inteira ocupando a máquina, duas leituras sem novidade com o processo "morto" fazem o serviço sintetizar um `run.end` ("sumiu") e o teste falha só às vezes. Para reproduzir, ponha uma pausa de 100 ms entre os eventos.
 
+- 2026-11-22 · Os testes do renderer usam matchers próprios (`app/tests/renderer/matchers`), não o jest-dom: não há `toBeVisible`, `toHaveFocus` nem `toHaveAccessibleName`, e `toBeDisabled` olha o `disabled` do próprio input (não pega o de um `<fieldset disabled>`). **Por quê:** o erro só aparece ao rodar ("Invalid Chai property"); use `document.activeElement`, `textContent` e `disabled` no input.
 
 ## Comandos
+
+- 2026-11-22 · Para refazer só uma captura do README: `cd app && npm run build && npx playwright test -c playwright.capturas.config.ts -g biblioteca` (o `-g` filtra pelo nome do teste em `tests/capturas/readme.spec.ts`). **Por quê:** `npm run capturas` refaz todas; e a captura roda em janela de 1264×801, então ela não mostra como a tela fica em janela alta.
 
 - 2026-10-13 · Para regenerar e conferir o mapa de dependências: `node scripts/dependencias.mjs`, depois `--check`. Os testes dos scripts e dos hooks rodam com `node --test "scripts/*.test.mjs" ".claude/hooks/*.test.mjs"`.
 - 2026-10-13 · Para simular um hook à mão: `printf '%s' '{"session_id":"x","tool_name":"Write","tool_input":{"file_path":"C:/caminho/arquivo"}}' | node .claude/hooks/memoria.mjs post-tool-use`. **Por quê:** no Git Bash, a barra invertida de caminho do Windows dentro do JSON chega estragada ao stdin, e o hook recebe um JSON inválido. Use barras normais.

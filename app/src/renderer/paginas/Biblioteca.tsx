@@ -1,7 +1,7 @@
 // Tela Biblioteca (protótipo "Biblioteca", Fase 5): o caixote. A tabela das faixas (artista, título, BPM, tom, gênero,
-// formato) lida do beets, os indicadores que filtram o que está faltando, a manutenção, a organização das pastas, o
-// compartilhamento do slskd e as playlists para o Rekordbox. Remover e as tarefas que mexem nos arquivos passam por
-// diálogos com pré-visualização. A tela é a mesma nos dois modos (Modo DJ e Modo Dev).
+// formato) lida do beets, que vai até o fim da janela, e os indicadores que filtram o que está faltando. Na lateral, em
+// abas: a manutenção, a organização, as playlists para o Rekordbox e o compartilhamento do slskd. Remover e as tarefas
+// que mexem nos arquivos passam por diálogos com pré-visualização. A tela é a mesma nos dois modos (Modo DJ e Modo Dev).
 import { useMemo, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { Link } from 'react-router';
@@ -21,10 +21,11 @@ import { CartaoCompartilhamento } from '../components/biblioteca/CartaoCompartil
 import { CartaoOrganizacao } from '../components/biblioteca/CartaoOrganizacao';
 import { CartaoRekordbox } from '../components/biblioteca/CartaoRekordbox';
 import { DialogoRemover } from '../components/biblioteca/DialogoRemover';
+import { PainelLateral } from '../components/biblioteca/PainelLateral';
 import { CartaoErro } from '../components/CartaoErro';
 import { Carregando, SemPasta, useSemPasta } from '../components/estados';
 import { IconeLixeira, IconePasta, IconeRecarregar } from '../components/icones';
-import { TabelaVirtual } from '../components/TabelaVirtual';
+import { TabelaVirtual, useAlturaAteOFim } from '../components/TabelaVirtual';
 import { Botao, CabecalhoPagina, Cartao, Chip, classeBotao, Rotulo } from '../components/ui';
 import { seguro } from '../lib/acoes';
 import { api } from '../lib/api';
@@ -40,6 +41,10 @@ import { useAgora, useStackStatus } from '../lib/estado';
 
 const COLUNAS = 'minmax(150px,1.2fr) minmax(220px,2.2fr) 70px 96px minmax(120px,1.1fr) 96px 84px';
 const FALTA = 'font-bold text-chip-laranja';
+/** a tabela nunca fica mais baixa que isto (era a altura fixa); em janela alta, cresce até o fim da página */
+const ALTURA_MINIMA_DA_TABELA = 560;
+/** o respiro de baixo da página e a borda do cartão da tabela */
+const FOLGA_ABAIXO_DA_TABELA = 40;
 
 // ---------------------------------------------------------------- Indicadores
 
@@ -115,6 +120,7 @@ function TabelaDeFaixas({
 }) {
   const t = msg.biblioteca;
   const [busca, setBusca] = useState('');
+  const [refDaTabela, alturaDaTabela] = useAlturaAteOFim(ALTURA_MINIMA_DA_TABELA, FOLGA_ABAIXO_DA_TABELA);
   const [aviso, setAviso] = useState<string | null>(null);
   const visiveis = useMemo(() => filtrarFaixas(leitura.faixas, busca, indicador), [leitura.faixas, busca, indicador]);
 
@@ -185,74 +191,76 @@ function TabelaDeFaixas({
           {aviso}
         </p>
       ) : null}
-      <TabelaVirtual
-        rotulo={t.tabela}
-        colunas={COLUNAS}
-        cabecalho={[
-          t.colunas.artista,
-          t.colunas.titulo,
-          t.colunas.bpm,
-          t.colunas.tom,
-          t.colunas.genero,
-          t.colunas.formato,
-          t.colunas.acoes,
-        ]}
-        linhas={visiveis}
-        alturaLinha={46}
-        alturaMax={560}
-        larguraMinima={760}
-        chave={(f) => String(f.id)}
-        vazio={vazio}
-        testId="tabela-biblioteca"
-        celulas={(f) => [
-          <span
-            key="a"
-            className={`block truncate ${f.artista ? 'font-semibold' : 'text-texto-mudo'}`}
-            title={f.artista}
-          >
-            {f.artista || '—'}
-          </span>,
-          <span key="t" className="block truncate" title={f.titulo}>
-            {f.titulo}
-          </span>,
-          <span key="b" className={`block text-right font-mono ${f.bpm === null ? FALTA : ''}`}>
-            {f.bpm ?? t.sem}
-          </span>,
-          <Tom key="k" tom={f.tom} />,
-          <span
-            key="g"
-            className={`block truncate ${f.semGenero ? 'text-chip-laranja' : 'text-texto-claro'}`}
-            title={f.genero ?? t.semGenero}
-          >
-            {f.genero ?? t.semGenero}
-          </span>,
-          <span key="f" className="block font-mono text-texto-suave">
-            {f.formato}
-          </span>,
-          <span key="x" className="flex justify-end gap-[2px] pr-2 whitespace-nowrap">
-            <button
-              type="button"
-              className="ico-btn !h-8 !w-8"
-              aria-label={t.mostrarNoExplorer(f.titulo)}
-              title={t.mostrarNoExplorer(f.titulo)}
-              onClick={() => void mostrar(f)}
-              data-acao="explorer"
+      <div ref={refDaTabela}>
+        <TabelaVirtual
+          rotulo={t.tabela}
+          colunas={COLUNAS}
+          cabecalho={[
+            t.colunas.artista,
+            t.colunas.titulo,
+            t.colunas.bpm,
+            t.colunas.tom,
+            t.colunas.genero,
+            t.colunas.formato,
+            t.colunas.acoes,
+          ]}
+          linhas={visiveis}
+          alturaLinha={46}
+          alturaMax={alturaDaTabela}
+          larguraMinima={760}
+          chave={(f) => String(f.id)}
+          vazio={vazio}
+          testId="tabela-biblioteca"
+          celulas={(f) => [
+            <span
+              key="a"
+              className={`block truncate ${f.artista ? 'font-semibold' : 'text-texto-mudo'}`}
+              title={f.artista}
             >
-              <IconePasta tamanho={15} />
-            </button>
-            <button
-              type="button"
-              className="ico-btn ico-d !h-8 !w-8"
-              aria-label={t.removerFaixa(f.titulo)}
-              title={t.removerFaixa(f.titulo)}
-              onClick={() => aoRemover(f)}
-              data-acao="remover"
+              {f.artista || '—'}
+            </span>,
+            <span key="t" className="block truncate" title={f.titulo}>
+              {f.titulo}
+            </span>,
+            <span key="b" className={`block text-right font-mono ${f.bpm === null ? FALTA : ''}`}>
+              {f.bpm ?? t.sem}
+            </span>,
+            <Tom key="k" tom={f.tom} />,
+            <span
+              key="g"
+              className={`block truncate ${f.semGenero ? 'text-chip-laranja' : 'text-texto-claro'}`}
+              title={f.genero ?? t.semGenero}
             >
-              <IconeLixeira tamanho={15} />
-            </button>
-          </span>,
-        ]}
-      />
+              {f.genero ?? t.semGenero}
+            </span>,
+            <span key="f" className="block font-mono text-texto-suave">
+              {f.formato}
+            </span>,
+            <span key="x" className="flex justify-end gap-[2px] pr-2 whitespace-nowrap">
+              <button
+                type="button"
+                className="ico-btn !h-8 !w-8"
+                aria-label={t.mostrarNoExplorer(f.titulo)}
+                title={t.mostrarNoExplorer(f.titulo)}
+                onClick={() => void mostrar(f)}
+                data-acao="explorer"
+              >
+                <IconePasta tamanho={15} />
+              </button>
+              <button
+                type="button"
+                className="ico-btn ico-d !h-8 !w-8"
+                aria-label={t.removerFaixa(f.titulo)}
+                title={t.removerFaixa(f.titulo)}
+                onClick={() => aoRemover(f)}
+                data-acao="remover"
+              >
+                <IconeLixeira tamanho={15} />
+              </button>
+            </span>,
+          ]}
+        />
+      </div>
     </section>
   );
 }
@@ -391,12 +399,14 @@ export function Biblioteca() {
               aoRemover={setRemovendo}
               aoImportar={() => setTarefa('importLeftovers')}
             />
-            <aside className="flex min-w-0 flex-[1_1_300px] flex-col gap-4">
-              <CartaoManutencao leitura={lida} agora={agora} aoEscolher={setTarefa} />
-              <CartaoOrganizacao aoReorganizar={() => setTarefa('move')} />
-              <CartaoCompartilhamento slskdNoAr={slskdNoAr} />
-              <CartaoRekordbox agora={agora} />
-            </aside>
+            <PainelLateral
+              paineis={{
+                cuidar: <CartaoManutencao leitura={lida} agora={agora} aoEscolher={setTarefa} />,
+                organizacao: <CartaoOrganizacao aoReorganizar={() => setTarefa('move')} />,
+                rekordbox: <CartaoRekordbox agora={agora} />,
+                compartilhar: <CartaoCompartilhamento slskdNoAr={slskdNoAr} />,
+              }}
+            />
           </div>
         </>
       ) : null}

@@ -91,7 +91,7 @@ max_filename_length: 200
 # =============================================================================
 #  Estrutura de pastas:  Gênero / Artista / Título   ou   Gênero / Artista - Título
 # =============================================================================
-# A organização do disco é escolhida no app (Suas músicas → Organização → No disco):
+# A organização do disco é escolhida no app (Suas músicas → Organizar → No disco):
 #   - Gênero e artista (padrão): Hard Techno/Azyr/No Escape
 #   - Só gênero:                 Hard Techno/Azyr - No Escape
 # O app grava a escolha em soulbeet/data/pastas.json ("disco"), e o plugin pastas.py a

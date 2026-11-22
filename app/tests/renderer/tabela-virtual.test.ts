@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { janelaVisivel } from '../../src/renderer/components/TabelaVirtual';
+import { alturaAteOFim, janelaVisivel } from '../../src/renderer/components/TabelaVirtual';
 
 describe('janelaVisivel (virtualização da tabela)', () => {
   it('no topo: da primeira linha até o que cabe na altura, mais a folga', () => {
@@ -27,5 +27,26 @@ describe('janelaVisivel (virtualização da tabela)', () => {
       const [de, ate] = janelaVisivel(1000, 44, rolagem, 520);
       expect(ate - de).toBeLessThan(40);
     }
+  });
+});
+
+describe('alturaAteOFim (a tabela da Biblioteca vai até o fim da janela)', () => {
+  const medida = { topo: 360, topoDaRolagem: 0, rolado: 0, visivel: 1032 };
+
+  it('janela alta: a tabela cresce até o fim da área visível, menos a folga', () => {
+    expect(alturaAteOFim(medida, 560, 40)).toBe(1032 - 360 - 40);
+  });
+
+  it('janela baixa: não passa do mínimo (a página rola)', () => {
+    expect(alturaAteOFim({ ...medida, visivel: 801 }, 560, 40)).toBe(560);
+  });
+
+  it('com a página já rolada, mede como se estivesse no topo', () => {
+    expect(alturaAteOFim({ ...medida, topo: 160, rolado: 200 }, 560, 40)).toBe(1032 - 360 - 40);
+    expect(alturaAteOFim({ ...medida, topo: 400, topoDaRolagem: 40 }, 560, 40)).toBe(1032 - 360 - 40);
+  });
+
+  it('sem layout (jsdom): o mínimo', () => {
+    expect(alturaAteOFim({ topo: 0, topoDaRolagem: 0, rolado: 0, visivel: 0 }, 560, 40)).toBe(560);
   });
 });

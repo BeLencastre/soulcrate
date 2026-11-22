@@ -113,6 +113,8 @@ const linhas = (janela: Page) =>
     .getByRole('row')
     .filter({ hasNot: janela.getByRole('columnheader') });
 const valor = (janela: Page, id: string) => janela.locator(`[data-valor="${id}"]`);
+/** uma aba da lateral (Cuidar, Organizar, Rekordbox, Compartilhar) */
+const aba = (janela: Page, nome: string) => janela.getByRole('tab', { name: nome, exact: true });
 /** Os argumentos de cada comando do beets que o app mandou (o que vem depois do `-l /music/.beets_library.db`). */
 const comandosDoBeets = (a: Ambiente, sub: string): string[] =>
   a
@@ -145,8 +147,11 @@ test('lê a biblioteca do beets: faixas, pasta, indicadores e o caminho para o R
   await expect(valor(janela, 'tom')).toHaveText('1');
   await expect(valor(janela, 'gen')).toHaveText('1');
   await expect(valor(janela, 'dl')).toHaveText('1');
-  await expect(janela.getByTestId('rekordbox-situacao')).toHaveText('Ainda não criadas.');
+  // a lateral abre em Cuidar; as outras ferramentas ficam nas abas
+  await expect(janela.getByTestId('cartao-manutencao')).toBeVisible();
   await capturar(janela, '05-biblioteca');
+  await aba(janela, 'Rekordbox').click();
+  await expect(janela.getByTestId('rekordbox-situacao')).toHaveText('Ainda não criadas.');
 
   // o indicador filtra, a busca também
   await janela.locator('[data-indicador="bpm"]').click();
@@ -174,6 +179,7 @@ test('Rekordbox: cria o arquivo por gênero e artista e uma playlist por lista q
   // a análise da lista roda o script de verdade, que lê o beets pelo `docker`: o do dublê
   const janela = await abrirBiblioteca(dockerDoDubleNosScripts(amb));
 
+  await aba(janela, 'Rekordbox').click();
   await janela.getByTestId('gerar-rekordbox').click();
   await expect(janela.getByTestId('rekordbox-situacao')).toContainText('5 faixas em 2 gêneros e 1 lista.', {
     timeout: 60_000,
@@ -195,6 +201,7 @@ test('Rekordbox: cria o arquivo por gênero e artista e uma playlist por lista q
   expect(xml).not.toContain('Name="nunca"');
 
   // só por gênero no Rekordbox (o disco não muda): o arquivo se refaz sozinho, com uma playlist por gênero
+  await aba(janela, 'Organizar').click();
   await janela.locator('[data-alvo="rekordbox"] [data-organizacao="genero"] input').check();
   await expect
     .poll(() => readFileSync(caminho, 'utf8'), { timeout: 60_000 })
@@ -413,6 +420,7 @@ test('compartilhamento: mostra o que o slskd anuncia e pede a varredura', async 
   montarBiblioteca(amb);
   const janela = await abrirBiblioteca();
 
+  await aba(janela, 'Compartilhar').click();
   await expect(janela.getByTestId('compartilhamento-n')).toContainText('10 músicas compartilhadas no Soulseek');
   await janela.getByTestId('reescanear').click();
   await expect(janela.getByText('Atualizando. O número sobe conforme a lista é refeita.')).toBeVisible();
@@ -427,6 +435,7 @@ test('compartilhamento: com o slskd fora do ar o cartão explica e a tabela segu
   const janela = aberto.janela;
   await menu(janela, 'Biblioteca').click();
   await expect(tabela(janela)).toBeVisible();
+  await aba(janela, 'Compartilhar').click();
   await expect(janela.getByTestId('compartilhamento-erro')).toContainText('Não consegui ver quantas músicas');
   await expect(linhas(janela)).toHaveCount(5);
 });
