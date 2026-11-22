@@ -1,6 +1,6 @@
 // Tela Biblioteca (protótipo "Biblioteca", Fase 5): o caixote. A tabela das faixas (artista, título, BPM, tom, gênero,
 // formato) lida do beets, os indicadores que filtram o que está faltando, a manutenção, o compartilhamento do slskd e
-// o caminho para o Rekordbox. Remover e as tarefas que mexem nos arquivos passam por diálogos com pré-visualização.
+// as playlists para o Rekordbox. Remover e as tarefas que mexem nos arquivos passam por diálogos com pré-visualização.
 // A tela é a mesma nos dois modos (Modo DJ e Modo Dev).
 import { useMemo, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
@@ -18,6 +18,7 @@ import { msg } from '@shared/mensagens';
 import { servicoDe, servicoSaudavel } from '@shared/stack';
 import { DialogoManutencao } from '../components/biblioteca/DialogoManutencao';
 import { CartaoCompartilhamento } from '../components/biblioteca/CartaoCompartilhamento';
+import { CartaoRekordbox } from '../components/biblioteca/CartaoRekordbox';
 import { DialogoRemover } from '../components/biblioteca/DialogoRemover';
 import { CartaoErro } from '../components/CartaoErro';
 import { Carregando, SemPasta, useSemPasta } from '../components/estados';
@@ -315,35 +316,6 @@ function CartaoManutencao({
   );
 }
 
-function CartaoRekordbox({ pasta }: { pasta: string }) {
-  const t = msg.biblioteca.rekordbox;
-  const [copiado, setCopiado] = useState(false);
-  async function copiar() {
-    await api.app.copyText(pasta);
-    setCopiado(true);
-    setTimeout(() => setCopiado(false), 2000);
-  }
-  return (
-    <Cartao como="section" className="flex flex-col gap-[10px] p-4" data-testid="cartao-rekordbox">
-      <Rotulo>{t.titulo}</Rotulo>
-      <span className="text-[13.5px] leading-normal text-texto-medio">{t.instrucao}</span>
-      <div className="flex items-center gap-2 rounded-md border border-borda-fraca bg-fundo py-2 pr-2 pl-3">
-        <span
-          className="min-w-0 flex-1 truncate font-mono text-[12.5px]"
-          title={pasta}
-          aria-label={t.pastaMonitorada}
-          data-testid="pasta-rekordbox"
-        >
-          {pasta}
-        </span>
-        <Botao pequeno onClick={() => void copiar()} data-testid="copiar-pasta">
-          {copiado ? t.copiado : t.copiar}
-        </Botao>
-      </div>
-    </Cartao>
-  );
-}
-
 // ---------------------------------------------------------------- Página
 
 export function Biblioteca() {
@@ -421,7 +393,7 @@ export function Biblioteca() {
             <aside className="flex min-w-0 flex-[1_1_300px] flex-col gap-4">
               <CartaoManutencao leitura={lida} agora={agora} aoEscolher={setTarefa} />
               <CartaoCompartilhamento slskdNoAr={slskdNoAr} />
-              <CartaoRekordbox pasta={lida.pastaMusica} />
+              <CartaoRekordbox agora={agora} />
             </aside>
           </div>
         </>

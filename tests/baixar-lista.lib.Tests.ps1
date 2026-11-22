@@ -413,6 +413,23 @@ Describe 'baixar-lista.lib' {
     }
   }
 
+  Describe 'Find-InLibrary' {
+    It 'devolve a entrada que casou, com o id do beets (a playlist da lista no Rekordbox usa esse id)' {
+      $e = [pscustomobject]@{ Id = 42; A = 'azyr'; T = 'no escape' }; $e | Add-Member NoteProperty AT 'azyr no escape'
+      $r = [pscustomobject]@{ Id = 7; A = 'azyr'; T = 'no escape radio edit' }; $r | Add-Member NoteProperty AT 'azyr no escape radio edit'
+      $lib = @{ Index = @{ 'azyr' = [Collections.ArrayList]@($r, $e) }; Count = 2 }
+      (Find-InLibrary $lib (Parse-Line 'Azyr - No Escape')).Id | Should -Be 42
+      (Find-InLibrary $lib (Parse-Line 'Azyr - No Escape (Radio Edit)')).Id | Should -Be 7
+    }
+    It 'devolve $null quando nada casa, sem biblioteca ou sem artista' {
+      $e = [pscustomobject]@{ Id = 1; A = 'azyr'; T = 'no escape' }; $e | Add-Member NoteProperty AT 'azyr no escape'
+      $lib = @{ Index = @{ 'azyr' = [Collections.ArrayList]@($e) }; Count = 1 }
+      Find-InLibrary $lib (Parse-Line 'Azyr - Power') | Should -BeNullOrEmpty
+      Find-InLibrary $null (Parse-Line 'Azyr - No Escape') | Should -BeNullOrEmpty
+      Find-InLibrary $lib (Parse-Line 'No Escape') | Should -BeNullOrEmpty
+    }
+  }
+
   Describe 'Read-DotEnv' {
     It 'le chave=valor, ignora comentarios e tira aspas' {
       $f = Join-Path ([IO.Path]::GetTempPath()) ("sc-env-" + [guid]::NewGuid() + '.env')

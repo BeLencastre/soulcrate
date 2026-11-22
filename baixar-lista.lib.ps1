@@ -459,20 +459,22 @@ function Read-Lista([string]$path) {
 # ============================================================================
 # Biblioteca do beets (a leitura, que chama o docker, fica no baixar-lista.ps1)
 # ============================================================================
-function In-Library($lib, $req) {
-  if (-not $lib -or $req.ArtistTokens.Count -eq 0) { return $false }
+# A faixa da biblioteca que casa com a linha (com `Id`, o $id do beets), ou $null.
+function Find-InLibrary($lib, $req) {
+  if (-not $lib -or $req.ArtistTokens.Count -eq 0) { return $null }
   $bucket = $lib.Index[$req.ArtistTokens[0]]
-  if (-not $bucket) { return $false }
+  if (-not $bucket) { return $null }
   foreach ($e in $bucket) {
     if (-not (Has-AllTokensN $req.BaseTokens $e.T)) { continue }
     if (-not (Has-Artist $req $e.AT)) { continue }
     if ($req.MixTokens.Count -gt 0 -and -not (Has-AllTokensN $req.MixTokens $e.T)) { continue }
     $words = @($e.T -split ' '); $bad = $false
     foreach ($b in $req.Banned) { if ($words -contains $b) { $bad = $true; break } }
-    if (-not $bad) { return $true }
+    if (-not $bad) { return $e }
   }
-  return $false
+  return $null
 }
+function In-Library($lib, $req) { return ($null -ne (Find-InLibrary $lib $req)) }
 
 # ============================================================================
 # Catalogo (MusicBrainz): partes que nao acessam a rede

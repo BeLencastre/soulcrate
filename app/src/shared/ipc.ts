@@ -49,6 +49,7 @@ import type {
 } from './lote.js';
 import type { OpcoesLote } from './opcoes-lote.js';
 import type { ResultadoBuscaPlaylist } from './playlists.js';
+import type { EstadoRekordbox, ResultadoRekordbox } from './rekordbox.js';
 import type { ArquivoDeLicencaId, CreditosELicenca, InfoSobre, ResultadoPacoteSuporte } from './sobre.js';
 import type { ServicoId } from './servicos.js';
 import type { ConfigStatus, DockerStatus, ProjetoStatus, StackStatus } from './stack.js';
@@ -356,6 +357,12 @@ export interface SoulcrateApi {
     /** pede ao slskd uma nova varredura de `music/` */
     rescanSharing(): Promise<ResultadoCompartilhamento>;
   };
+  rekordbox: {
+    /** o arquivo de playlists para o Rekordbox: onde fica, quando foi gerado, se está gerando; null sem pasta */
+    state(): Promise<EstadoRekordbox | null>;
+    /** gera (ou refaz) o arquivo agora; exige a stack no ar, porque lê o beets */
+    generate(): Promise<ResultadoRekordbox>;
+  };
   logs: {
     subscribe(alvo: AlvoLog): Promise<SubscriptionId>;
     unsubscribe(id: SubscriptionId): Promise<void>;
@@ -395,6 +402,8 @@ export type MainEvent =
   | { type: 'update.state'; estado: EstadoAtualizacao }
   /** os arquivos da stack da pasta foram atualizados (ou o aviso mudou): a tela relê o estado */
   | { type: 'stackFiles.changed' }
+  /** o arquivo de playlists para o Rekordbox começou ou terminou de ser gerado (também as gerações automáticas) */
+  | { type: 'rekordbox.state'; estado: EstadoRekordbox }
   | { type: 'app.closePrompt' }
   | { type: 'app.navigate'; rota: string }
   /** o app foi aberto com um .txt/.csv ("Abrir com"): vira uma lista na pasta do Soulcrate */
@@ -489,6 +498,8 @@ export interface IpcInvoke {
   'library:openMusicFolder': { args: []; result: void };
   'library:sharing': { args: []; result: ResultadoCompartilhamento };
   'library:rescanSharing': { args: []; result: ResultadoCompartilhamento };
+  'rekordbox:state': { args: []; result: EstadoRekordbox | null };
+  'rekordbox:generate': { args: []; result: ResultadoRekordbox };
   'logs:subscribe': { args: [alvo: AlvoLog]; result: SubscriptionId };
   'logs:unsubscribe': { args: [id: SubscriptionId]; result: void };
   'webui:show': { args: [servico: ServicoId, limites: Limites]; result: void };

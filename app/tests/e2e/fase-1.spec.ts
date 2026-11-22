@@ -281,6 +281,7 @@ test.describe('segurança do renderer', () => {
       'onEvent',
       'playlists',
       'project',
+      'rekordbox',
       'reports',
       'setup',
       'stack',

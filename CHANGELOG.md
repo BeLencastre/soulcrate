@@ -16,6 +16,8 @@ O **app desktop** e a **stack** (Docker Compose, scripts e configuração do bee
   - em **Baixar lista → Ajustes**, cada ajuste diz o que faz ("Organizar depois de baixar", "Baixa 8 faixas ao mesmo tempo.") no lugar do parâmetro do script, e o resumo fala em frases, sem o comando equivalente;
   - **Configurações** fica com Pastas, Conta Soulseek, **Compartilhamento** (músicas compartilhadas, ouvir no celular e o teste da porta) e as preferências do app.
   - Onde o Modo DJ esconde algo útil para resolver um problema, "Mostrar detalhes técnicos" leva à mesma tela no Modo Dev.
+- **Playlists no Rekordbox.** Em **Suas músicas → Rekordbox**, **Criar as playlists** grava um arquivo no formato oficial *rekordbox xml* com a pasta `Soulcrate`. Dentro dela, `Gêneros` tem uma playlist por pasta de gênero e `Listas` tem uma playlist por lista baixada, na ordem da lista (vale também para as faixas que já estavam na biblioteca). No Rekordbox, aponte **Preferências → Avançado → Banco de dados → rekordbox xml → Imported Library** para esse arquivo uma vez; depois, importe a pasta `Soulcrate` de *rekordbox xml* sempre que quiser trazer o que é novo. O arquivo se atualiza sozinho ao fim de cada download e de cada tarefa de Cuidar da biblioteca. O app não mexe no banco do Rekordbox: pode deixar o Rekordbox aberto. Veja o [ADR 0004](docs/adr/0004-playlists-no-rekordbox-pelo-rekordbox-xml.md).
+- **Análise da lista (stack 1.3.0):** com `-SoAnalisar -AnalisarBiblioteca`, cada linha traz o `libraryId`, o `$id` do beets da faixa que casa com ela (pela mesma regra do "ja na biblioteca"), também nas linhas "ja feita". É com ele que o app monta a playlist de cada lista. Campo novo, os antigos continuam iguais ([`docs/eventos-lote.md`](docs/eventos-lote.md#análise-da-lista--soanalisar)).
 
 ### Mudado
 
@@ -34,6 +36,7 @@ O **app desktop** e a **stack** (Docker Compose, scripts e configuração do bee
 
 - **Baixar lista → Ajustes: clicar de novo numa receita não a desmarcava.** Agora o segundo clique desmarca e volta ao padrão só o que a receita tinha ajustado.
 - **Assistente: o Avançar podia ignorar um clique feito logo depois de o passo aparecer.** Com o computador ocupado, o clique na hora em que o passo "Pastas das músicas" surgia não fazia nada e não mostrava nenhum aviso. Agora ele sempre avança.
+- **Rekordbox: a instrução pedia uma "pasta monitorada" que o Rekordbox não tem.** O README e o cartão Rekordbox da Biblioteca mandavam ativar uma pasta monitorada em Preferências › Avançado, opção que não existe no Rekordbox 7. Agora o cartão cria as playlists do Soulcrate (veja "Playlists no Rekordbox", acima), e o README explica esse caminho e, para quem prefere montar as playlists à mão, a importação da pasta `music` em **Arquivo › Importar › Importar pasta**, repetida depois de cada download.
 
 ## App 1.1.1 (2026-10-13)
 

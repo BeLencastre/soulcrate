@@ -20,6 +20,11 @@ export interface LinhaAnalise {
   /** status da execução anterior desta lista, se houver */
   previous: string | null;
   warnings: string[];
+  /**
+   * `$id` do beets da faixa que casa com a linha (com `-AnalisarBiblioteca`), também nas "ja feita": é com ele que a
+   * playlist da lista no Rekordbox é montada. Ausente nos scripts anteriores à stack 1.3.0.
+   */
+  libraryId?: number | null;
 }
 
 export interface AnaliseListaOk {

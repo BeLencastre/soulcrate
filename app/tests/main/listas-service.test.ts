@@ -341,6 +341,26 @@ describe('analisar (baixar-lista.ps1 -SoAnalisar)', () => {
     expect(segunda.analise.ok).toBe(true);
     await expect(primeira).rejects.toBeInstanceOf(AnaliseCanceladaError);
   });
+
+  it('a análise independente (playlists do Rekordbox) não cancela a do editor nem é cancelada por ela', async () => {
+    escrever('baixar-lista.ps1', '# script');
+    escrever('a.txt', 'x');
+    let n = 0;
+    const { svc } = novo((_c, a) => {
+      const minha = ++n;
+      writeFileSync(saidaDe(a), JSON.stringify(ANALISE));
+      // as duas primeiras demoram um pouco: a terceira chega enquanto elas rodam
+      return minha <= 2 ? { codigo: 0, atraso: 200 } : OK();
+    });
+    const doEditor = svc.analisar(dir, 'a.txt', { biblioteca: false, retentar: false });
+    // a do editor só é cancelada pela análise seguinte do próprio editor (a expectativa já fica ligada à promessa)
+    const editorCancelado = expect(doEditor).rejects.toBeInstanceOf(AnaliseCanceladaError);
+    const independente = svc.analisar(dir, 'a.txt', { biblioteca: true, retentar: false }, { independente: true });
+    const outraDoEditor = svc.analisar(dir, 'a.txt', { biblioteca: false, retentar: false });
+    expect((await independente).analise.ok).toBe(true);
+    expect((await outraDoEditor).analise.ok).toBe(true);
+    await editorCancelado;
+  });
 });
 
 describe('arquivos temporários', () => {

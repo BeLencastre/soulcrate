@@ -375,7 +375,7 @@ O **diagnóstico** explica por que cada faixa não veio, na linguagem da tabela 
 
 #### Biblioteca
 
-"Suas músicas": as faixas do beets com artista, título, BPM, tom, gênero e formato, com busca e indicadores do que falta (sem BPM, sem tom, sem gênero, esperando organizar em `downloads/`). **Remover uma faixa nunca é imediato**: o app mostra tudo o que o filtro pega, avisa que o arquivo é apagado de vez (sem Lixeira) e só apaga depois da sua confirmação. Em **Cuidar da biblioteca** faz a [manutenção](#manutenção-da-biblioteca) sem linha de comando (calcular tom e BPM que faltam, organizar o que ficou em `downloads/`, atualizar depois de mexer nos arquivos e reorganizar as pastas, os dois últimos com pré-visualização), mostra quantas músicas estão compartilhadas no Soulseek (com **Atualizar a lista**) e a pasta para monitorar no Rekordbox. O botão **Abrir … no Explorer** diz qual pasta abre (por exemplo, "Abrir DJ/Musics no Explorer"). Nada disso roda com a stack desligada nem com um lote em andamento.
+"Suas músicas": as faixas do beets com artista, título, BPM, tom, gênero e formato, com busca e indicadores do que falta (sem BPM, sem tom, sem gênero, esperando organizar em `downloads/`). **Remover uma faixa nunca é imediato**: o app mostra tudo o que o filtro pega, avisa que o arquivo é apagado de vez (sem Lixeira) e só apaga depois da sua confirmação. Em **Cuidar da biblioteca** faz a [manutenção](#manutenção-da-biblioteca) sem linha de comando (calcular tom e BPM que faltam, organizar o que ficou em `downloads/`, atualizar depois de mexer nos arquivos e reorganizar as pastas, os dois últimos com pré-visualização), mostra quantas músicas estão compartilhadas no Soulseek (com **Atualizar a lista**) e cria as [playlists para o Rekordbox](#rekordbox-e-pendrive) (uma por gênero e uma por lista baixada). O botão **Abrir … no Explorer** diz qual pasta abre (por exemplo, "Abrir DJ/Musics no Explorer"). Nada disso roda com a stack desligada nem com um lote em andamento.
 
 ![Tela Biblioteca: as faixas com BPM, tom e gênero, os indicadores e a manutenção](docs/img/09-biblioteca.png)
 
@@ -439,7 +439,7 @@ Mais detalhes em [`docs/distribuicao.md`](docs/distribuicao.md) (instalar, atual
 1. Abra o **Docker Desktop** e espere ele ficar verde (o app abre para você).
 2. Rode o `subir.bat` ou use **Ligar** no app. Se nada mudou, sobe em segundos.
 3. Baixe faixas pelo [Soulbeet](#baixar-uma-faixa-pelo-soulbeet) ou por [lista](#download-em-lote).
-4. Abra o Rekordbox. Se a `music` for pasta monitorada, as faixas novas aparecem sozinhas ([Rekordbox e pendrive](#rekordbox-e-pendrive)).
+4. Abra o Rekordbox e importe de novo a pasta `Soulcrate` de *rekordbox xml* para trazer as faixas e as playlists novas ([Rekordbox e pendrive](#rekordbox-e-pendrive)).
 5. Quando terminar, rode o `parar.bat` (ou **Desligar** no app), ou só feche o Docker Desktop.
 
 Os contêineres têm `restart: unless-stopped`: se o Docker Desktop abrir com o Windows, a stack volta sozinha.
@@ -532,16 +532,22 @@ A **mesma lista não roda duas vezes ao mesmo tempo**: se você abrir o `baixar-
 
 ## Rekordbox e pendrive
 
+O Rekordbox não tem pasta monitorada: ele não enxerga sozinho as faixas que chegam depois. O app resolve isso com as **playlists do Soulcrate**: um arquivo no formato oficial *rekordbox xml* com a pasta `Soulcrate`, que tem uma playlist por gênero (`Gêneros`) e uma por lista baixada (`Listas`, na ordem da lista). O app não mexe no banco do Rekordbox, então pode deixar o Rekordbox aberto. A decisão está no [ADR 0004](docs/adr/0004-playlists-no-rekordbox-pelo-rekordbox-xml.md).
+
 **Configuração (uma vez):**
 
-1. Em **Preferências → Avançado → Banco de dados → Pasta monitorada** (Auto Import / Watch Folder), ative e escolha a pasta `music` do projeto (ou o caminho de `MUSIC_DIR`). As faixas novas aparecem sozinhas. Outra opção é arrastar a pasta para a coleção.
-2. Em **Preferências → Análise**, desative a **detecção de tom** se quiser manter o tom do keyfinder (gravado na tag padrão `TKEY`). Deixe o **beatgrid** ativo: o BPM é gravado como número inteiro.
+1. No app, em **Biblioteca → Rekordbox**, clique em **Criar as playlists**. O arquivo fica em `rekordbox\soulcrate.xml`, na pasta do Soulcrate (o cartão mostra o caminho, com **Copiar**). Daí em diante, ele se atualiza sozinho ao fim de cada download e de cada tarefa de **Cuidar da biblioteca**.
+2. No Rekordbox, em **Preferências → Avançado → Banco de dados → rekordbox xml → Imported Library** (*Preferences → Advanced → Database → rekordbox xml → Imported Library*), escolha esse arquivo. Se *rekordbox xml* não aparecer na árvore à esquerda, ligue em **Preferências → Exibição → Layout → Media Browser** (*Preferences → View → Layout → Media Browser*).
+3. Em **Preferências → Análise**, desative a **detecção de tom** se quiser manter o tom do keyfinder (gravado na tag padrão `TKEY`). Deixe o **beatgrid** ativo: o BPM é gravado como número inteiro.
 
 **Depois de cada lote:**
 
-1. Analise as faixas novas no Rekordbox (beatgrid e waveform).
-2. Faça hot cues e memory cues e coloque nas playlists.
-3. Exporte para o pendrive como de costume.
+1. Na árvore do Rekordbox, em *rekordbox xml*, clique em atualizar. Depois, clique com o botão direito na pasta `Soulcrate` e escolha **Importar playlist** (*Import Playlist*). As faixas novas entram na Coleção junto com as playlists.
+2. Analise as faixas novas no Rekordbox (beatgrid e waveform).
+3. Faça hot cues e memory cues.
+4. Exporte a pasta `Soulcrate` (ou as playlists que quiser) para o pendrive, como de costume.
+
+Prefere montar as suas playlists à mão? Importe só as faixas em **Arquivo → Importar → Importar pasta** (*File → Import → Import Folder*), escolhendo a pasta `music` (ou a de `MUSIC_DIR`), e repita depois de cada lote.
 
 **Formato:** FLAC toca no Rekordbox e nos XDJ/CDJ recentes (XDJ-XZ, XDJ-RX3, XDJ-AZ, CDJ-3000). Se for tocar num equipamento antigo, confirme o suporte a FLAC antes da gig ou mantenha AIFF ou MP3 320 dessas faixas (e rode com `-AceitarAacAiff` ou `-AceitarMp3320` para baixá-los).
 

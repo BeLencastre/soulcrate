@@ -22,8 +22,10 @@ Formato: `- AAAA-MM-DD · o aprendizado. **Por quê:** o motivo ou a consequênc
 - 2026-10-07 · `wsl.exe -l -v` sai em UTF-16LE. **Por quê:** sem converter (`iconv -f utf-16le -t utf-8`, ou ler como Unicode no app), a saída parece vazia ou com caracteres nulos.
 - 2026-10-17 · Em teste do renderer que troca uma preferência, deixe `api.app.getSettings` pendente (`new Promise(() => {})`) e semeie `chaveSettings` no QueryClient. **Por quê:** a releitura ao montar responde depois do clique e sobrescreve a troca otimista, e o teste fica intermitente.
 - 2026-10-19 · `spawn` com `detached: true` não roda o `powershell.exe` no Windows (o libuv usa `DETACHED_PROCESS`); o lote só sobrevive ao app por um PowerShell lançador com `Start-Process`, sem pipe no lançador (`stdio: 'ignore'`), e o `-ArgumentList` do `Start-Process` junta os itens com espaço **sem aspas**. **Por quê:** é o que `infra/processos.ts` e `services/lote-comando.ts` já fazem; mudar um desses sem entender faz o lote morrer junto com o app ou travar o app por 30 s.
+- 2026-11-16 · No e2e, o app usa o dublê do docker (`SOULCRATE_DOCKER_DUBLE`), mas o `baixar-lista.ps1` que ele roda chama o `docker` do PATH, que na máquina de quem testa é o de verdade. Para o script ler o beets do dublê, use `dockerDoDubleNosScripts` (um `docker.ps1` no PATH); um `docker.cmd` não serve, porque o cmd.exe trata o `|` do formato do `ls` como pipe. **Por quê:** sem isso, a análise com `-AnalisarBiblioteca` falha em silêncio (`libraryChecked: false`) ou fala com a stack real.
 - 2026-10-19 · Em teste do renderer, mudar um store Zustand fora de um evento (`useRascunho.getState().definirOpcoes(...)`) e logo depois dar `fireEvent.click` usa o `onClick` da renderização anterior, com o estado velho: envolva a mudança em `act(() => ...)`. **Por quê:** sem o `act`, o React ainda não renderizou de novo e o teste confere o valor errado sem erro nenhum.
 - 2026-10-19 · Em `lote-service.test.ts`, teste que escreve um `run.start` (ele traz o `pid`) precisa pôr o pid em `vivos` enquanto espera novos eventos. **Por quê:** a sondagem roda a cada 15 ms; com a suíte inteira ocupando a máquina, duas leituras sem novidade com o processo "morto" fazem o serviço sintetizar um `run.end` ("sumiu") e o teste falha só às vezes. Para reproduzir, ponha uma pausa de 100 ms entre os eventos.
+
 
 ## Comandos
 
@@ -35,4 +37,5 @@ Formato: `- AAAA-MM-DD · o aprendizado. **Por quê:** o motivo ou a consequênc
 
 ## Produto
 
+- 2026-11-16 · O Rekordbox 7 não tem pasta monitorada (Preferências › Avançado › Banco de dados só tem iTunes, rekordbox xml, Auto Relocate, Auto Export e Database management): as faixas novas entram só importando a pasta de novo. As playlists do Soulcrate vão pelo rekordbox XML (Imported Library, [ADR 0004](../../docs/adr/0004-playlists-no-rekordbox-pelo-rekordbox-xml.md)); escrever no `master.db` (pyrekordbox, rekordbox-mcp) exige o Rekordbox fechado e um banco cifrado sem documentação oficial. **Por quê:** o README prometia uma pasta monitorada que não existe; confira no manual da versão instalada antes de descrever um menu do Rekordbox.
 - 2026-10-13 · Importação de playlist: pelo link público, o Spotify entrega no máximo 100 faixas, e a Amazon Music ficou de fora por não ter caminho gratuito. **Por quê:** essas limitações são do serviço, não bug do app.

@@ -11,6 +11,12 @@ import { api } from './api';
 
 /** Todas as consultas da biblioteca começam por aqui: um `invalidateQueries` com esta chave refaz todas. */
 export const CHAVE_BIBLIOTECA = ['biblioteca'] as const;
+/** O arquivo de playlists para o Rekordbox; o evento `rekordbox.state` do main o atualiza no cache. */
+export const CHAVE_REKORDBOX = [...CHAVE_BIBLIOTECA, 'rekordbox'] as const;
+
+export function useRekordbox() {
+  return useQuery({ queryKey: CHAVE_REKORDBOX, queryFn: () => api.rekordbox.state(), retry: false });
+}
 
 /** Enquanto o slskd varre a pasta, a tela relê o número a cada tanto. */
 const RELER_VARREDURA_MS = 3000;

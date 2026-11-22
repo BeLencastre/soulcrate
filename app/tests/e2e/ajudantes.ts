@@ -281,6 +281,19 @@ export function ambienteDoLote(amb: Ambiente, slskd: SlskdFalso): Record<string,
   };
 }
 
+/**
+ * Um `docker` no PATH dos scripts que responde pelo mesmo dublê do app: o baixar-lista.ps1 lê a biblioteca do beets
+ * com `docker compose exec` (na análise das listas, por exemplo), e sem isto ele chamaria o Docker de quem testa. É
+ * um .ps1, não um .cmd: o formato do `ls` tem `|`, que o cmd.exe trataria como pipe. O dublê acha o mundo pela
+ * SOULCRATE_DUBLE_ESTADO que o app repassa ao PowerShell.
+ */
+export function dockerDoDubleNosScripts(amb: Ambiente): Record<string, string> {
+  const bin = join(amb.raiz, 'bin-duble');
+  mkdirSync(bin, { recursive: true });
+  writeFileSync(join(bin, 'docker.ps1'), `& '${process.execPath}' '${DUBLE}' @args\r\nexit $LASTEXITCODE\r\n`);
+  return { PATH: `${bin};${process.env.PATH ?? ''}` };
+}
+
 export interface NotificacaoVista {
   tipo: 'fim' | 'pausa';
   titulo: string;

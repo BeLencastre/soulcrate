@@ -11,6 +11,7 @@ Um ADR guarda uma decisão de arquitetura: o contexto, o que foi decidido e as c
 | [0001](0001-memoria-do-repositorio-e-mapa-de-dependencias.md) | Memória do repositório e mapa de dependências com hooks | Aceito |
 | [0002](0002-modo-dj-e-modo-dev.md) | Modo DJ e Modo Dev: uma preferência que muda só o que aparece | Aceito |
 | [0003](0003-app-desktop-decisoes-da-primeira-versao.md) | App desktop: decisões da primeira versão | Aceito |
+| [0004](0004-playlists-no-rekordbox-pelo-rekordbox-xml.md) | Playlists no Rekordbox pelo rekordbox XML, sem tocar no banco do Rekordbox | Proposto |
 
 ## Modelo
 

@@ -307,7 +307,7 @@ test('capturas: biblioteca', async () => {
   const { janela } = aberto;
   await menu(janela, 'Biblioteca').click();
   await expect(janela.getByTestId('tabela-biblioteca')).toBeVisible();
-  await expect(janela.getByTestId('pasta-rekordbox')).toBeVisible();
+  await expect(janela.getByTestId('cartao-manutencao')).toBeVisible();
   await foto(janela, '09-biblioteca');
 });
 

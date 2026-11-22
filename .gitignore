@@ -25,6 +25,8 @@ soulbeet/data/
 
 # ===================== Relatorios e logs ==============================
 /lotes/
+# o arquivo de playlists para o Rekordbox que o app grava na pasta do Soulcrate (rekordbox-service)
+/rekordbox/
 *.log
 diagnostico*.txt
 # fixtures reais do script (o diagnostico-exemplo.txt cai na regra acima)

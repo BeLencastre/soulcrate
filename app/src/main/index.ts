@@ -42,6 +42,7 @@ import { LoteService, processoVivoReal, type NotificacaoLote } from './services/
 import { OperacoesService } from './services/operacoes-service';
 import { PastaService } from './services/pasta-service';
 import { PlaylistsService } from './services/playlists-service';
+import { fsRekordboxReal, RekordboxService } from './services/rekordbox-service';
 import { RelatoriosService } from './services/relatorios-service';
 import { lerVersaoDaStack, resolverProjeto } from './services/project-service';
 import { portaAceitaConexao, SetupService } from './services/setup-service';
@@ -183,11 +184,19 @@ async function principal(): Promise<void> {
   let avisoPendente = false;
 
   let aoFimDeLote: (() => void) | null = null;
+  let aoMudarBiblioteca: (() => void) | null = null;
   const emitir = (evento: MainEvent): void => {
     if (janela && !janela.isDestroyed() && !janela.webContents.isDestroyed())
       janela.webContents.send(CANAL_EVENTOS, evento);
-    // o lote terminou: a atualização dos arquivos da stack que esperava por ele pode entrar agora
-    if (evento.type === 'batch.events' && evento.eventos.some((ev) => ev.type === 'run.end')) aoFimDeLote?.();
+    // o lote terminou: a atualização dos arquivos da stack que esperava por ele pode entrar agora, e o lote importou
+    // faixas (as playlists do Rekordbox mudam)
+    if (evento.type === 'batch.events' && evento.eventos.some((ev) => ev.type === 'run.end')) {
+      aoFimDeLote?.();
+      aoMudarBiblioteca?.();
+    }
+    // reorganizar, importar o que sobrou ou atualizar depois de mexer nos arquivos mudam caminhos e faixas
+    // (calcular tom e BPM não muda nada que o arquivo do Rekordbox leve)
+    if (evento.type === 'library.end' && evento.ok && evento.tarefa !== 'tomEBpm') aoMudarBiblioteca?.();
   };
   const aoErro = (e: unknown) => log.error('Erro inesperado:', e);
 
@@ -342,6 +351,18 @@ async function principal(): Promise<void> {
     agora: Date.now,
     aoErro,
   });
+  // playlists para o Rekordbox (rekordbox XML): uma por gênero e uma por lista baixada; refeito sozinho depois da
+  // primeira vez que a pessoa o gera
+  const rekordbox = new RekordboxService({
+    biblioteca,
+    listas,
+    projeto,
+    fs: fsRekordboxReal,
+    versao: app.getVersion(),
+    emitir,
+    aoErro,
+  });
+  aoMudarBiblioteca = () => rekordbox.atualizarSeJaExiste();
   const slskd = new SlskdService({
     projeto,
     lerArquivo,
@@ -506,6 +527,7 @@ async function principal(): Promise<void> {
     lote,
     relatorios,
     biblioteca,
+    rekordbox,
     slskd,
     sobre,
     suporte,

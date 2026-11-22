@@ -116,6 +116,10 @@ const api: SoulcrateApi = {
     sharing: () => chamar('library:sharing'),
     rescanSharing: () => chamar('library:rescanSharing'),
   },
+  rekordbox: {
+    state: () => chamar('rekordbox:state'),
+    generate: () => chamar('rekordbox:generate'),
+  },
   logs: {
     subscribe: (alvo) => chamar('logs:subscribe', alvo),
     unsubscribe: (id) => chamar('logs:unsubscribe', id),

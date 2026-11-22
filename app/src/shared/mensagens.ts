@@ -1478,11 +1478,29 @@ export const msg = {
     },
     rekordbox: {
       titulo: 'Rekordbox',
-      instrucao:
-        'Em Preferências › Avançado › Gerenciamento de banco de dados, adicione esta pasta como monitorada. As faixas novas aparecem sozinhas.',
-      pastaMonitorada: 'Pasta para monitorar no Rekordbox',
+      explicacao:
+        'Suas músicas viram playlists no Rekordbox, dentro da pasta Soulcrate: uma por gênero e uma por lista baixada.',
+      criar: 'Criar as playlists',
+      atualizar: 'Atualizar agora',
+      gerando: 'Montando as playlists…',
+      nunca: 'Ainda não criadas.',
+      atualizadoEm: (quando: string) => `Atualizadas ${quando}.`,
+      resumo: (faixas: number, generos: number, listas: number) =>
+        `${faixas.toLocaleString('pt-BR')} ${plural(faixas, 'faixa', 'faixas')} em ${generos} ${plural(generos, 'gênero', 'gêneros')}` +
+        (listas > 0 ? ` e ${listas} ${plural(listas, 'lista', 'listas')}.` : '.'),
+      listasComFalha: (nomes: string[]) =>
+        `${plural(nomes.length, 'Esta lista ficou', 'Estas listas ficaram')} de fora desta vez: ${nomes.join(', ')}.`,
+      sozinho:
+        'Depois da primeira vez, as playlists se atualizam sozinhas ao fim de cada download e de cada tarefa de Cuidar da biblioteca.',
+      arquivo: 'Arquivo para o Rekordbox',
       copiar: 'Copiar',
       copiado: 'Copiado',
+      comoLevar: 'Como levar para o Rekordbox',
+      passos: [
+        'Uma vez: em Preferências › Avançado › Banco de dados › rekordbox xml › Imported Library, escolha o arquivo acima. Se "rekordbox xml" não aparecer na árvore à esquerda, ligue em Preferências › Exibição › Layout.',
+        'A cada atualização: na árvore, em rekordbox xml, clique em atualizar. Depois, clique com o botão direito na pasta Soulcrate e escolha Importar playlist.',
+        'Para tocar fora: exporte a pasta Soulcrate para o pendrive, como sempre.',
+      ],
     },
     remover: {
       rotulo: 'Ação destrutiva',
@@ -1783,6 +1801,7 @@ export const msg = {
       'atualizacao.falhou': 'Erro · atualização',
       'atualizacao.lote-rodando': 'Atualização · espera',
       'stack.atualizacao-falhou': 'Erro · stack',
+      'rekordbox.nao-gravou': 'Erro · Rekordbox',
       inesperado: 'Erro inesperado',
     } satisfies Record<ErroCodigo, string>,
     inesperado: { titulo: 'Algo deu errado', mensagem: 'O app não conseguiu terminar o que você pediu.' },
@@ -1934,6 +1953,11 @@ export const msg = {
       titulo: 'Não consegui atualizar os arquivos da stack',
       mensagem:
         'Nenhum arquivo seu foi alterado. Veja se a pasta do Soulcrate permite gravação e se nenhum outro programa está com um deles aberto, e tente de novo.',
+    },
+    rekordboxNaoGravou: {
+      titulo: 'Não consegui gravar o arquivo para o Rekordbox',
+      mensagem:
+        'Nada mudou no Rekordbox. Veja se a pasta do Soulcrate permite gravação e se nenhum outro programa está com o arquivo aberto, e tente de novo.',
     },
     operacaoFalhou: {
       titulo: (op: OperacaoStack | 'reiniciando') =>

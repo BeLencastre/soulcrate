@@ -222,13 +222,15 @@ $py = "import sys; from beets.ui import main; main(sys.argv[1:])"
 function Get-Library {
   $idx = @{}
   $ErrorActionPreference = "Continue"
-  $out = & docker compose exec -T -w /data soulbeet /usr/bin/python3 -c $py -c /config/config.yaml -l $BeetsLib ls -f '$artist|||$title' 2>$null
+  $out = & docker compose exec -T -w /data soulbeet /usr/bin/python3 -c $py -c /config/config.yaml -l $BeetsLib ls -f '$id|||$artist|||$title' 2>$null
   if ($LASTEXITCODE -ne 0) { return $null }
   $n = 0
   foreach ($l in @($out)) {
-    $p = ([string]$l) -split '\|\|\|', 2
-    if ($p.Count -lt 2) { continue }
-    $e = [pscustomobject]@{ A = (Normalize $p[0]); T = (Normalize $p[1]) }
+    $p = ([string]$l) -split '\|\|\|', 3
+    if ($p.Count -lt 3) { continue }
+    $id = 0
+    if (-not [int]::TryParse($p[0], [ref]$id)) { continue }
+    $e = [pscustomobject]@{ Id = $id; A = (Normalize $p[1]); T = (Normalize $p[2]) }
     $e | Add-Member NoteProperty AT ("$($e.A) $($e.T)")
     foreach ($tk in @($e.A -split ' ' | Select-Object -Unique)) {
       if (-not $tk) { continue }
@@ -1010,14 +1012,18 @@ function Invoke-Analise {
       if ($req.Remixer) { [void]$avisos.Add("o artista da linha e o remixer: o artista original sera aceito livremente") }
       $e = [ordered]@{ sourceLine = $d.SourceLine; line = [string]$d.Line; key = $k; artist = [string]$req.Artist; title = [string]$req.Base; mix = [string]$req.Mix
                        original = [bool]$req.IsOriginal; remixer = [bool]$req.Remixer; queries = [object[]]@($req.Queries | ForEach-Object { [string]$_ })
-                       status = 'nova'; duplicateOf = $null; previous = $null; warnings = [object[]]$avisos.ToArray() }
+                       status = 'nova'; duplicateOf = $null; previous = $null; warnings = [object[]]$avisos.ToArray(); libraryId = $null }
       if (-not $k) { $e.status = 'ignorada' }
       elseif ($seen.ContainsKey($k)) { $e.status = 'repetida'; $e.duplicateOf = $seen[$k]; $cnt.dup++ }
       else {
         $seen[$k] = $d.SourceLine; $cnt.unique++
+        # a faixa da biblioteca vale também para o que já foi feito: o app monta a playlist da lista com ela
+        $naBiblioteca = $null
+        if ($lib) { $naBiblioteca = Find-InLibrary $lib $req }
+        if ($naBiblioteca) { $e.libraryId = $naBiblioteca.Id }
         if ($state.ContainsKey($k)) { $e.previous = [string]$state[$k] }
         if ($state.ContainsKey($k) -and $skipStatus -contains $state[$k]) { $e.status = 'ja feita'; $cnt.done++ }
-        elseif ($lib -and (In-Library $lib $req)) { $e.status = 'ja na biblioteca'; $cnt.lib++ }
+        elseif ($naBiblioteca) { $e.status = 'ja na biblioteca'; $cnt.lib++ }
       }
       [void]$linhas.Add($e)
     }

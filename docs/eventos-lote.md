@@ -142,7 +142,9 @@ Usa a mesma leitura, limpeza e separação de artista/título/mix do lote. Escre
     "status": "ja feita",          // nova | repetida | ignorada | ja feita | ja na biblioteca
     "duplicateOf": null,           // em "repetida": sourceLine da primeira ocorrência
     "previous": "baixada",         // status da execução anterior, se houver
-    "warnings": []                 // ex.: linha sem " - ", título vazio, artista = remixer
+    "warnings": [],                // ex.: linha sem " - ", título vazio, artista = remixer
+    "libraryId": 42                // $id do beets da faixa que casa com a linha (mesma regra do "ja na biblioteca"),
+                                   // também em "ja feita"; null sem -AnalisarBiblioteca, sem par, ou em repetida/ignorada
   }]
 }
 ```

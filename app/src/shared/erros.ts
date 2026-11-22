@@ -36,6 +36,7 @@ export type ErroCodigo =
   | 'atualizacao.falhou'
   | 'atualizacao.lote-rodando'
   | 'stack.atualizacao-falhou'
+  | 'rekordbox.nao-gravou'
   | 'inesperado';
 
 /** Ações que um erro pode oferecer; o renderer liga cada uma a um comportamento. */
@@ -326,6 +327,17 @@ export function criarErro(codigo: ErroCodigo, ctx: ContextoErro = {}): AppError 
       return {
         codigo,
         ...e.stackAtualizacaoFalhou,
+        acoes: [
+          acao('tentarDeNovo', A.tentarDeNovo, true),
+          acao('copiarDetalhes', A.copiarDetalhes),
+          acao('abrirLog', A.abrirLog),
+        ],
+        detalhes,
+      };
+    case 'rekordbox.nao-gravou':
+      return {
+        codigo,
+        ...e.rekordboxNaoGravou,
         acoes: [
           acao('tentarDeNovo', A.tentarDeNovo, true),
           acao('copiarDetalhes', A.copiarDetalhes),

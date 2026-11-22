@@ -19,6 +19,7 @@ import type {
 import { criarErro } from '../../src/shared/erros';
 import { lerLinhaEvento } from '../../src/shared/eventos-lote';
 import type { MainEvent } from '../../src/shared/ipc';
+import type { EstadoRekordbox } from '../../src/shared/rekordbox';
 import { statusInicial, type StackStatus } from '../../src/shared/stack';
 
 const api = vi.hoisted(() => ({
@@ -40,6 +41,7 @@ const api = vi.hoisted(() => ({
     sharing: vi.fn(),
     rescanSharing: vi.fn(),
   },
+  rekordbox: { state: vi.fn(), generate: vi.fn() },
 }));
 vi.mock('../../src/renderer/lib/api', () => ({ api }));
 
@@ -151,6 +153,15 @@ function montar(s: StackStatus = stack()) {
 }
 
 const lerOk = (l: LeituraBiblioteca = leitura()): ResultadoLeitura => ({ ok: true, leitura: l });
+const XML_REKORDBOX = 'C:\\Soulcrate\\rekordbox\\soulcrate.xml';
+const rekordbox = (extra: Partial<EstadoRekordbox> = {}): EstadoRekordbox => ({
+  caminho: XML_REKORDBOX,
+  geradoEm: null,
+  resumo: null,
+  gerando: false,
+  erro: null,
+  ...extra,
+});
 const compartilhando = (arquivos: number | null, escaneando = false): ResultadoCompartilhamento => ({
   ok: true,
   compartilhamento: { arquivos, escaneando },
@@ -172,6 +183,7 @@ beforeEach(() => {
   });
   api.stack.up.mockResolvedValue({ id: 'op', tipo: 'ligar' });
   api.app.copyText.mockResolvedValue(undefined);
+  api.rekordbox.state.mockResolvedValue(rekordbox());
   useManutencao.setState({ operacao: null });
   useRascunho.setState({ lista: null, texto: '', textoSalvo: '', erro: null });
 });
@@ -386,13 +398,92 @@ describe('compartilhamento e Rekordbox', () => {
     expect(screen.getByTestId('tabela-biblioteca')).toBeInTheDocument();
   });
 
-  it('Rekordbox: mostra a pasta certa e copia', async () => {
+  it('Rekordbox ainda não criado: explica, oferece criar e diz como levar para o Rekordbox', async () => {
     montar();
-    await carregada();
-    expect(screen.getByTestId('pasta-rekordbox')).toHaveTextContent('D:\\Musica\\Soulcrate\\music');
-    fireEvent.click(screen.getByTestId('copiar-pasta'));
-    await waitFor(() => expect(api.app.copyText).toHaveBeenCalledWith('D:\\Musica\\Soulcrate\\music'));
+    expect(await screen.findByTestId('rekordbox-situacao')).toHaveTextContent('Ainda não criadas.');
+    const cartao = screen.getByTestId('cartao-rekordbox');
+    expect(cartao).toHaveTextContent('uma por gênero e uma por lista baixada');
+    expect(screen.getByTestId('gerar-rekordbox')).toHaveTextContent('Criar as playlists');
+    expect(screen.queryByTestId('arquivo-rekordbox')).toBeNull();
+    // o Rekordbox 7 não tem pasta monitorada: o caminho é o rekordbox xml (Imported Library)
+    expect(cartao).toHaveTextContent('rekordbox xml › Imported Library');
+    expect(cartao).toHaveTextContent('Importar playlist');
+    expect(cartao).not.toHaveTextContent(/monitorad/i);
+  });
+
+  it('Rekordbox: criar grava o arquivo e mostra quando, o resumo e o caminho para copiar', async () => {
+    api.rekordbox.generate.mockResolvedValue({
+      ok: true,
+      estado: rekordbox({
+        geradoEm: ONTEM_AO_MEIO_DIA,
+        resumo: { faixas: 1204, generos: 12, listas: 3, listasComFalha: [] },
+      }),
+    });
+    montar();
+    await screen.findByTestId('rekordbox-situacao');
+    fireEvent.click(screen.getByTestId('gerar-rekordbox'));
+    await waitFor(() => expect(api.rekordbox.generate).toHaveBeenCalledTimes(1));
+    expect(await screen.findByTestId('rekordbox-situacao')).toHaveTextContent(
+      'Atualizadas ontem, 12:00. 1.204 faixas em 12 gêneros e 3 listas.',
+    );
+    expect(screen.getByLabelText('Arquivo para o Rekordbox')).toHaveTextContent(XML_REKORDBOX);
+    expect(screen.getByTestId('gerar-rekordbox')).toHaveTextContent('Atualizar agora');
+    expect(screen.getByTestId('cartao-rekordbox')).toHaveTextContent('se atualizam sozinhas');
+    fireEvent.click(screen.getByTestId('copiar-arquivo-rekordbox'));
+    await waitFor(() => expect(api.app.copyText).toHaveBeenCalledWith(XML_REKORDBOX));
     expect(await screen.findByRole('button', { name: 'Copiado' })).toBeInTheDocument();
+  });
+
+  it('Rekordbox: um erro aparece no cartão, e Tentar de novo gera outra vez', async () => {
+    const erro = criarErro('rekordbox.nao-gravou', { detalhes: XML_REKORDBOX });
+    api.rekordbox.generate.mockResolvedValue({ ok: false, erro });
+    montar();
+    await screen.findByTestId('rekordbox-situacao');
+    api.rekordbox.state.mockResolvedValue(rekordbox({ erro }));
+    fireEvent.click(screen.getByTestId('gerar-rekordbox'));
+    const alerta = await screen.findByRole('alert');
+    expect(alerta).toHaveTextContent('Não consegui gravar o arquivo para o Rekordbox');
+    fireEvent.click(within(alerta).getByRole('button', { name: 'Tentar de novo' }));
+    await waitFor(() => expect(api.rekordbox.generate).toHaveBeenCalledTimes(2));
+  });
+
+  it('Rekordbox: avisa as listas que ficaram de fora', async () => {
+    api.rekordbox.state.mockResolvedValue(
+      rekordbox({
+        geradoEm: ONTEM_AO_MEIO_DIA,
+        resumo: { faixas: 5, generos: 2, listas: 1, listasComFalha: ['techno-pesado.txt'] },
+      }),
+    );
+    montar();
+    expect(await screen.findByTestId('rekordbox-listas-com-falha')).toHaveTextContent(
+      'Esta lista ficou de fora desta vez: techno-pesado.txt.',
+    );
+  });
+
+  it('Rekordbox: enquanto gera (também sozinho, pelo evento do main), o botão espera', async () => {
+    let ouvinte: (e: MainEvent) => void = () => undefined;
+    api.onEvent.mockImplementation((fn: (e: MainEvent) => void) => {
+      ouvinte = fn;
+      return () => undefined;
+    });
+    const { qc } = montar();
+    const parar = ligarEventos(qc, vi.fn());
+    await screen.findByTestId('rekordbox-situacao');
+    act(() => ouvinte({ type: 'rekordbox.state', estado: rekordbox({ gerando: true }) }));
+    expect(await screen.findByText('Montando as playlists…')).toBeInTheDocument();
+    expect(screen.getByTestId('gerar-rekordbox')).toBeDisabled();
+    act(() =>
+      ouvinte({
+        type: 'rekordbox.state',
+        estado: rekordbox({
+          geradoEm: ONTEM_AO_MEIO_DIA,
+          resumo: { faixas: 1, generos: 1, listas: 0, listasComFalha: [] },
+        }),
+      }),
+    );
+    expect(await screen.findByText('Atualizadas ontem, 12:00. 1 faixa em 1 gênero.')).toBeInTheDocument();
+    expect(screen.getByTestId('gerar-rekordbox')).toBeEnabled();
+    parar();
   });
 });
 
