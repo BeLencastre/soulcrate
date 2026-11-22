@@ -130,7 +130,7 @@ export interface ItemDiagnostic extends Base<'item.diagnostic'> {
   artistCatalogTotal: number;
   /**
    * A regra que impediu o download quando algum arquivo era a faixa certa (docs/adr/0006). Ausente quando o motivo é
-   * outro, e nos lotes anteriores à stack 1.3.0.
+   * outro, e nos lotes anteriores à stack 1.4.0.
    */
   rejectedBy?: RegraRecusa;
   /** a duração pedida na linha, em segundos (só com `-Versoes`) */

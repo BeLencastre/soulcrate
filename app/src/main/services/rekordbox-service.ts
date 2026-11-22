@@ -182,7 +182,7 @@ export class RekordboxService {
     const a = r.analise;
     if (!a.ok || !a.libraryChecked) return null;
     const linhas = a.lines.filter((l) => l.status !== 'repetida' && l.status !== 'ignorada');
-    // script anterior à stack 1.3.0: a análise não diz qual faixa casou (os arquivos da stack ainda não foram atualizados)
+    // script anterior à stack 1.4.0: a análise não diz qual faixa casou (os arquivos da stack ainda não foram atualizados)
     if (linhas.length > 0 && linhas.every((l) => !('libraryId' in l))) return null;
     return linhas.map((l) => l.libraryId);
   }

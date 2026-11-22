@@ -16,7 +16,7 @@ export interface LinhaAnalise {
   queries: string[];
   /**
    * Duração no fim da linha (`Título 6:58`) ou no CSV, em segundos: com o card Versão da faixa, o arquivo precisa
-   * ter essa duração. `null` sem duração; ausente nos scripts anteriores à stack 1.3.0.
+   * ter essa duração. `null` sem duração; ausente nos scripts anteriores à stack 1.4.0.
    */
   duration?: number | null;
   status: StatusLinhaAnalise;
@@ -27,7 +27,7 @@ export interface LinhaAnalise {
   warnings: string[];
   /**
    * `$id` do beets da faixa que casa com a linha (com `-AnalisarBiblioteca`), também nas "ja feita": é com ele que a
-   * playlist da lista no Rekordbox é montada. Ausente nos scripts anteriores à stack 1.3.0.
+   * playlist da lista no Rekordbox é montada. Ausente nos scripts anteriores à stack 1.4.0.
    */
   libraryId?: number | null;
 }
