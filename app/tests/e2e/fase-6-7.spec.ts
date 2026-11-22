@@ -245,15 +245,18 @@ test('pacote de suporte: gera o zip com o que o suporte precisa e SEM nenhum seg
 
   // abre o zip com o Expand-Archive do Windows (o que o suporte usaria)
   const extraido = join(amb.raiz, 'extraido');
+  // Sem o PSModulePath herdado: sob o pwsh (CI), o 5.1 carregaria o módulo Archive 1.2.7 do PowerShell 7,
+  // que não funciona no .NET Framework (veja zip.test.ts).
+  const env = Object.fromEntries(Object.entries(process.env).filter(([nome]) => nome.toLowerCase() !== 'psmodulepath'));
   const r = spawnSync(
     'powershell.exe',
     [
       '-NoProfile',
       '-NonInteractive',
       '-Command',
-      `Expand-Archive -LiteralPath '${destino}' -DestinationPath '${extraido}'`,
+      `Expand-Archive -LiteralPath '${destino}' -DestinationPath '${extraido}' -ErrorAction Stop`,
     ],
-    { encoding: 'utf8' },
+    { encoding: 'utf8', env },
   );
   expect(r.status, `${r.stdout}${r.stderr}`).toBe(0);
   const arquivos = (pasta: string, prefixo = ''): string[] =>
