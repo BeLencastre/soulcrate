@@ -32,6 +32,7 @@ Formato: `- AAAA-MM-DD · o aprendizado. **Por quê:** o motivo ou a consequênc
 - 2026-11-22 · Teste de arrastar e soltar no renderer: o jsdom não tem `DataTransfer`; passe um objeto com `setData`/`getData` e um `types` que o `setData` preenche (`fireEvent.dragStart(el, { dataTransfer })`), porque o `onDragOver` confere `types` antes de aceitar. **Por quê:** sem o `types`, o drop é ignorado e o teste falha sem erro (ver `transferencia()` em `lote-telas.test.tsx`).
 
 - 2026-11-22 · Os testes do renderer usam matchers próprios (`app/tests/renderer/matchers`), não o jest-dom: não há `toBeVisible`, `toHaveFocus` nem `toHaveAccessibleName`, e `toBeDisabled` olha o `disabled` do próprio input (não pega o de um `<fieldset disabled>`). **Por quê:** o erro só aparece ao rodar ("Invalid Chai property"); use `document.activeElement`, `textContent` e `disabled` no input.
+- 2026-10-19 · Teste que abre `powershell.exe` de verdade não pode medir tempo de relógio (`levou < 3900`): com a suíte inteira rodando, a partida do PowerShell já levou 4,3 s e passou em outras rodadas. Em `lote-lancador-powershell.test.ts` o brinquedo espera um `liberar.txt` que o teste cria, em vez de dormir. **Por quê:** a falha era intermitente (2 de 6 rodadas da suíte); sinal por arquivo é determinístico. Na mesma carga, `zip.test.ts` (Expand-Archive, 30 s) e `listas-powershell.test.ts` também estouraram o timeout; e um worker do vitest chegou a morrer com `0xC0000409` em `setup-service.test.ts`.
 
 ## Comandos
 

@@ -1,6 +1,8 @@
 // O lançador de verdade, com o PowerShell de verdade e um baixar-lista.ps1 de brinquedo: confere que aspas, espaços,
 // acentos e apóstrofos chegam intactos ao script, que a saída vai para arquivos e que o lote continua rodando depois que
-// o lançador sai (é isso que deixa o app fechar sem matar o lote).
+// o lançador sai (é isso que deixa o app fechar sem matar o lote). O brinquedo só termina quando o teste cria o
+// liberar.txt, em vez de dormir um tempo fixo: com a máquina ocupada, a partida do powershell.exe passa de qualquer
+// limite de tempo (já levou 4,3 s) e o teste ficava intermitente.
 import { spawnSync } from 'node:child_process';
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, realpathSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
@@ -22,7 +24,9 @@ $o = [ordered]@{ Lista = $Lista; IdExecucao = $IdExecucao; Eventos = $Eventos; A
 [Console]::OutputEncoding = [Text.Encoding]::UTF8
 Write-Host 'ola, ação'
 [Console]::Error.WriteLine('erro de teste')
-Start-Sleep -Seconds 4
+$liberar = Join-Path $PSScriptRoot 'liberar.txt'
+$limite = (Get-Date).AddSeconds(60)
+while (-not (Test-Path -LiteralPath $liberar) -and (Get-Date) -lt $limite) { Start-Sleep -Milliseconds 50 }
 Set-Content -LiteralPath (Join-Path $PSScriptRoot 'fim.txt') -Value 'fim'
 `;
 
@@ -34,7 +38,8 @@ beforeEach(() => {
   writeFileSync(join(dir, 'baixar-lista.ps1'), `${BOM}${SCRIPT_DE_BRINQUEDO}`, 'utf8');
 });
 afterEach(async () => {
-  // o brinquedo ainda pode estar rodando (segura a pasta): espera ele terminar antes de apagar
+  // o brinquedo ainda pode estar rodando (segura a pasta): libera e espera ele terminar antes de apagar
+  writeFileSync(join(dir, 'liberar.txt'), '');
   if (existsSync(join(dir, 'recebido.json')))
     await ate(() => existsSync(join(dir, 'fim.txt')), 20_000).catch(() => undefined);
   await removerPasta(dir);
@@ -56,14 +61,10 @@ describe.skipIf(!temPowerShell)('lançador do lote (PowerShell de verdade)', () 
       cwd: dir,
     });
 
-    const antes = Date.now();
+    // o brinquedo está parado esperando o liberar.txt: se o lançador esperasse por ele, o lançamento só acabaria no
+    // tempo esgotado (codigo null), e não com a saída normal do lançador
     const r = await new LancadorReal().lancar(POWERSHELL, args, { cwd: dir, timeoutMs: 30_000 });
-    const levou = Date.now() - antes;
     expect(r).toEqual({ codigo: 0, tempoEsgotado: false, erroSpawn: null });
-
-    // o brinquedo dorme 4 s: se o lançador esperasse por ele, passaria disso
-    expect(levou).toBeLessThan(3900);
-    expect(existsSync(join(dir, 'fim.txt'))).toBe(false);
 
     await ate(() => existsSync(join(dir, 'recebido.json')), 15_000);
     const recebido = JSON.parse(semBom(readFileSync(join(dir, 'recebido.json'), 'utf8'))) as Record<string, unknown>;
@@ -77,6 +78,10 @@ describe.skipIf(!temPowerShell)('lançador do lote (PowerShell de verdade)', () 
       Raiz: realpathSync.native(dir),
       Cwd: realpathSync.native(dir),
     });
+
+    // o lançador já saiu e o lote segue vivo: o brinquedo começou (recebido.json) e ainda não terminou
+    expect(existsSync(join(dir, 'fim.txt'))).toBe(false);
+    writeFileSync(join(dir, 'liberar.txt'), '');
 
     // a saída do script foi para os arquivos, não para um pipe do app
     await ate(() => existsSync(join(dir, 'fim.txt')), 15_000);
