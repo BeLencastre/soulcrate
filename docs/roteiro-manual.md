@@ -48,6 +48,8 @@
 - [ ] O lote roda até o fim. O painel mostra progresso, contadores e a tabela por faixa; a notificação do Windows aparece ao terminar.
 - [ ] As faixas aparecem em `music/<Gênero>/<Artista>/`, com **BPM, tom e capa**, e o "(Extended Mix)" **não se perdeu**.
 - [ ] Importar a pasta `Soulcrate` de *rekordbox xml* no Rekordbox traz as faixas novas com o tom e o BPM (veja **E3**).
+- [ ] **Versão da faixa:** com o card no padrão, uma faixa que existe em Extended Mix e em Original Mix vem na Extended (mesmo em MP3 320, se ele estiver aceito); com a Radio Edit em *Não baixar*, uma faixa que só existe em Radio Edit cai no diagnóstico como "Só existe em versão não aceita", e **Tentar de novo** abre com a Radio Edit no fim do card. O card funciona só pelo teclado (Espaço, setas, Espaço).
+- [ ] **Duração:** uma linha com a duração errada no fim (`... 3:00` para uma faixa de 6 min) não baixa e o diagnóstico diz "Duração diferente"; a pré-visualização mostra a duração ao lado da versão.
 - [ ] A faixa com título errado cai no **Histórico → diagnóstico** com o motivo certo; o "talvez seja" corrige a linha com um clique, e **Tentar de novo** baixa a faixa.
 - [ ] **Parar** no meio gera o `resultado-*.txt` e o `nao-baixadas-*.txt`, e rodar de novo continua de onde parou.
 - [ ] **Fechar o app no meio de um lote:** o lote continua (confira em Serviços → slskd), e o painel volta de onde estava ao reabrir.

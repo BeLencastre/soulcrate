@@ -798,9 +798,10 @@ describe('tela Diagnóstico das faixas que não vieram', () => {
       const rodape = await screen.findByTestId('rodape-tentar-de-novo');
       expect(rodape).toHaveTextContent('Tentar de novo as 2');
       expect(rodape).toHaveTextContent(`nao-baixadas-${ID}.txt`);
-      // a fixture rodou com SemBeets e SemCatalogo; o formato recusado pede -AceitarAacAiff, -AceitarMp3320 e -AceitarMp3Menor
+      // a fixture rodou com SemBeets e SemCatalogo; o formato recusado pede -AceitarAacAiff, -AceitarMp3320 e
+      // -AceitarMp3Menor; ela rodou sem o card de versão, e a retentativa usa o card como o app manda hoje
       expect(screen.getByTestId('opcoes-sugeridas').textContent).toBe(
-        '-AceitarAacAiff -AceitarMp3320 -AceitarMp3Menor -SemCatalogo -SemBeets',
+        '-AceitarAacAiff -AceitarMp3320 -AceitarMp3Menor -SemCatalogo -SemBeets -Versoes extended,club,original+semnome',
       );
     });
 

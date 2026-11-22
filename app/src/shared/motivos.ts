@@ -3,6 +3,7 @@
 // da tabela do README contra elas.
 import { msg } from './mensagens.js';
 import { RECEITAS, type OpcoesLote } from './opcoes-lote.js';
+import { versaoPeloNomeNoScript } from './versoes.js';
 
 export type TipoMotivo =
   | 'wav'
@@ -19,6 +20,10 @@ export type TipoMotivo =
   | 'artista'
   | 'mix'
   | 'versao'
+  | 'versaoNaoAceita'
+  | 'duracaoDiferente'
+  | 'duracaoCurta'
+  | 'versaoEFormato'
   | 'bloqueado'
   | 'curto'
   | 'ilegivel'
@@ -60,8 +65,13 @@ interface Regra {
   re: RegExp;
 }
 
-// A ordem importa: `formato <ext>` genérico vem depois do AIFF/AAC, que têm a opção própria.
+// A ordem importa: `formato <ext>` genérico vem depois do AIFF/AAC, que têm a opção própria; `versao e formato: ...`
+// (as duas regras falharam no mesmo arquivo, docs/adr/0006) vem antes de tudo, porque traz os outros motivos dentro.
 const REGRAS_DE_ARQUIVO: readonly Regra[] = [
+  { tipo: 'versaoEFormato', re: /^versao e formato: (.+)$/i },
+  { tipo: 'versaoNaoAceita', re: /^versao nao aceita \('(.*)'\)$/i },
+  { tipo: 'duracaoDiferente', re: /^duracao diferente \((.+)\)$/i },
+  { tipo: 'duracaoCurta', re: /^curta para a versao \((.+)\)$/i },
   // lotes antigos (até a stack 1.1.0), quando o WAV precisava de -AceitarWav
   { tipo: 'wav', re: /^formato wav \(use -AceitarWav\)/i },
   { tipo: 'aacAiff', re: /^formato (aiff?|m4a|aac) \(use -Aceitar(?:AacAiff|Wav)\)/i },
@@ -124,6 +134,25 @@ function montar(tipo: TipoMotivo, bruto: string, n: number, detalhe: string, ctx
       return { ...base, rotulo: m.mix.rotulo, acao: m.mix.acao };
     case 'versao':
       return { ...base, rotulo: m.versao.rotulo(detalhe), acao: m.versao.acao(detalhe) };
+    case 'versaoNaoAceita': {
+      const v = versaoPeloNomeNoScript(detalhe);
+      const nome = v ? msg.lote.versoes.nomes[v] : detalhe;
+      return { ...base, rotulo: m.versaoNaoAceita.rotulo(nome), acao: m.versaoNaoAceita.acao(nome) };
+    }
+    case 'duracaoDiferente':
+      return { ...base, rotulo: m.duracaoDiferente.rotulo(detalhe), acao: m.duracaoDiferente.acao };
+    case 'duracaoCurta':
+      return {
+        ...base,
+        rotulo: m.duracaoCurta.rotulo(detalhe),
+        acao: m.duracaoCurta.acao,
+        sugere: { DuracaoMinima: 0 },
+      };
+    case 'versaoEFormato': {
+      // "versao nao aceita ('radio edit') + mp3 320 kbps (use -AceitarMp3320)": cada parte com o rótulo dela
+      const partes = detalhe.split(' + ').map((p) => traduzirMotivo(p, n, ctx).rotulo);
+      return { ...base, rotulo: m.versaoEFormato.rotulo(partes.join(' · ')), acao: m.versaoEFormato.acao };
+    }
     case 'bloqueado':
       return { ...base, rotulo: m.bloqueado.rotulo, acao: m.bloqueado.acao };
     case 'curto':
@@ -201,6 +230,12 @@ export function traduzirTentativas(razoes: readonly string[]): MotivoTraduzido[]
       const estado = tipo === 'erroUsuario' ? (g.exemplo.split(': ').slice(1).join(': ') || g.exemplo).trim() : '';
       return montar(tipo, g.exemplo, g.n, estado, {});
     });
+}
+
+/** A versão que um motivo `versao nao aceita ('radio edit')` pede para aceitar (a retentativa a junta ao card). */
+export function versaoRecusadaDoMotivo(m: MotivoTraduzido): ReturnType<typeof versaoPeloNomeNoScript> {
+  if (m.tipo !== 'versaoNaoAceita') return null;
+  return versaoPeloNomeNoScript(/\('(.*)'\)/.exec(m.bruto)?.[1] ?? '');
 }
 
 /** Reúne o que os motivos pedem para tentar de novo (a união das opções sugeridas). */

@@ -24,6 +24,7 @@ Describe 'baixar-lista.lib' {
     # opcoes do script, com os valores padrao
     $NaoTolerarGrafia = $false; $TituloAproximado = $false; $AceitarAacAiff = $false; $AceitarMp3320 = $false; $AceitarMp3Menor = $false
     $SemBuscaArtista = $false; $BadUsers = @{}; $ArtistLineCount = @{}
+    $VersionRank = $null; $DuracaoMinima = 0
   }
 
   Describe 'Normalize' {
@@ -327,6 +328,241 @@ Describe 'baixar-lista.lib' {
       $f = Join-Path $tmp 'ruim.csv'
       Set-Content -LiteralPath $f -Encoding UTF8 -Value @('a,b', '1,2')
       { Read-Lista $f } | Should -Throw '*CSV sem colunas*'
+    }
+  }
+
+  Describe 'Versao da faixa e duracao (docs/adr/0006)' {
+    BeforeAll {
+      function New-Req([string]$linha, [int]$duracao = 0) { $r = Parse-Line $linha; $r.Duration = $duracao; $r }
+      function Test-Versao([string]$linha, [string]$arquivo, [hashtable]$extra = @{}, [int]$duracao = 0) {
+        $p = @{ name = $arquivo } + $extra
+        Test-File (New-Req $linha $duracao) (New-F @p)
+      }
+    }
+
+    Describe 'ConvertTo-VersionRanks' {
+      It 'le a ordem, com "+" juntando versoes na mesma posicao' {
+        $r = ConvertTo-VersionRanks 'extended,club,original+semnome'
+        $r.extended | Should -Be 0
+        $r.club | Should -Be 1
+        $r.original | Should -Be 2
+        $r.semnome | Should -Be 2
+        $r.ContainsKey('radioedit') | Should -BeFalse
+      }
+      It 'vazio e a regra antiga' { ConvertTo-VersionRanks '' | Should -BeNullOrEmpty }
+      It 'recusa versao desconhecida e repetida' {
+        { ConvertTo-VersionRanks 'extended,remix' } | Should -Throw "*desconhecida*'remix'*"
+        { ConvertTo-VersionRanks 'extended,extended' } | Should -Throw '*repetida*'
+      }
+    }
+
+    Describe 'Get-FileVersion' {
+      It '<Rotulos> -> <Versao>' -ForEach @(
+        @{ Rotulos = @('extended mix'); Versao = 'extended' }
+        @{ Rotulos = @('extended'); Versao = 'extended' }
+        @{ Rotulos = @('extended version'); Versao = 'extended' }
+        @{ Rotulos = @('club mix'); Versao = 'club' }
+        @{ Rotulos = @('original mix'); Versao = 'original' }
+        @{ Rotulos = @('original'); Versao = 'original' }
+        @{ Rotulos = @('radio edit'); Versao = 'radioedit' }
+        @{ Rotulos = @('radio mix'); Versao = 'radioedit' }
+        @{ Rotulos = @('azyr', 'no escape'); Versao = 'semnome' }
+        @{ Rotulos = @('extended family'); Versao = 'semnome' }
+        @{ Rotulos = @('extended mix', 'radio edit'); Versao = 'radioedit' }
+      ) { Get-FileVersion $Rotulos | Should -Be $Versao }
+    }
+
+    Describe 'Get-LineDuration' {
+      It '"<In>" -> <Out> s' -ForEach @(
+        @{ In = 'Azyr - No Escape 6:58'; Out = 418 }
+        @{ In = 'Azyr - No Escape (6:58)'; Out = 418 }
+        @{ In = 'Azyr - No Escape [5:12]'; Out = 312 }
+        @{ In = "Azyr - No Escape`t6:58"; Out = 418 }
+        @{ In = 'Azyr - No Escape'; Out = 0 }
+        @{ In = 'Azyr - 4:20 Anthem'; Out = 0 }
+      ) { Get-LineDuration $In | Should -Be $Out }
+    }
+
+    Describe 'regra da versao pelo nome (card)' {
+      BeforeEach { $VersionRank = ConvertTo-VersionRanks 'extended,club,original+semnome' }
+
+      It 'aceita as versoes do card, com a posicao de cada uma' {
+        (Test-Versao 'Azyr - No Escape' 'Azyr - No Escape (Extended Mix).flac').VerRank | Should -Be 0
+        (Test-Versao 'Azyr - No Escape' 'Azyr - No Escape (Club Mix).flac').VerRank | Should -Be 1
+        (Test-Versao 'Azyr - No Escape' 'Azyr - No Escape (Original Mix).flac').VerRank | Should -Be 2
+        (Test-Versao 'Azyr - No Escape' 'Azyr - No Escape.flac').VerRank | Should -Be 2
+        (Test-Versao 'Azyr - No Escape' 'Azyr - No Escape - Extended Mix.flac').VerRank | Should -Be 0
+      }
+      It 'recusa versao fora do card' {
+        (Test-Versao 'Azyr - No Escape' 'Azyr - No Escape (Radio Edit).flac').Reason | Should -Be "versao nao aceita ('radio edit')"
+        $VersionRank = ConvertTo-VersionRanks 'extended'
+        (Test-Versao 'Azyr - No Escape' 'Azyr - No Escape.flac').Reason | Should -Be "versao nao aceita ('sem versao no nome')"
+      }
+      It 'Radio Edit aceita no card passa (as palavras "radio" e "edit" deixam de recusar)' {
+        $VersionRank = ConvertTo-VersionRanks 'extended,radioedit'
+        (Test-Versao 'Azyr - No Escape' 'Azyr - No Escape (Radio Edit).flac').VerRank | Should -Be 1
+      }
+      It 'outras versoes (remix, VIP...) continuam recusadas fora da linha' {
+        (Test-Versao 'Azyr - No Escape' 'Azyr - No Escape (Fulano Remix).flac').Reason | Should -Be "outra versao ('remix')"
+      }
+      It 'a linha com mix manda: o card nao vale para ela' {
+        $VersionRank = ConvertTo-VersionRanks 'extended'
+        (Test-Versao 'RIOT CODE - Direct It To The Roof (Azyr Remix)' 'RIOT CODE - Direct It To The Roof (Azyr Remix).flac').Tier | Should -Be 0
+        (Test-Versao 'Azyr - No Escape (Radio Edit)' 'Azyr - No Escape (Radio Edit).flac').Tier | Should -Be 0
+      }
+      It '"(Original Mix)" na linha pede o original, com ou sem o nome no arquivo' {
+        $VersionRank = ConvertTo-VersionRanks 'extended'
+        (Test-Versao 'Azyr - No Escape (Original Mix)' 'Azyr - No Escape (Original Mix).flac').Tier | Should -Be 0
+        (Test-Versao 'Azyr - No Escape (Original Mix)' 'Azyr - No Escape.flac').Tier | Should -Be 0
+        (Test-Versao 'Azyr - No Escape (Original Mix)' 'Azyr - No Escape (Extended Mix).flac').Reason | Should -Be "versao nao aceita ('extended mix')"
+      }
+      It 'sem -Versoes, tudo como antes' {
+        $VersionRank = $null
+        (Test-Versao 'Azyr - No Escape' 'Azyr - No Escape (Radio Edit).flac').Reason | Should -Match "^outra versao"
+        (Test-Versao 'Azyr - No Escape' 'Azyr - No Escape (Extended Mix).flac').Bonus | Should -Be 1
+      }
+    }
+
+    Describe 'regra da versao pela duracao' {
+      BeforeEach { $VersionRank = ConvertTo-VersionRanks 'extended,club,original+semnome' }
+
+      It 'aceita dentro da folga de 5 s ou 2% da duracao da linha' {
+        (Test-Versao 'Azyr - No Escape' 'Azyr - No Escape.flac' @{ length = 423 } 418).Tier | Should -Be 0
+        (Test-Versao 'Azyr - No Escape' 'Azyr - No Escape.flac' @{ length = 413 } 418).Tier | Should -Be 0
+        # 7 min: 2% = 8 s
+        (Test-Versao 'Azyr - No Escape' 'Azyr - No Escape.flac' @{ length = 428 } 420).Tier | Should -Be 0
+      }
+      It 'recusa fora da folga' {
+        (Test-Versao 'Azyr - No Escape' 'Azyr - No Escape.flac' @{ length = 190 } 418).Reason | Should -Be 'duracao diferente (3:10, a linha pede 6:58)'
+        (Test-Versao 'Azyr - No Escape' 'Azyr - No Escape.flac' @{ length = 427 } 418).Reason | Should -Be 'duracao diferente (7:07, a linha pede 6:58)'
+      }
+      It 'a duracao da linha vale tambem para a linha com mix' {
+        (Test-Versao 'Azyr - No Escape (Fulano Remix)' 'Azyr - No Escape (Fulano Remix).flac' @{ length = 190 } 418).Reason | Should -Match '^duracao diferente'
+      }
+      It 'arquivo sem duracao informada passa, sem a duracao conferida' {
+        $r = Test-Versao 'Azyr - No Escape' 'Azyr - No Escape.flac' @{ length = 0 } 418
+        $r.Tier | Should -Be 0
+        $r.DurChecked | Should -BeFalse
+        (Test-Versao 'Azyr - No Escape' 'Azyr - No Escape.flac' @{ length = 418 } 418).DurChecked | Should -BeTrue
+      }
+      It 'sem -Versoes, a duracao da linha nao e conferida' {
+        $VersionRank = $null
+        (Test-Versao 'Azyr - No Escape' 'Azyr - No Escape.flac' @{ length = 190 } 418).Tier | Should -Be 0
+      }
+      It 'duracao minima recusa as mais curtas nas linhas sem mix e sem duracao' {
+        $DuracaoMinima = 300
+        (Test-Versao 'Azyr - No Escape' 'Azyr - No Escape.flac' @{ length = 190 }).Reason | Should -Be 'curta para a versao (3:10, minimo 5:00)'
+        (Test-Versao 'Azyr - No Escape' 'Azyr - No Escape.flac' @{ length = 330 }).Tier | Should -Be 0
+      }
+      It 'duracao minima nao vale com duracao na linha nem na linha com mix' {
+        $DuracaoMinima = 300
+        (Test-Versao 'Azyr - No Escape' 'Azyr - No Escape.flac' @{ length = 190 } 190).Tier | Should -Be 0
+        (Test-Versao 'Azyr - No Escape (Radio Edit)' 'Azyr - No Escape (Radio Edit).flac' @{ length = 190 }).Tier | Should -Be 0
+      }
+      It 'duracao minima funciona sem -Versoes' {
+        $VersionRank = $null; $DuracaoMinima = 300
+        (Test-Versao 'Azyr - No Escape' 'Azyr - No Escape.flac' @{ length = 190 }).Reason | Should -Match '^curta para a versao'
+      }
+      It 'nome e duracao falham juntos: o motivo e o do nome' {
+        $DuracaoMinima = 300
+        (Test-Versao 'Azyr - No Escape' 'Azyr - No Escape (Radio Edit).flac' @{ length = 190 }).Reason | Should -Be "versao nao aceita ('radio edit')"
+      }
+    }
+
+    Describe 'as duas regras conferidas juntas' {
+      BeforeEach { $VersionRank = ConvertTo-VersionRanks 'extended,club,original+semnome' }
+
+      It 'versao e formato falham: os dois motivos' {
+        (Test-Versao 'Azyr - No Escape' 'Azyr - No Escape (Radio Edit).mp3' @{ bitRate = 320 }).Reason |
+          Should -Be "versao e formato: versao nao aceita ('radio edit') + mp3 320 kbps (use -AceitarMp3320)"
+      }
+      It 'mix diferente e formato recusado tambem aparecem juntos' {
+        (Test-Versao 'RIOT CODE - Direct It To The Roof (Azyr Remix)' 'RIOT CODE - Direct It To The Roof (Other Remix).aiff').Reason |
+          Should -Be 'versao e formato: mix diferente + formato aiff (use -AceitarAacAiff)'
+      }
+      It 'so o formato: o motivo de sempre' {
+        (Test-Versao 'Azyr - No Escape' 'Azyr - No Escape (Extended Mix).mp3' @{ bitRate = 320 }).Reason | Should -Be 'mp3 320 kbps (use -AceitarMp3320)'
+      }
+      It 'nao era a faixa: o motivo de identidade, sem as regras' {
+        (Test-Versao 'Azyr - No Escape' 'Azyr - Plague (Radio Edit).mp3' @{ bitRate = 128 }).Reason | Should -Be 'titulo diferente'
+      }
+    }
+
+    Describe 'Get-ReasonRule e Get-RejectedBy (veredito da faixa)' {
+      It '<Motivo> -> <Regra>' -ForEach @(
+        @{ Motivo = "versao nao aceita ('radio edit')"; Regra = 'versao' }
+        @{ Motivo = "outra versao ('remix')"; Regra = 'versao' }
+        @{ Motivo = 'mix diferente'; Regra = 'versao' }
+        @{ Motivo = 'duracao diferente (3:10, a linha pede 6:58)'; Regra = 'versao' }
+        @{ Motivo = 'curta para a versao (3:10, minimo 5:00)'; Regra = 'versao' }
+        @{ Motivo = 'mp3 320 kbps (use -AceitarMp3320)'; Regra = 'formato' }
+        @{ Motivo = 'formato aiff (use -AceitarAacAiff)'; Regra = 'formato' }
+        @{ Motivo = 'aac 128 kbps (qualidade baixa)'; Regra = 'formato' }
+        @{ Motivo = 'formato ogg'; Regra = 'formato' }
+        @{ Motivo = "versao e formato: mix diferente + formato ogg"; Regra = 'ambas' }
+        @{ Motivo = 'titulo diferente'; Regra = '' }
+        @{ Motivo = 'curto demais (previa)'; Regra = '' }
+      ) { Get-ReasonRule $Motivo | Should -Be $Regra }
+
+      It 'so versao, so formato, as duas ou outro motivo' {
+        Get-RejectedBy @{ 'titulo diferente' = 3; "versao nao aceita ('radio edit')" = 2 } | Should -Be 'versao'
+        Get-RejectedBy @{ 'mp3 320 kbps (use -AceitarMp3320)' = 1 } | Should -Be 'formato'
+        Get-RejectedBy @{ "versao nao aceita ('radio edit')" = 1; 'mp3 320 kbps (use -AceitarMp3320)' = 1 } | Should -Be 'versao-e-formato'
+        Get-RejectedBy @{ 'versao e formato: mix diferente + formato ogg' = 1 } | Should -Be 'versao-e-formato'
+        Get-RejectedBy @{ 'titulo diferente' = 4 } | Should -Be ''
+        Get-RejectedBy @{} | Should -Be ''
+      }
+    }
+
+    Describe 'Get-Candidates com o card' {
+      It 'a versao vem antes do formato, e a duracao conferida antes da nao informada' {
+        $VersionRank = ConvertTo-VersionRanks 'extended,club,original+semnome'
+        $AceitarMp3320 = $true
+        $item = [pscustomobject]@{ Req = (New-Req 'Azyr - No Escape' 418); Reasons = @{}; Diag = (New-Object System.Collections.ArrayList) }
+        $resp = @(
+          [pscustomobject]@{ username = 'original-flac'; hasFreeUploadSlot = $true; queueLength = 0; uploadSpeed = 9; files = @((New-F 'Azyr - No Escape (Original Mix).flac' 418)) }
+          [pscustomobject]@{ username = 'extended-mp3'; hasFreeUploadSlot = $true; queueLength = 0; uploadSpeed = 1; files = @((New-F 'Azyr - No Escape (Extended Mix).mp3' 418 320)) }
+          [pscustomobject]@{ username = 'extended-sem-duracao'; hasFreeUploadSlot = $true; queueLength = 0; uploadSpeed = 9; files = @((New-F 'Azyr - No Escape (Extended Mix).flac' 0)) }
+          [pscustomobject]@{ username = 'radio'; hasFreeUploadSlot = $true; queueLength = 0; uploadSpeed = 9; files = @((New-F 'Azyr - No Escape (Radio Edit).flac' 418)) }
+        )
+        $c = Get-Candidates $item $resp
+        @($c | ForEach-Object User) | Should -Be @('extended-mp3', 'extended-sem-duracao', 'original-flac')
+        $item.Reasons["versao nao aceita ('radio edit')"] | Should -Be 1
+      }
+      It 'sem o card, o formato vem antes (como sempre)' {
+        $AceitarMp3320 = $true
+        $item = [pscustomobject]@{ Req = (Parse-Line 'Azyr - No Escape'); Reasons = @{}; Diag = (New-Object System.Collections.ArrayList) }
+        $resp = @(
+          [pscustomobject]@{ username = 'extended-mp3'; hasFreeUploadSlot = $true; queueLength = 0; uploadSpeed = 1; files = @((New-F 'Azyr - No Escape (Extended Mix).mp3' 300 320)) }
+          [pscustomobject]@{ username = 'original-flac'; hasFreeUploadSlot = $true; queueLength = 0; uploadSpeed = 9; files = @((New-F 'Azyr - No Escape (Original Mix).flac')) }
+        )
+        $c = Get-Candidates $item $resp
+        @($c | ForEach-Object User) | Should -Be @('original-flac', 'extended-mp3')
+      }
+    }
+
+    Describe 'Read-ListaDetalhada: duracao' {
+      BeforeAll { $tmpD = Join-Path ([IO.Path]::GetTempPath()) ("sc-dur-" + [guid]::NewGuid()); New-Item -ItemType Directory -Path $tmpD | Out-Null }
+      AfterAll { Remove-Item -LiteralPath $tmpD -Recurse -Force }
+
+      It 'le a duracao do fim da linha no .txt, sem mudar a linha' {
+        $f = Join-Path $tmpD 'lista.txt'
+        Set-Content -LiteralPath $f -Encoding UTF8 -Value @('Creeds - Push Up (Extended Mix) 6:58', 'Azyr - No Escape')
+        $d = Read-ListaDetalhada $f
+        $d[0].Line | Should -Be 'Creeds - Push Up (Extended Mix)'
+        $d[0].Duration | Should -Be 418
+        $d[1].Duration | Should -Be 0
+      }
+      It 'le a duracao em ms do .csv' {
+        $f = Join-Path $tmpD 'spotify.csv'
+        Set-Content -LiteralPath $f -Encoding UTF8 -Value @(
+          '"Track Name","Artist Name(s)","Duration (ms)"',
+          '"No Escape","Azyr","312480"',
+          '"Plague","Azyr",""')
+        $d = Read-ListaDetalhada $f
+        $d[0].Duration | Should -Be 312
+        $d[1].Duration | Should -Be 0
+      }
     }
   }
 

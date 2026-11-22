@@ -14,6 +14,11 @@ export interface LinhaAnalise {
   original: boolean;
   remixer: boolean;
   queries: string[];
+  /**
+   * Duração no fim da linha (`Título 6:58`) ou no CSV, em segundos: com o card Versão da faixa, o arquivo precisa
+   * ter essa duração. `null` sem duração; ausente nos scripts anteriores à stack 1.3.0.
+   */
+  duration?: number | null;
   status: StatusLinhaAnalise;
   /** em "repetida": sourceLine da primeira ocorrência */
   duplicateOf: number | null;

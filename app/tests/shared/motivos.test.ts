@@ -6,6 +6,7 @@ import {
   tipoDaTentativa,
   traduzirMotivo,
   traduzirTentativas,
+  versaoRecusadaDoMotivo,
   type TipoMotivo,
 } from '../../src/shared/motivos';
 
@@ -115,6 +116,31 @@ const CASOS: { readme: RegExp; bruto: string; tipo: TipoMotivo; acao: RegExp; su
     acao: /versão "edit"/,
   },
   {
+    readme: /^versao nao aceita \('radio edit'\)$/,
+    bruto: "versao nao aceita ('radio edit')",
+    tipo: 'versaoNaoAceita',
+    acao: /leve Radio Edit para “Baixar” no card Versão da faixa/,
+  },
+  {
+    readme: /^duracao diferente \(3:10, a linha pede 6:58\)$/,
+    bruto: 'duracao diferente (3:10, a linha pede 6:58)',
+    tipo: 'duracaoDiferente',
+    acao: /Confira a duração na lista/,
+  },
+  {
+    readme: /^curta para a versao \(3:10, minimo 5:00\)$/,
+    bruto: 'curta para a versao (3:10, minimo 5:00)',
+    tipo: 'duracaoCurta',
+    acao: /desligue a duração mínima/,
+    sugere: { DuracaoMinima: 0 },
+  },
+  {
+    readme: /^versao e formato: \.\.\.$/,
+    bruto: "versao e formato: versao nao aceita ('radio edit') + mp3 320 kbps (use -AceitarMp3320)",
+    tipo: 'versaoEFormato',
+    acao: /Mudar só uma não basta|não basta/,
+  },
+  {
     readme: /^0 respostas$/,
     bruto: '0 respostas',
     tipo: 'semRespostas',
@@ -137,7 +163,7 @@ describe('tabela "Decida pelo motivo" do README', () => {
   });
 
   it('encontrou a tabela e todas as linhas dela', () => {
-    expect(linhas).toHaveLength(15);
+    expect(linhas).toHaveLength(19);
   });
 
   it('toda linha do README tem um caso aqui (se o README ganhar um motivo, este teste avisa)', () => {
@@ -178,6 +204,23 @@ describe('traduzirMotivo', () => {
     expect(wav.tipo).toBe('wav');
     expect(wav.sugere).toEqual({});
     expect(traduzirMotivo('formato aiff (use -AceitarWav)', 1).tipo).toBe('aacAiff');
+  });
+
+  it('versão e formato: o rótulo junta os dois motivos traduzidos, e nada é ligado sozinho', () => {
+    const m = traduzirMotivo(
+      "versao e formato: versao nao aceita ('radio edit') + mp3 320 kbps (use -AceitarMp3320)",
+      2,
+    );
+    expect(m.rotulo).toBe('Versão e formato não aceitos (Versão não aceita: Radio Edit · MP3 320 kbps)');
+    expect(m.sugere).toEqual({});
+  });
+
+  it('a versão não aceita é a do card, pelo nome que o script escreve', () => {
+    expect(traduzirMotivo("versao nao aceita ('sem versao no nome')", 1).rotulo).toBe(
+      'Versão não aceita: Sem versão no nome',
+    );
+    expect(versaoRecusadaDoMotivo(traduzirMotivo("versao nao aceita ('radio edit')", 1))).toBe('radioedit');
+    expect(versaoRecusadaDoMotivo(traduzirMotivo('mix diferente', 1))).toBeNull();
   });
 
   it('o rótulo traz o que o script escreveu entre aspas', () => {

@@ -13,6 +13,7 @@ Um ADR guarda uma decisão de arquitetura: o contexto, o que foi decidido e as c
 | [0003](0003-app-desktop-decisoes-da-primeira-versao.md) | App desktop: decisões da primeira versão | Aceito |
 | [0004](0004-playlists-no-rekordbox-pelo-rekordbox-xml.md) | Playlists no Rekordbox pelo rekordbox XML, sem tocar no banco do Rekordbox | Proposto |
 | [0005](0005-organizacao-das-pastas-escolhida-no-app.md) | Organização do disco e do Rekordbox escolhidas no app, de forma independente | Aceito |
+| [0006](0006-versao-da-faixa-e-formato-como-regras-obrigatorias.md) | Versão da faixa (com a duração) e formato como regras obrigatórias, com o motivo da recusa separado por regra | Aceito |
 
 ## Modelo
 

@@ -345,7 +345,7 @@ export const msgDj = {
       } as Record<string, string>,
       qualidade: {
         nome: 'Qualidade',
-        desc: 'FLAC e WAV entram sempre. Marque o que mais aceitar quando eles não existirem.',
+        desc: 'FLAC e WAV entram sempre. Marque o que mais aceitar. Entre duas versões iguais, o melhor formato ganha.',
       },
       titulos: { nome: 'Títulos', desc: 'Como comparar o nome da faixa na lista com o do arquivo.' },
       comportamento: { nome: 'Comportamento', desc: 'O que fazer com o que já foi feito.' },
@@ -365,10 +365,10 @@ export const msgDj = {
           titulo: 'Aceitar AIFF e AAC',
           desc: 'AIFF (sem perda) e AAC de 256 kbps ou mais, logo depois de FLAC e WAV.',
         },
-        AceitarMp3320: { titulo: 'Aceitar MP3 320', desc: 'Só quando a faixa não existe nos formatos acima.' },
+        AceitarMp3320: { titulo: 'Aceitar MP3 320', desc: 'Fica atrás de FLAC, WAV e AIFF da mesma versão.' },
         AceitarMp3Menor: {
           titulo: 'Aceitar MP3 256 e V0',
-          desc: 'Também aceita MP3 320. Só quando não há nada melhor.',
+          desc: 'Também aceita MP3 320. Fica atrás dos outros formatos da mesma versão.',
         },
         TituloAproximado: {
           titulo: 'Aceitar títulos com palavras a mais',
@@ -420,6 +420,18 @@ export const msgDj = {
         qualidade: 'Qualidade',
         qualidadeValor: (aceitos: readonly string[]) =>
           aceitos.length === 0 ? 'só FLAC e WAV' : `FLAC e WAV, depois ${juntar(aceitos)}`,
+        versao: 'Versão',
+        /** `Extended → Club → Original e sem nome · mínimo 5 min` */
+        versaoValor: (posicoes: readonly string[], minimo: string | null) =>
+          `${posicoes.join(' → ')}${minimo ? ` · mínimo ${minimo}` : ''}`,
+        versaoCurta: {
+          extended: 'Extended',
+          club: 'Club',
+          original: 'Original',
+          semnome: 'sem nome',
+          radioedit: 'Radio Edit',
+        },
+        e: ' e ',
         ligado: 'sim',
         desligado: 'não',
         organizar: 'Organizar',

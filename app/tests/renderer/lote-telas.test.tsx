@@ -157,7 +157,7 @@ function analise(
       toProcess: 3,
       lines: [
         linha(2, 'Azyr', 'No Escape'),
-        linha(3, 'Creeds', 'Push Up', { mix: 'Original Mix' }),
+        linha(3, 'Creeds', 'Push Up', { mix: 'Original Mix', duration: 418 }),
         linha(4, 'Vendex', 'Abaddon', { status: 'ja feita' }),
         linha(5, '', 'Sem traço', { warnings: ["sem ' - ' entre artista e titulo"] }),
       ],
@@ -242,6 +242,8 @@ describe('tela Lista', () => {
     const previa = await screen.findByTestId('previa-lista');
     expect(within(previa).getByText('Azyr')).toBeInTheDocument();
     expect(within(previa).getByText('Original Mix')).toBeInTheDocument();
+    // a duração no fim da linha aparece ao lado da versão: é a que o arquivo precisa ter
+    expect(previa.querySelector('[data-duracao="418"]')).toHaveTextContent('Original Mix · 6:58');
     expect(within(previa).getByText('Feita em execução anterior')).toBeInTheDocument();
     expect(within(previa).getByText('Falta o " - "')).toBeInTheDocument();
 
@@ -625,6 +627,126 @@ describe('tela Ajustes no Modo Dev (o layout do Modo DJ, com os parâmetros do s
     expect(screen.getByText(/o app confere se a stack está no ar e oferece ligá-la/)).toBeInTheDocument();
     fireEvent.click(screen.getByTestId('iniciar-lote'));
     await waitFor(() => expect(api.batch.start).toHaveBeenCalledTimes(1));
+  });
+});
+
+// ---------------------------------------------------------------- Versão da faixa (docs/adr/0006)
+
+/** o dataTransfer do arrastar e soltar, que o jsdom não tem */
+function transferencia() {
+  const dados: Record<string, string> = {};
+  return {
+    dados,
+    types: [] as string[],
+    effectAllowed: '',
+    dropEffect: '',
+    setData(tipo: string, valor: string) {
+      dados[tipo] = valor;
+      this.types.push(tipo);
+    },
+    getData: (tipo: string) => dados[tipo] ?? '',
+  };
+}
+
+describe('card Versão da faixa (Ajustes)', () => {
+  beforeEach(() => {
+    useRascunho.setState({ lista: conteudo('x'), texto: 'x', textoSalvo: 'x' });
+  });
+  const linha = (v: string) => document.querySelector(`[data-versao="${v}"]`) as HTMLElement;
+  const aceitas = () =>
+    [...document.querySelectorAll('[data-testid="versoes-aceitas"] [data-versao]')].map((e) =>
+      e.getAttribute('data-versao'),
+    );
+  const alcaDe = (nome: string) => screen.getByRole('button', { name: new RegExp(`^Mover ${nome}`) });
+
+  it('fica entre Qualidade e Títulos, com o padrão: Extended, Club, Original e sem nome; Radio Edit em Não baixar', () => {
+    montar('/lista/opcoes');
+    const qualidade = screen.getByRole('group', { name: /^Qualidade/ });
+    const card = screen.getByRole('region', { name: 'Versão da faixa' });
+    const titulos = screen.getByRole('region', { name: 'Títulos' });
+    expect(qualidade.compareDocumentPosition(card) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(card.compareDocumentPosition(titulos) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(card).toHaveTextContent('Vale para as linhas sem mix');
+    expect(aceitas()).toEqual(['extended', 'club', 'original', 'semnome']);
+    expect(linha('original')).toHaveTextContent('3º');
+    expect(linha('semnome')).toHaveTextContent('=');
+    expect(within(screen.getByTestId('versoes-recusadas')).getByText('Radio Edit')).toBeInTheDocument();
+    expect(screen.getByTestId('parametro-versoes')).toHaveTextContent('-Versoes extended,club,original+semnome');
+    expect(screen.getByRole('button', { name: 'Pista' })).toHaveAttribute('aria-pressed', 'true');
+    // o comando equivalente sempre leva a ordem, entre aspas por causa do cmd
+    expect(screen.getByTestId('comando-equivalente')).toHaveTextContent(
+      'baixar-lista.bat set.txt -Versoes "extended,club,original+semnome"',
+    );
+  });
+
+  it('↑, mesma posição, baixar e atalho mudam a ordem; a última aceita não sai', () => {
+    montar('/lista/opcoes');
+    fireEvent.click(screen.getByRole('button', { name: 'Subir Club Mix' }));
+    expect(useRascunho.getState().opcoes.Versoes).toBe('club,extended,original+semnome');
+    expect(screen.getByTestId('resumo-opcoes')).toHaveTextContent('1 ajuste diferente');
+    const card = screen.getByRole('region', { name: 'Versão da faixa' });
+    expect(within(card).getByText('≠ PADRÃO')).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Sem versão no nome na mesma posição da de cima' }));
+    expect(useRascunho.getState().opcoes.Versoes).toBe('club,extended,original,semnome');
+    fireEvent.click(screen.getByRole('button', { name: 'Baixar Radio Edit' }));
+    expect(useRascunho.getState().opcoes.Versoes).toBe('club,extended,original,semnome,radioedit');
+    fireEvent.click(screen.getByRole('button', { name: 'Só Extended' }));
+    expect(useRascunho.getState().opcoes.Versoes).toBe('extended');
+    expect(screen.getByRole('button', { name: 'Não baixar Extended Mix' })).toBeDisabled();
+    expect(screen.getByTestId('versoes-recusadas')).toHaveTextContent('Club Mix');
+  });
+
+  it('pelo teclado: Espaço pega, as setas movem com anúncio, Espaço solta', () => {
+    montar('/lista/opcoes');
+    alcaDe('Club Mix').focus();
+    fireEvent.keyDown(alcaDe('Club Mix'), { key: ' ' });
+    expect(alcaDe('Club Mix')).toHaveAttribute('aria-pressed', 'true');
+    expect(screen.getByTestId('anuncio-versoes')).toHaveTextContent('Club Mix pega');
+    fireEvent.keyDown(alcaDe('Club Mix'), { key: 'ArrowUp' });
+    expect(useRascunho.getState().opcoes.Versoes).toBe('club,extended,original+semnome');
+    expect(screen.getByTestId('anuncio-versoes')).toHaveTextContent('Club Mix, posição 1 de 3.');
+    expect(document.activeElement).toBe(alcaDe('Club Mix'));
+    fireEvent.keyDown(alcaDe('Club Mix'), { key: ' ' });
+    expect(alcaDe('Club Mix')).toHaveAttribute('aria-pressed', 'false');
+    // sem pegar, as setas não mexem
+    fireEvent.keyDown(alcaDe('Club Mix'), { key: 'ArrowDown' });
+    expect(useRascunho.getState().opcoes.Versoes).toBe('club,extended,original+semnome');
+  });
+
+  it('arrastar: antes de outra versão, para Não baixar e de volta', () => {
+    montar('/lista/opcoes');
+    const dt = transferencia();
+    fireEvent.dragStart(linha('radioedit'), { dataTransfer: dt });
+    fireEvent.dragOver(linha('extended'), { dataTransfer: dt });
+    fireEvent.drop(linha('extended'), { dataTransfer: dt });
+    expect(useRascunho.getState().opcoes.Versoes).toBe('radioedit,extended,club,original+semnome');
+    const dt2 = transferencia();
+    fireEvent.dragStart(linha('club'), { dataTransfer: dt2 });
+    fireEvent.drop(screen.getByTestId('versoes-recusadas'), { dataTransfer: dt2 });
+    expect(useRascunho.getState().opcoes.Versoes).toBe('radioedit,extended,original+semnome');
+    const dt3 = transferencia();
+    fireEvent.dragStart(linha('club'), { dataTransfer: dt3 });
+    fireEvent.drop(screen.getByTestId('versoes-aceitas'), { dataTransfer: dt3 });
+    expect(useRascunho.getState().opcoes.Versoes).toBe('radioedit,extended,original+semnome,club');
+  });
+
+  it('duração mínima: o seletor muda a opção e entra no comando', () => {
+    montar('/lista/opcoes');
+    const sel = screen.getByTestId('duracao-minima') as HTMLSelectElement;
+    expect(sel.value).toBe('0');
+    fireEvent.change(sel, { target: { value: '300' } });
+    expect(useRascunho.getState().opcoes.DuracaoMinima).toBe(300);
+    expect(screen.getByTestId('comando-equivalente')).toHaveTextContent('-DuracaoMinima 300');
+    expect(screen.getByTestId('parametro-versoes')).toHaveTextContent('-DuracaoMinima 300');
+  });
+
+  it('no Modo DJ: o mesmo card, sem o parâmetro, e a versão no resumo em palavras', () => {
+    montar('/lista/opcoes', stack(), 'dj');
+    expect(screen.getByRole('region', { name: 'Versão da faixa' })).toBeInTheDocument();
+    expect(screen.queryByTestId('parametro-versoes')).toBeNull();
+    expect(screen.getByTestId('resumo-linhas')).toHaveTextContent('Extended → Club → Original e sem nome');
+    fireEvent.change(screen.getByTestId('duracao-minima'), { target: { value: '300' } });
+    expect(screen.getByTestId('resumo-linhas')).toHaveTextContent('mínimo 5 min');
   });
 });
 

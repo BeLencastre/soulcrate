@@ -476,6 +476,7 @@ describe('execução antiga: resultado-*.txt e diagnostico-*.txt do baixar-lista
       expect(a?.skipped).toBe(b?.skipped);
       expect(a?.artistCatalog).toEqual(b?.artistCatalog);
       expect(a?.artistSearched).toBe(b?.artistSearched);
+      expect(a?.rejectedBy).toEqual(b?.rejectedBy);
       expect(a?.closest.map((c) => [c.reason, c.user, c.file])).toEqual(
         b?.closest.map((c) => [c.reason, c.user, c.file]),
       );
@@ -507,6 +508,82 @@ describe('execução antiga: resultado-*.txt e diagnostico-*.txt do baixar-lista
       { title: 'Tres (Remix)', users: 1 },
     ]);
     expect(d['a b']?.artistCatalogTotal).toBe(3);
+  });
+});
+
+describe('versão da faixa e formato: o veredito da faixa (docs/adr/0006)', () => {
+  const PLAGUE = 'vendex plague';
+  /** a execução da fixture, com o diagnóstico do "Vendex - Plague" trocado */
+  function comDiag(extra: Partial<DiagBruto>) {
+    const b = lerExecucaoDeEventos('x', COMPLETO);
+    b.diagnosticos[PLAGUE] = { ...diagDoTexto(b.diagnosticos, PLAGUE), ...extra };
+    return b;
+  }
+  const ctx = { correcoes: {}, retentar: false, arquivoDaRetentativa: 'x.txt' };
+
+  it('a fixture traz o veredito do script: o "Vendex - Plague" só existia em formato recusado', () => {
+    const b = lerExecucaoDeEventos('x', COMPLETO);
+    expect(diagnosticarFaixa(faixaEm(b, 2), b, null).regra).toBe('formato');
+    expect(diagnosticarFaixa(faixaEm(b, 5), b, null).regra).toBeNull(); // 0 respostas: outro motivo
+  });
+
+  it('só a versão: o resumo diz versão, e a retentativa aceita a versão recusada no fim do card', () => {
+    const b = comDiag({
+      reasons: { "versao nao aceita ('radio edit')": 2, 'titulo diferente': 1 },
+      rejectedBy: 'versao',
+    });
+    const d = diagnosticarFaixa(faixaEm(b, 2), b, null);
+    expect(d.regra).toBe('versao');
+    expect(d.resumo).toBe(msg.historico.resumoDaFalta.soVersao);
+    expect(d.motivos[0]?.tipo).toBe('versaoNaoAceita');
+    const r = detalharExecucao(b, ctx).retentativa;
+    // a fixture rodou sem o card (regra antiga): a retentativa parte do card padrão e soma a Radio Edit
+    expect(r?.opcoes.Versoes).toBe('extended,club,original+semnome,radioedit');
+    expect(r?.sugeridas).toContain('Versoes');
+  });
+
+  it('versão e formato: o resumo diz que nenhum arquivo cumpre as duas, e nada é ligado sozinho', () => {
+    const b = comDiag({
+      reasons: { "versao e formato: versao nao aceita ('radio edit') + formato aiff (use -AceitarAacAiff)": 2 },
+      rejectedBy: 'versao-e-formato',
+    });
+    const d = diagnosticarFaixa(faixaEm(b, 2), b, null);
+    expect(d.resumo).toBe(msg.historico.resumoDaFalta.versaoEFormato);
+    expect(d.motivos.map((m) => m.tipo)).toEqual(['versaoEFormato']);
+    const r = detalharExecucao(b, ctx).retentativa;
+    expect(r?.sugeridas).toEqual([]);
+    expect(r?.opcoes.AceitarAacAiff).toBe(false);
+    expect(r?.opcoes.Versoes).toBe('extended,club,original+semnome');
+  });
+
+  it('a retentativa mantém o card com que o lote rodou', () => {
+    const b = comDiag({ reasons: { 'curta para a versao (3:10, minimo 5:00)': 1 }, rejectedBy: 'versao' });
+    if (b.inicioEvento)
+      b.inicioEvento = {
+        ...b.inicioEvento,
+        options: { ...b.inicioEvento.options, Versoes: 'extended', DuracaoMinima: 300 },
+      };
+    const r = detalharExecucao(b, ctx).retentativa;
+    expect(r?.opcoes).toMatchObject({ Versoes: 'extended', DuracaoMinima: 0 });
+    expect(r?.sugeridas).toEqual(['DuracaoMinima']);
+  });
+
+  it('lotes sem o veredito (antigos) continuam com o resumo de sempre', () => {
+    const b = lerExecucaoDeEventos('x', COMPLETO);
+    const antigo = { ...diagDoTexto(b.diagnosticos, PLAGUE) };
+    delete antigo.rejectedBy;
+    b.diagnosticos[PLAGUE] = antigo;
+    expect(diagnosticarFaixa(faixaEm(b, 2), b, null).resumo).toBe(msg.historico.resumoDaFalta.soFormato);
+  });
+
+  it('o diagnóstico em texto traz a regra e a duração pedida', () => {
+    const d = lerDiagnosticoTexto(
+      ['### A - B', '    duracao pedida: 6:58', '    recusada pela regra: versao e formato', '    motivos: x x1'].join(
+        '\n',
+      ),
+    );
+    expect(d['a b']?.rejectedBy).toBe('versao-e-formato');
+    expect(d['a b']?.duration).toBe(418);
   });
 });
 
@@ -547,5 +624,18 @@ describe('opcoesDaExecucao', () => {
 
   it('execução antiga não registrou opções', () => {
     expect(opcoesDaExecucao(undefined)).toBeNull();
+  });
+
+  it('versão da faixa: lê o card com que o lote rodou; sem ele, a regra antiga (Versoes vazia)', () => {
+    expect(opcoesDaExecucao({ Versoes: 'extended', DuracaoMinima: 300 })).toMatchObject({
+      Versoes: 'extended',
+      DuracaoMinima: 300,
+    });
+    expect(opcoesDaExecucao({ Paralelo: 8 })?.Versoes).toBe('');
+    expect(opcoesDaExecucao({ Versoes: '' })?.Versoes).toBe('');
+    expect(opcoesDaExecucao({ Versoes: 'extended,remix', DuracaoMinima: -5 })).toMatchObject({
+      Versoes: '',
+      DuracaoMinima: 0,
+    });
   });
 });

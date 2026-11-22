@@ -633,6 +633,7 @@ export const msg = {
       naBiblioteca: (n: number) => `${n} já na biblioteca`,
       jaFeitas: (n: number) => `${n} ${plural(n, 'baixada antes', 'baixadas antes')}`,
       colunas: { numero: '#', artista: 'Artista', titulo: 'Título', mix: 'Versão', aviso: 'Aviso' },
+      duracaoPedida: (d: string) => `o arquivo precisa ter ${d} (folga de 5 s)`,
       previaVazia: 'Nenhuma faixa ainda. Escreva ou cole faixas ao lado.',
       analiseFalhou: 'Não consegui ler a lista',
       avisos: {
@@ -792,7 +793,10 @@ export const msg = {
       diminuir: (titulo: string) => `Diminuir: ${titulo}`,
       aumentar: (titulo: string) => `Aumentar: ${titulo}`,
       grupos: {
-        qualidade: { nome: 'Qualidade', desc: 'FLAC e WAV são sempre aceitos. Marque o que mais aceitar' },
+        qualidade: {
+          nome: 'Qualidade',
+          desc: 'FLAC e WAV são sempre aceitos. Marque o que mais aceitar; entre duas versões iguais, o melhor formato ganha',
+        },
         titulos: { nome: 'Títulos', desc: 'Como comparar o título da linha com o do arquivo' },
         comportamento: { nome: 'Comportamento', desc: 'O que fazer com o que já foi feito' },
         ritmo: { nome: 'Ritmo', desc: '' },
@@ -805,11 +809,11 @@ export const msg = {
         },
         AceitarMp3320: {
           titulo: 'Aceitar MP3 320',
-          desc: 'Quando a faixa não existe nos formatos acima.',
+          desc: 'Fica atrás de FLAC, WAV e AIFF da mesma versão.',
         },
         AceitarMp3Menor: {
           titulo: 'Aceitar MP3 256 e VBR (V0)',
-          desc: 'Também aceita MP3 320. Só quando não há nada melhor.',
+          desc: 'Também aceita MP3 320. Fica atrás dos outros formatos da mesma versão.',
         },
         TituloAproximado: {
           titulo: 'Aceitar títulos com palavras a mais',
@@ -858,6 +862,57 @@ export const msg = {
         titulosIncompletos: 'Títulos da lista incompletos',
         listaEnormeComPressa: 'Lista enorme e com pressa',
       } as Record<string, string>,
+    },
+    /** o card Versão da faixa (docs/adr/0006), igual nos dois modos; o Modo Dev mostra também o parâmetro */
+    versoes: {
+      nome: 'Versão da faixa',
+      desc: 'Vale para as linhas sem mix. Quando a linha diz o mix, ela manda.',
+      atalhos: { pista: 'Pista', tantoFaz: 'Tanto faz a versão', soExtended: 'Só Extended' },
+      atalhosDica: 'Atalhos',
+      baixar: 'Baixar, nesta ordem',
+      naoBaixar: 'Não baixar',
+      naoBaixarVazio: 'Nenhuma: todas as versões são aceitas.',
+      soltarAqui: 'Solte aqui para não baixar',
+      soltarNoFim: 'Solte aqui para baixar por último',
+      nomes: {
+        extended: 'Extended Mix',
+        club: 'Club Mix',
+        original: 'Original Mix',
+        semnome: 'Sem versão no nome',
+        radioedit: 'Radio Edit',
+      },
+      exemplos: {
+        extended: '“Título (Extended Mix)”',
+        club: '“Título (Club Mix)”',
+        original: '“Título (Original Mix)”',
+        semnome: '“Artista - Título.flac”, quase sempre o original',
+        radioedit: 'a versão curta, de rádio',
+      },
+      empate: 'Mesma posição da de cima',
+      posicao: (n: number) => `${n}º`,
+      subir: (nome: string) => `Subir ${nome}`,
+      descer: (nome: string) => `Descer ${nome}`,
+      empatar: (nome: string) => `${nome} na mesma posição da de cima`,
+      recusar: (nome: string) => `Não baixar ${nome}`,
+      aceitar: (nome: string) => `Baixar ${nome}`,
+      alca: (nome: string) => `Mover ${nome}. Espaço pega; setas movem; Espaço solta.`,
+      ultima: 'O lote precisa aceitar pelo menos uma versão.',
+      anuncio: {
+        pegou: (nome: string) => `${nome} pega. Use as setas para mover e Espaço para soltar.`,
+        moveu: (nome: string, pos: number, total: number, empatada: boolean) =>
+          `${nome}, posição ${pos} de ${total}${empatada ? ', mesma posição da de cima' : ''}.`,
+        soltou: (nome: string) => `${nome} solta.`,
+        recusou: (nome: string) => `${nome} foi para Não baixar.`,
+        aceitou: (nome: string) => `${nome} vai ser baixada por último.`,
+      },
+      duracao: {
+        nome: 'Duração mínima',
+        desc: 'Para as linhas sem mix e sem duração. Pega a Radio Edit com o nome errado. Em alguns gêneros (hard techno, por exemplo) o Original tem de 4 a 5 min.',
+        desligada: 'Desligada',
+        minutos: (m: number) => `${m} min`,
+        daLista:
+          'Linha com duração no fim (“Título 6:58”) é conferida por ela, com folga de 5 s: o arquivo de outra duração é outra versão.',
+      },
     },
     antesDeIniciar: {
       semStackTitulo: 'A stack não está no ar',
@@ -1269,6 +1324,8 @@ export const msg = {
     resumoDaFalta: {
       tituloErrado: 'Título provavelmente errado',
       soFormato: 'Só existe em formato não aceito',
+      soVersao: 'Só existe em versão não aceita',
+      versaoEFormato: 'Nenhum arquivo cumpre a versão e o formato juntos',
       usuarios: 'Usuários não entregaram a tempo',
       ninguemTem: 'Ninguém compartilha',
       semCompativel: 'Respostas sem arquivo compatível',
@@ -1328,6 +1385,23 @@ export const msg = {
         acao: 'Troque o artista principal na linha (ex.: pelo outro colaborador).',
       },
       mix: { rotulo: 'Mix diferente', acao: 'Confira o nome exato do remix.' },
+      versaoNaoAceita: {
+        rotulo: (v: string) => `Versão não aceita: ${v}`,
+        acao: (v: string) =>
+          `Só achei ${v}. Para aceitar, leve ${v} para “Baixar” no card Versão da faixa, em Ajustes.`,
+      },
+      duracaoDiferente: {
+        rotulo: (detalhe: string) => `Duração diferente (${detalhe})`,
+        acao: 'Achei a faixa com outra duração, então é outra versão. Confira a duração na lista, ou apague-a para aceitar qualquer duração.',
+      },
+      duracaoCurta: {
+        rotulo: (detalhe: string) => `Curta demais para a versão (${detalhe})`,
+        acao: 'Só achei versões mais curtas que a duração mínima. Diminua ou desligue a duração mínima no card Versão da faixa.',
+      },
+      versaoEFormato: {
+        rotulo: (detalhe: string) => `Versão e formato não aceitos (${detalhe})`,
+        acao: 'Os arquivos falham nas duas regras. Aceitar só o formato ou só a versão não basta: mude os dois, em Qualidade e em Versão da faixa.',
+      },
       versao: {
         rotulo: (v: string) => (v ? `Outra versão (${v})` : 'Outra versão'),
         acao: (v: string) =>

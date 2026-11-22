@@ -8,6 +8,7 @@ import { msg } from '@shared/mensagens';
 import { alterouAlgo, opcoesAlteradas } from '@shared/opcoes-lote';
 import { origemDoTexto, STREAMINGS, streamingPorId, type StreamingId } from '@shared/playlists';
 import { resumirStack } from '@shared/stack';
+import { formatarDuracao } from '@shared/versoes';
 import type { LinhaAnalise } from '@shared/analise-lista';
 import { IconeEnviar, IconePlay, IconePlaylist, IconeReconstruir } from '../../components/icones';
 import { CartaoErro } from '../../components/CartaoErro';
@@ -108,8 +109,17 @@ function Previa({ linhas }: { linhas: readonly LinhaAnalise[] }) {
           <span key="t" className={`block truncate ${tom}`} title={l.title}>
             {l.title || '—'}
           </span>,
-          <span key="m" className="block truncate text-texto-suave" title={l.mix}>
+          // a duração no fim da linha vira a duração que o arquivo precisa ter (card Versão da faixa)
+          <span
+            key="m"
+            className="block truncate text-texto-suave"
+            title={
+              l.duration ? `${l.mix || '—'} · ${msg.lote.lista.duracaoPedida(formatarDuracao(l.duration))}` : l.mix
+            }
+            data-duracao={l.duration ?? undefined}
+          >
             {l.mix || '—'}
+            {l.duration ? <span className="font-mono text-texto-apagado"> · {formatarDuracao(l.duration)}</span> : null}
           </span>,
           aviso ? (
             <Chip key="w" cor={aviso.cor}>
