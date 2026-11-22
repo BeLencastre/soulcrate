@@ -64,15 +64,21 @@ describe('criarZip', () => {
       ]),
     );
     const destino = join(raiz, 'saida');
+    // Sem o PSModulePath herdado: quando o teste roda sob o pwsh (como no CI), o Windows PowerShell 5.1
+    // carregava o Microsoft.PowerShell.Archive 1.2.7 do PowerShell 7, que não funciona no .NET Framework, e o
+    // Expand-Archive saía sem extrair nada. O usuário do pacote de suporte usa o módulo que vem com o Windows.
+    const env = Object.fromEntries(
+      Object.entries(process.env).filter(([nome]) => nome.toLowerCase() !== 'psmodulepath'),
+    );
     const r = spawnSync(
       'powershell.exe',
       [
         '-NoProfile',
         '-NonInteractive',
         '-Command',
-        `Expand-Archive -LiteralPath '${arquivo}' -DestinationPath '${destino}'`,
+        `Expand-Archive -LiteralPath '${arquivo}' -DestinationPath '${destino}' -ErrorAction Stop`,
       ],
-      { encoding: 'utf8' },
+      { encoding: 'utf8', env },
     );
     expect(r.status, `${r.stdout}${r.stderr}`).toBe(0);
     expect(readFileSync(join(destino, 'app', 'main.log'), 'utf8')).toBe('linha 1\nlinha 2\n'.repeat(100));
