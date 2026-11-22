@@ -2,10 +2,12 @@
 // Rekordbox lê em Preferências › Avançado › Banco de dados › rekordbox xml › Imported Library, e a pessoa importa a
 // pasta "Soulcrate" para as playlists dela. O app nunca toca no banco do Rekordbox (ADR 0004).
 //
-// Aqui ficam as regras puras: a árvore (uma playlist por gênero e uma por lista baixada), o caminho de cada faixa
-// (`Location`) e o texto do XML. Nada de disco, processo ou DOM.
+// Aqui ficam as regras puras: a árvore (por gênero, ou por gênero e artista, conforme a escolha do Rekordbox, que é
+// independente da do disco, e uma playlist por lista baixada), o caminho de cada faixa (`Location`) e o texto do XML.
+// Nada de disco, processo ou DOM.
 import { ordenarFaixas, type FaixaDaBiblioteca } from './biblioteca.js';
 import type { AppError } from './erros.js';
+import type { OrganizacaoDasPastas } from './organizacao.js';
 
 /** Onde o arquivo fica, dentro da pasta do Soulcrate. É dado do usuário: a atualização da stack não toca nele. */
 export const PASTA_REKORDBOX = 'rekordbox';
@@ -16,6 +18,8 @@ export const PASTA_GENEROS = 'Gêneros';
 export const PASTA_LISTAS = 'Listas';
 /** Arquivo solto na raiz de `music/`, fora de qualquer pasta de gênero (não deveria existir, mas não some). */
 export const PLAYLIST_FORA_DAS_PASTAS = '_Outras';
+/** Na organização por gênero e artista, a playlist com o gênero inteiro, a primeira da pasta do gênero. */
+export const PLAYLIST_TODAS = 'Todas';
 
 // ---------------------------------------------------------------- Modelo
 
@@ -31,8 +35,16 @@ export interface ListaParaRekordbox {
   ids: readonly (number | null | undefined)[];
 }
 
+/**
+ * Um gênero. Sem `artistas`, é uma playlist; com eles (organização por gênero e artista), é uma pasta com a playlist
+ * "Todas" (os `ids` do gênero inteiro) e uma playlist por artista.
+ */
+export interface GeneroRekordbox extends PlaylistRekordbox {
+  artistas: PlaylistRekordbox[] | null;
+}
+
 export interface ArvoreRekordbox {
-  generos: PlaylistRekordbox[];
+  generos: GeneroRekordbox[];
   listas: PlaylistRekordbox[];
 }
 
@@ -71,6 +83,23 @@ export function generoDaPasta(arquivo: string): string {
   return partes.length >= 2 && partes[0] ? partes[0] : PLAYLIST_FORA_DAS_PASTAS;
 }
 
+/**
+ * O artista da playlist do Rekordbox, tirado do caminho no disco (o mesmo nome que o `pastas.py` deu, sem copiar as
+ * regras dele), qualquer que seja a organização do disco:
+ * - por gênero e artista, a segunda pasta: `Hard Techno/Azyr/No Escape.flac` → `Azyr`;
+ * - só por gênero, o começo do nome do arquivo, até o primeiro " - ": `Hard Techno/Azyr - No Escape.flac` → `Azyr`
+ *   (um artista com " - " no nome fica cortado ali).
+ * Sem nenhum dos dois (arquivo solto na raiz, nome sem " - "), `_Outras`.
+ */
+export function artistaDaPasta(arquivo: string): string {
+  const partes = arquivo.split('/').filter(Boolean);
+  if (partes.length >= 3 && partes[1]) return partes[1];
+  if (partes.length !== 2 || !partes[1]) return PLAYLIST_FORA_DAS_PASTAS;
+  const nome = partes[1].replace(/\.[^.]*$/, '');
+  const fim = nome.indexOf(' - ');
+  return fim > 0 && nome.slice(0, fim).trim() ? nome.slice(0, fim).trim() : PLAYLIST_FORA_DAS_PASTAS;
+}
+
 /** "techno-pesado.txt" → "techno-pesado". */
 export function nomeDaLista(arquivo: string): string {
   return arquivo.replace(/\.[^./\\]*$/, '') || arquivo;
@@ -94,15 +123,37 @@ function agrupar(entradas: Iterable<{ nome: string; ids: Iterable<number> }>): P
   return [...grupos.values()].map(({ nome, ids }) => ({ nome, ids }));
 }
 
+/** As playlists de artista de um gênero, por nome; um artista chamado "Todas" ganha um sufixo para não colidir. */
+function artistasDoGenero(faixas: readonly FaixaDaBiblioteca[]): PlaylistRekordbox[] {
+  return agrupar(
+    faixas.map((f) => {
+      const nome = artistaDaPasta(f.arquivo);
+      return { nome: chave(nome) === chave(PLAYLIST_TODAS) ? `${nome} (artista)` : nome, ids: [f.id] };
+    }),
+  ).sort(porNome);
+}
+
 /**
- * Uma playlist por pasta de gênero (faixas como num caixote: artista e título) e uma por lista baixada (na ordem da
- * lista, só com faixas que estão na biblioteca; lista sem nenhuma fica de fora).
+ * Uma playlist por pasta de gênero (faixas como num caixote: artista e título), ou, na organização por gênero e
+ * artista, uma pasta por gênero com "Todas" e uma playlist por pasta de artista; e uma playlist por lista baixada (na
+ * ordem da lista, só com faixas que estão na biblioteca; lista sem nenhuma fica de fora).
  */
 export function montarArvore(
   faixas: readonly FaixaDaBiblioteca[],
   listas: readonly ListaParaRekordbox[] = [],
+  organizacao: OrganizacaoDasPastas = 'genero',
 ): ArvoreRekordbox {
-  const generos = agrupar(ordenarFaixas(faixas).map((f) => ({ nome: generoDaPasta(f.arquivo), ids: [f.id] })));
+  const ordenadas = ordenarFaixas(faixas);
+  const porId = new Map(ordenadas.map((f) => [f.id, f]));
+  const generos = agrupar(ordenadas.map((f) => ({ nome: generoDaPasta(f.arquivo), ids: [f.id] }))).map(
+    (g): GeneroRekordbox => ({
+      ...g,
+      artistas:
+        organizacao === 'genero-artista'
+          ? artistasDoGenero(g.ids.map((id) => porId.get(id)).filter((f): f is FaixaDaBiblioteca => f !== undefined))
+          : null,
+    }),
+  );
   const naBiblioteca = new Set(faixas.map((f) => f.id));
   const dasListas = agrupar(
     listas.map((l) => ({
@@ -179,6 +230,12 @@ function playlist(p: PlaylistRekordbox, recuo: string): string {
   return [cabeca, ...p.ids.map((id) => `${recuo}  <TRACK Key="${id}" />`), `${recuo}</NODE>`].join('\n');
 }
 
+function genero(g: GeneroRekordbox, recuo: string): string {
+  if (!g.artistas) return playlist(g, recuo);
+  const filhos = [{ nome: PLAYLIST_TODAS, ids: g.ids }, ...g.artistas].map((p) => playlist(p, `${recuo}  `));
+  return pasta(g.nome, filhos, recuo).join('\n');
+}
+
 export interface EntradaXml {
   /** `music/` no disco do PC */
   pastaMusica: string;
@@ -207,7 +264,7 @@ export function gerarXml({ pastaMusica, faixas, arvore, versao }: EntradaXml): s
   const filhos = [
     ...pasta(
       PASTA_GENEROS,
-      arvore.generos.map((g) => playlist(g, `${r}  `)),
+      arvore.generos.map((g) => genero(g, `${r}  `)),
       r,
     ),
     ...(arvore.listas.length > 0

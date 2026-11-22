@@ -92,7 +92,7 @@ O Soulcrate é um **garimpeiro de músicas para DJs**. Você diz quais faixas qu
 1. **Procura** cada faixa na rede [Soulseek](https://www.slsknet.org), uma rede de compartilhamento de músicas entre usuários;
 2. **Escolhe e baixa** a melhor versão disponível (FLAC ou WAV; AIFF, AAC e MP3 se você permitir);
 3. **Etiqueta** a faixa com BPM, tom harmônico e capa;
-4. **Organiza** tudo em pastas por gênero e artista;
+4. **Organiza** tudo em pastas por gênero e artista (ou só por gênero, se preferir);
 5. **Entrega** uma biblioteca que o Rekordbox lê direto, pronta para ir para o pendrive.
 
 Ele roda **no seu próprio computador**, e os arquivos ficam com você. Não há assinatura nem serviço online do Soulcrate (só uma conta no Soulseek, criada no primeiro login): é um conjunto de ferramentas open source já configuradas para trabalhar juntas, com scripts de um clique no Windows.
@@ -375,7 +375,7 @@ O **diagnóstico** explica por que cada faixa não veio, na linguagem da tabela 
 
 #### Biblioteca
 
-"Suas músicas": as faixas do beets com artista, título, BPM, tom, gênero e formato, com busca e indicadores do que falta (sem BPM, sem tom, sem gênero, esperando organizar em `downloads/`). **Remover uma faixa nunca é imediato**: o app mostra tudo o que o filtro pega, avisa que o arquivo é apagado de vez (sem Lixeira) e só apaga depois da sua confirmação. Em **Cuidar da biblioteca** faz a [manutenção](#manutenção-da-biblioteca) sem linha de comando (calcular tom e BPM que faltam, organizar o que ficou em `downloads/`, atualizar depois de mexer nos arquivos e reorganizar as pastas, os dois últimos com pré-visualização), mostra quantas músicas estão compartilhadas no Soulseek (com **Atualizar a lista**) e cria as [playlists para o Rekordbox](#rekordbox-e-pendrive) (uma por gênero e uma por lista baixada). O botão **Abrir … no Explorer** diz qual pasta abre (por exemplo, "Abrir DJ/Musics no Explorer"). Nada disso roda com a stack desligada nem com um lote em andamento.
+"Suas músicas": as faixas do beets com artista, título, BPM, tom, gênero e formato, com busca e indicadores do que falta (sem BPM, sem tom, sem gênero, esperando organizar em `downloads/`). **Remover uma faixa nunca é imediato**: o app mostra tudo o que o filtro pega, avisa que o arquivo é apagado de vez (sem Lixeira) e só apaga depois da sua confirmação. Em **Cuidar da biblioteca** faz a [manutenção](#manutenção-da-biblioteca) sem linha de comando (calcular tom e BPM que faltam, organizar o que ficou em `downloads/`, atualizar depois de mexer nos arquivos e reorganizar as pastas, os dois últimos com pré-visualização), mostra quantas músicas estão compartilhadas no Soulseek (com **Atualizar a lista**) e cria as [playlists para o Rekordbox](#rekordbox-e-pendrive) (por gênero e uma por lista baixada). Em **Organização**, escolha à parte como organizar **no disco** e **no Rekordbox**, cada um entre **Por gênero e artista** (o padrão) e **Só por gênero**. No disco: `Hard Techno/Azyr/No Escape` ou `Hard Techno/Azyr - No Escape`; a escolha vale para o que for importado daqui em diante, e para mudar o que já está no disco use **Reorganizar as pastas**, com prévia. No Rekordbox: uma pasta por gênero com a playlist `Todas` e uma playlist por artista, ou uma playlist por gênero. O botão **Abrir … no Explorer** diz qual pasta abre (por exemplo, "Abrir DJ/Musics no Explorer"). Nada disso roda com a stack desligada nem com um lote em andamento.
 
 ![Tela Biblioteca: as faixas com BPM, tom e gênero, os indicadores e a manutenção](docs/img/09-biblioteca.png)
 
@@ -532,7 +532,7 @@ A **mesma lista não roda duas vezes ao mesmo tempo**: se você abrir o `baixar-
 
 ## Rekordbox e pendrive
 
-O Rekordbox não tem pasta monitorada: ele não enxerga sozinho as faixas que chegam depois. O app resolve isso com as **playlists do Soulcrate**: um arquivo no formato oficial *rekordbox xml* com a pasta `Soulcrate`, que tem uma playlist por gênero (`Gêneros`) e uma por lista baixada (`Listas`, na ordem da lista). O app não mexe no banco do Rekordbox, então pode deixar o Rekordbox aberto. A decisão está no [ADR 0004](docs/adr/0004-playlists-no-rekordbox-pelo-rekordbox-xml.md).
+O Rekordbox não tem pasta monitorada: ele não enxerga sozinho as faixas que chegam depois. O app resolve isso com as **playlists do Soulcrate**: um arquivo no formato oficial *rekordbox xml* com a pasta `Soulcrate`, que organiza `Gêneros` do jeito escolhido em **Suas músicas → Organização → No Rekordbox**, independente das pastas do disco (só por gênero: uma playlist por gênero; por gênero e artista: uma pasta por gênero, com a playlist `Todas` e uma playlist por artista, tirado da pasta do artista ou, com o disco só por gênero, do começo do nome do arquivo) e tem uma playlist por lista baixada (`Listas`, na ordem da lista). O app não mexe no banco do Rekordbox, então pode deixar o Rekordbox aberto. A decisão está no [ADR 0004](docs/adr/0004-playlists-no-rekordbox-pelo-rekordbox-xml.md).
 
 **Configuração (uma vez):**
 
@@ -546,6 +546,8 @@ O Rekordbox não tem pasta monitorada: ele não enxerga sozinho as faixas que ch
 2. Analise as faixas novas no Rekordbox (beatgrid e waveform).
 3. Faça hot cues e memory cues.
 4. Exporte a pasta `Soulcrate` (ou as playlists que quiser) para o pendrive, como de costume.
+
+Reorganizar as pastas (por exemplo, depois de trocar a organização) muda o lugar dos arquivos: as faixas que já estão na Coleção do Rekordbox aparecem como não encontradas até você apontar o lugar novo delas no Rekordbox.
 
 Prefere montar as suas playlists à mão? Importe só as faixas em **Arquivo → Importar → Importar pasta** (*File → Import → Import Folder*), escolhendo a pasta `music` (ou a de `MUSIC_DIR`), e repita depois de cada lote.
 
@@ -1037,7 +1039,7 @@ docker compose exec soulbeet /usr/bin/python3 -c "import sys; from beets.ui impo
 | Recalcular BPM das faixas sem BPM                                          | `autobpm`                                                  |
 | **Apagar uma faixa errada** (do banco e do disco)                          | `remove -d "title:Northern Power"`                         |
 | Corrigir tags na mão                                                       | `modify "title:..." genre=Techno`                          |
-| Mover arquivos depois de mudar `paths:`                                    | `move`                                                     |
+| Mover arquivos depois de mudar `paths:` ou a organização no disco          | `move`                                                     |
 | Sincronizar o banco com o disco (arquivos apagados/editados fora do beets) | `update`                                                   |
 | Importar na mão o que sobrou em `downloads/`                               | `import -q -s /downloads/<pasta>`                          |
 

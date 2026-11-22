@@ -42,6 +42,7 @@ import { LoteService, processoVivoReal, type NotificacaoLote } from './services/
 import { OperacoesService } from './services/operacoes-service';
 import { PastaService } from './services/pasta-service';
 import { PlaylistsService } from './services/playlists-service';
+import { OrganizacaoService } from './services/organizacao-service';
 import { fsRekordboxReal, RekordboxService } from './services/rekordbox-service';
 import { RelatoriosService } from './services/relatorios-service';
 import { lerVersaoDaStack, resolverProjeto } from './services/project-service';
@@ -353,10 +354,17 @@ async function principal(): Promise<void> {
   });
   // playlists para o Rekordbox (rekordbox XML): uma por gênero e uma por lista baixada; refeito sozinho depois da
   // primeira vez que a pessoa o gera
+  const organizacao = new OrganizacaoService({
+    projeto,
+    fs: { lerTexto: lerArquivo, escreverAtomico: fsRekordboxReal.escreverAtomico },
+    aoMudarRekordbox: () => aoMudarBiblioteca?.(),
+    aoErro,
+  });
   const rekordbox = new RekordboxService({
     biblioteca,
     listas,
     projeto,
+    organizacao: (dir) => organizacao.organizacoes(dir).rekordbox,
     fs: fsRekordboxReal,
     versao: app.getVersion(),
     emitir,
@@ -527,6 +535,7 @@ async function principal(): Promise<void> {
     lote,
     relatorios,
     biblioteca,
+    organizacao,
     rekordbox,
     slskd,
     sobre,

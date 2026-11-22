@@ -21,7 +21,7 @@ Soulcrate                    (pasta)
 
 As respostas às perguntas de produto (16/11):
 
-1. A organização é **só por gênero**: uma playlist por gênero, sem playlists por artista.
+1. A organização é **só por gênero**: uma playlist por gênero, sem playlists por artista. *Revisto em 22/11:* a pessoa escolhe em Suas músicas, independente da organização do disco, e no modo gênero e artista cada gênero vira uma pasta com `Todas` e uma playlist por artista ([ADR 0005](adr/0005-organizacao-das-pastas-escolhida-no-app.md)).
 2. **Gerar sozinho** entra junto: depois da primeira vez, o arquivo se refaz ao fim de cada lote, de Cuidar da biblioteca (menos calcular tom e BPM) e de remover uma faixa.
 3. A **playlist por lista baixada** entra. Ela sai da análise do próprio script (`-SoAnalisar -AnalisarBiblioteca`), que agora diz em cada linha qual faixa do beets casou (`libraryId`). Vale também para as faixas que já estavam na biblioteca antes de a lista rodar. Entram só as listas que já rodaram (têm `lotes/estado-<lista>.tsv`).
 

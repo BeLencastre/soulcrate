@@ -40,6 +40,8 @@ const api = vi.hoisted(() => ({
     openMusicFolder: vi.fn(),
     sharing: vi.fn(),
     rescanSharing: vi.fn(),
+    organization: vi.fn(),
+    setOrganization: vi.fn(),
   },
   rekordbox: { state: vi.fn(), generate: vi.fn() },
 }));
@@ -184,6 +186,11 @@ beforeEach(() => {
   api.stack.up.mockResolvedValue({ id: 'op', tipo: 'ligar' });
   api.app.copyText.mockResolvedValue(undefined);
   api.rekordbox.state.mockResolvedValue(rekordbox());
+  api.library.organization.mockResolvedValue({
+    disco: 'genero-artista',
+    rekordbox: 'genero-artista',
+    configAtende: true,
+  });
   useManutencao.setState({ operacao: null });
   useRascunho.setState({ lista: null, texto: '', textoSalvo: '', erro: null });
 });
@@ -402,7 +409,7 @@ describe('compartilhamento e Rekordbox', () => {
     montar();
     expect(await screen.findByTestId('rekordbox-situacao')).toHaveTextContent('Ainda não criadas.');
     const cartao = screen.getByTestId('cartao-rekordbox');
-    expect(cartao).toHaveTextContent('uma por gênero e uma por lista baixada');
+    expect(cartao).toHaveTextContent('por gênero (do jeito escolhido em Organização) e uma por lista baixada');
     expect(screen.getByTestId('gerar-rekordbox')).toHaveTextContent('Criar as playlists');
     expect(screen.queryByTestId('arquivo-rekordbox')).toBeNull();
     // o Rekordbox 7 não tem pasta monitorada: o caminho é o rekordbox xml (Imported Library)
@@ -943,5 +950,99 @@ describe('eventos do main', () => {
     api.library.running.mockResolvedValue({ id: 'op-8', tarefa: 'update' });
     await useManutencao.getState().reconectar();
     expect(useManutencao.getState().operacao?.id).toBe('op-7');
+  });
+});
+
+// ---------------------------------------------------------------- Organização (disco e Rekordbox)
+
+describe('organização no disco e no Rekordbox', () => {
+  const opcao = (alvo: string, o: string) =>
+    document.querySelector(`[data-alvo="${alvo}"] [data-organizacao="${o}"] input`) as HTMLInputElement;
+  const estadoOrg = (extra: object = {}) => ({
+    disco: 'genero-artista',
+    rekordbox: 'genero-artista',
+    configAtende: true,
+    ...extra,
+  });
+
+  it('duas escolhas independentes, cada uma com a atual marcada e o exemplo', async () => {
+    api.library.organization.mockResolvedValue(estadoOrg({ rekordbox: 'genero' }));
+    montar();
+    await carregada();
+    const card = await screen.findByTestId('cartao-organizacao');
+    expect(within(card).getByRole('group', { name: 'No disco' })).toBeInTheDocument();
+    expect(within(card).getByRole('group', { name: 'No Rekordbox' })).toBeInTheDocument();
+    await waitFor(() => expect(opcao('disco', 'genero-artista')).toBeChecked());
+    expect(opcao('disco', 'genero')).not.toBeChecked();
+    expect(opcao('rekordbox', 'genero')).toBeChecked();
+    expect(opcao('rekordbox', 'genero-artista')).not.toBeChecked();
+    expect(within(card).getByText('Hard Techno/Azyr/No Escape')).toBeInTheDocument();
+    expect(within(card).getByText('Hard Techno/Azyr - No Escape')).toBeInTheDocument();
+    expect(within(card).getByText('Gêneros › Hard Techno › Azyr')).toBeInTheDocument();
+    expect(screen.queryByTestId('organizacao-reorganizar')).toBeNull();
+    expect(screen.queryByTestId('organizacao-config-antigo')).toBeNull();
+  });
+
+  it('trocar o disco grava só o disco, avisa do Rekordbox e oferece reorganizar com a prévia de sempre', async () => {
+    api.library.setOrganization.mockResolvedValue({ ok: true, estado: estadoOrg({ disco: 'genero' }) });
+    api.library.previewMaintenance.mockResolvedValue(previaManutencao({ tarefa: 'move', afetadas: 5 }));
+    montar();
+    await carregada();
+    await waitFor(() => expect(opcao('disco', 'genero-artista')).toBeChecked());
+    fireEvent.click(opcao('disco', 'genero'));
+    await waitFor(() => expect(api.library.setOrganization).toHaveBeenCalledWith('disco', 'genero'));
+    const card = screen.getByTestId('cartao-organizacao');
+    expect(await within(card).findByText(/Guardado\. Vale para as próximas músicas/)).toBeInTheDocument();
+    expect(within(card).getByText(/não encontradas até você apontar o lugar novo/)).toBeInTheDocument();
+    expect(opcao('disco', 'genero')).toBeChecked();
+    expect(opcao('rekordbox', 'genero-artista')).toBeChecked();
+    // reorganizar abre o diálogo de Cuidar da biblioteca: nada se move sem a prévia e a confirmação
+    fireEvent.click(screen.getByTestId('organizacao-reorganizar'));
+    await screen.findByTestId('dialogo-manutencao');
+    expect(api.library.previewMaintenance).toHaveBeenCalledWith('move');
+    expect(api.library.maintenance).not.toHaveBeenCalled();
+  });
+
+  it('trocar o Rekordbox grava só o Rekordbox, sem oferecer reorganizar o disco', async () => {
+    api.library.setOrganization.mockResolvedValue({ ok: true, estado: estadoOrg({ rekordbox: 'genero' }) });
+    montar();
+    await carregada();
+    await waitFor(() => expect(opcao('rekordbox', 'genero-artista')).toBeChecked());
+    fireEvent.click(opcao('rekordbox', 'genero'));
+    await waitFor(() => expect(api.library.setOrganization).toHaveBeenCalledWith('rekordbox', 'genero'));
+    const card = screen.getByTestId('cartao-organizacao');
+    expect(await within(card).findByText(/importe a pasta Soulcrate de novo no Rekordbox/)).toBeInTheDocument();
+    expect(opcao('rekordbox', 'genero')).toBeChecked();
+    expect(opcao('disco', 'genero-artista')).toBeChecked();
+    expect(screen.queryByTestId('organizacao-reorganizar')).toBeNull();
+  });
+
+  it('não conseguiu gravar: o erro do catálogo, a escolha volta e tentar de novo repete o mesmo pedido', async () => {
+    api.library.setOrganization.mockResolvedValue({ ok: false, erro: criarErro('organizacao.nao-gravou') });
+    montar();
+    await carregada();
+    await waitFor(() => expect(opcao('rekordbox', 'genero-artista')).toBeChecked());
+    fireEvent.click(opcao('rekordbox', 'genero'));
+    const card = screen.getByTestId('cartao-organizacao');
+    expect(await within(card).findByText('Não consegui guardar a organização das pastas')).toBeInTheDocument();
+    expect(opcao('rekordbox', 'genero-artista')).toBeChecked();
+    fireEvent.click(within(card).getByRole('button', { name: 'Tentar de novo' }));
+    await waitFor(() => expect(api.library.setOrganization).toHaveBeenCalledTimes(2));
+    expect(api.library.setOrganization).toHaveBeenLastCalledWith('rekordbox', 'genero');
+  });
+
+  it('config.yaml editado que não usa a escolha do disco: avisa que o beets continua no jeito antigo', async () => {
+    api.library.organization.mockResolvedValue(estadoOrg({ configAtende: false }));
+    montar();
+    await carregada();
+    expect(await screen.findByTestId('organizacao-config-antigo')).toHaveTextContent('config.yaml.novo');
+  });
+
+  it('com uma tarefa de Cuidar da biblioteca rodando, só a escolha do disco fica travada', async () => {
+    useManutencao.setState({ operacao: { id: 'op', tarefa: 'move', linhas: [], terminou: false, erro: null } });
+    montar();
+    await carregada();
+    await waitFor(() => expect(opcao('disco', 'genero')).toBeDisabled());
+    expect(opcao('rekordbox', 'genero')).not.toBeDisabled();
   });
 });

@@ -3,6 +3,7 @@
 import { describe, expect, it } from 'vitest';
 import type { FaixaDaBiblioteca } from '../../src/shared/biblioteca';
 import {
+  artistaDaPasta,
   escaparAtributo,
   gerarXml,
   generoDaPasta,
@@ -10,6 +11,7 @@ import {
   montarArvore,
   nomeDaLista,
   PLAYLIST_FORA_DAS_PASTAS,
+  PLAYLIST_TODAS,
   resumir,
 } from '../../src/shared/rekordbox';
 
@@ -35,8 +37,8 @@ describe('a árvore', () => {
       faixa(4, 'Hard Techno/Azyr/No Escape.flac'),
     ]);
     expect(arvore.generos).toEqual([
-      { nome: 'Acid Techno', ids: [2] },
-      { nome: 'Hard Techno', ids: [4, 1, 3] },
+      { nome: 'Acid Techno', ids: [2], artistas: null },
+      { nome: 'Hard Techno', ids: [4, 1, 3], artistas: null },
     ]);
     expect(arvore.listas).toEqual([]);
   });
@@ -53,7 +55,7 @@ describe('a árvore', () => {
       faixa(1, 'Psy-Trance/A/x.flac', { artista: 'A' }),
       faixa(2, 'psy-trance/B/y.flac', { artista: 'B' }),
     ]);
-    expect(arvore.generos).toEqual([{ nome: 'Psy-Trance', ids: [1, 2] }]);
+    expect(arvore.generos).toEqual([{ nome: 'Psy-Trance', ids: [1, 2], artistas: null }]);
   });
 
   it('uma playlist por lista, na ordem das linhas, sem repetir e só com o que está na biblioteca', () => {
@@ -71,6 +73,81 @@ describe('a árvore', () => {
       { nome: 'Abertura', ids: [2] },
       { nome: 'techno-pesado', ids: [3, 1] },
     ]);
+  });
+
+  it('por gênero e artista: uma pasta por gênero com Todas e uma playlist por pasta de artista', () => {
+    const arvore = montarArvore(
+      [
+        faixa(3, 'Hard Techno/Vendex/Plague.flac', { artista: 'Vendex', titulo: 'Plague' }),
+        faixa(1, 'Hard Techno/Azyr/Power.flac', { titulo: 'Power' }),
+        faixa(2, 'Acid Techno/AZYR/The Bassline.flac', { artista: 'AZYR', titulo: 'The Bassline' }),
+        faixa(4, 'Hard Techno/Azyr/No Escape.flac'),
+      ],
+      [],
+      'genero-artista',
+    );
+    expect(arvore.generos).toEqual([
+      { nome: 'Acid Techno', ids: [2], artistas: [{ nome: 'AZYR', ids: [2] }] },
+      {
+        nome: 'Hard Techno',
+        ids: [4, 1, 3],
+        artistas: [
+          { nome: 'Azyr', ids: [4, 1] },
+          { nome: 'Vendex', ids: [3] },
+        ],
+      },
+    ]);
+  });
+
+  it('o artista sai do caminho, com o disco em qualquer organização: a pasta, ou o começo do nome do arquivo', () => {
+    // disco por gênero e artista
+    expect(artistaDaPasta('Techno/Various Artists/A - B.flac')).toBe('Various Artists');
+    expect(artistaDaPasta('Techno/Azyr/No Escape - Part 2.flac')).toBe('Azyr');
+    // disco só por gênero: "Artista - Título", cortando no primeiro " - " (o título pode ter outros)
+    expect(artistaDaPasta('Techno/Azyr - No Escape.flac')).toBe('Azyr');
+    expect(artistaDaPasta('Techno/Above & Beyond - Sun - Moon (Extended).flac')).toBe('Above & Beyond');
+    expect(artistaDaPasta('Techno/Various Artists - A, B - No Escape.flac')).toBe('Various Artists');
+    // sem artista no caminho
+    expect(artistaDaPasta('Techno/No Escape.flac')).toBe(PLAYLIST_FORA_DAS_PASTAS);
+    expect(artistaDaPasta('Techno/ - No Escape.flac')).toBe(PLAYLIST_FORA_DAS_PASTAS);
+    expect(artistaDaPasta('solta.flac')).toBe(PLAYLIST_FORA_DAS_PASTAS);
+  });
+
+  it('Rekordbox por gênero e artista com o disco só por gênero (ou no meio da reorganização): junta pelo artista', () => {
+    const arvore = montarArvore(
+      [
+        faixa(1, 'Techno/Azyr - Power.flac', { titulo: 'Power' }),
+        faixa(2, 'Techno/Azyr/No Escape.flac'),
+        faixa(3, 'Techno/Vendex - Plague.flac', { artista: 'Vendex', titulo: 'Plague' }),
+      ],
+      [],
+      'genero-artista',
+    );
+    expect(arvore.generos).toEqual([
+      {
+        nome: 'Techno',
+        ids: [2, 1, 3],
+        artistas: [
+          { nome: 'Azyr', ids: [2, 1] },
+          { nome: 'Vendex', ids: [3] },
+        ],
+      },
+    ]);
+  });
+
+  it('Rekordbox só por gênero com o disco por gênero e artista: uma playlist por gênero', () => {
+    const arvore = montarArvore(
+      [faixa(1, 'Techno/Azyr/Power.flac'), faixa(2, 'Techno/Vendex/Plague.flac', { artista: 'Vendex' })],
+      [],
+      'genero',
+    );
+    expect(arvore.generos).toEqual([{ nome: 'Techno', ids: [1, 2], artistas: null }]);
+  });
+
+  it('um artista chamado Todas não colide com a playlist do gênero inteiro', () => {
+    const arvore = montarArvore([faixa(1, 'Techno/todas/x.flac')], [], 'genero-artista');
+    expect(arvore.generos[0]?.artistas).toEqual([{ nome: `todas (artista)`, ids: [1] }]);
+    expect(PLAYLIST_TODAS).toBe('Todas');
   });
 
   it('o nome da playlist da lista é o arquivo sem a extensão', () => {
@@ -167,6 +244,37 @@ describe('o XML', () => {
         '  </PLAYLISTS>',
         '</DJ_PLAYLISTS>',
         '',
+      ].join('\n'),
+    );
+  });
+
+  it('por gênero e artista: o gênero vira pasta, com Todas primeiro e os artistas em seguida', () => {
+    const faixas = [
+      faixa(1, 'Hard Techno/Azyr/Power.flac', { titulo: 'Power' }),
+      faixa(3, 'Hard Techno/Vendex/Plague.flac', { artista: 'Vendex', titulo: 'Plague' }),
+    ];
+    const xml = gerarXml({
+      pastaMusica: 'C:\\M',
+      faixas,
+      arvore: montarArvore(faixas, [], 'genero-artista'),
+      versao: '1',
+    });
+    expect(xml).toContain(
+      [
+        '        <NODE Type="0" Name="Gêneros" Count="1">',
+        '          <NODE Type="0" Name="Hard Techno" Count="3">',
+        '            <NODE Type="1" Name="Todas" KeyType="0" Entries="2">',
+        '              <TRACK Key="1" />',
+        '              <TRACK Key="3" />',
+        '            </NODE>',
+        '            <NODE Type="1" Name="Azyr" KeyType="0" Entries="1">',
+        '              <TRACK Key="1" />',
+        '            </NODE>',
+        '            <NODE Type="1" Name="Vendex" KeyType="0" Entries="1">',
+        '              <TRACK Key="3" />',
+        '            </NODE>',
+        '          </NODE>',
+        '        </NODE>',
       ].join('\n'),
     );
   });

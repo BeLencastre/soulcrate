@@ -89,10 +89,15 @@ asciify_paths: no
 max_filename_length: 200
 
 # =============================================================================
-#  Estrutura de pastas:  Gênero / Artista / Título
+#  Estrutura de pastas:  Gênero / Artista / Título   ou   Gênero / Artista - Título
 # =============================================================================
-# Os campos $genero_pasta, $artista_pasta e $albumartista_pasta vêm do plugin
-# pastas.py (soulbeet/beets-plugins). Só o nome da pasta muda; as tags ficam.
+# A organização do disco é escolhida no app (Suas músicas → Organização → No disco):
+#   - Gênero e artista (padrão): Hard Techno/Azyr/No Escape
+#   - Só gênero:                 Hard Techno/Azyr - No Escape
+# O app grava a escolha em soulbeet/data/pastas.json ("disco"), e o plugin pastas.py a
+# entrega em $organizar_por_artista ("1" ou "0") para o %if abaixo.
+# Os campos $genero_pasta, $artista_pasta e $albumartista_pasta vêm do mesmo
+# plugin (soulbeet/beets-plugins). Só o nome da pasta muda; as tags ficam.
 #   - Gênero: o primeiro da tag, sem o qualificador entre parênteses e na grafia
 #     canônica: "Hard Dance / Hardcore / Neo Rave" e "Hard Dance;Hardcore" -> Hard Dance,
 #     "Techno (Peak Time / Driving)" -> Techno, "psytrance" e "Psy Trance" -> Psy-Trance.
@@ -101,9 +106,9 @@ max_filename_length: 200
 #     "&" não separa ("Above & Beyond" é um artista só).
 # Depois de mudar esta seção, rode "Reorganizar as pastas" (beet move) no app.
 paths:
-  singleton: '$genero_pasta/$artista_pasta/$title'
-  default:   '$genero_pasta/$albumartista_pasta/$title'
-  comp:      '$genero_pasta/Various Artists/$artist - $title'
+  singleton: '$genero_pasta/%if{$organizar_por_artista,$artista_pasta/$title,$artista_pasta - $title}'
+  default:   '$genero_pasta/%if{$organizar_por_artista,$albumartista_pasta/$title,$albumartista_pasta - $title}'
+  comp:      '$genero_pasta/%if{$organizar_por_artista,Various Artists/}$artist - $title'
 
 # Outras grafias que são o mesmo gênero, além das que o plugin já conhece
 # (veja GENEROS_CANONICOS em pastas.py). Formato:  'como vem na tag': 'pasta'

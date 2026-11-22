@@ -6,6 +6,7 @@ import { criarErro } from '../../src/shared/erros';
 import type { MainEvent } from '../../src/shared/ipc';
 import type { LinhaAnalise } from '../../src/shared/analise-lista';
 import type { ListaRef, ResultadoAnalise } from '../../src/shared/lote';
+import type { OrganizacaoDasPastas } from '../../src/shared/organizacao';
 import { caminhoDoXml, RekordboxService, type FsRekordbox } from '../../src/main/services/rekordbox-service';
 import { ate } from './ajudantes';
 
@@ -73,6 +74,7 @@ interface Mundo {
   eventos: MainEvent[];
   dir: string | null;
   relogio: number;
+  organizacao: OrganizacaoDasPastas;
 }
 let m: Mundo;
 
@@ -98,6 +100,7 @@ function montar(): RekordboxService {
     eventos: [],
     dir: DIR,
     relogio: 1000,
+    organizacao: 'genero',
   };
   const fs: FsRekordbox = {
     modificadoEm: (c) => m.arquivos.get(c)?.em ?? null,
@@ -126,6 +129,10 @@ function montar(): RekordboxService {
       },
     },
     projeto: () => ({ dir: m.dir, origem: 'configurada' }),
+    organizacao: (dir) => {
+      expect(dir).toBe(DIR);
+      return m.organizacao;
+    },
     fs,
     versao: '9.9.9',
     emitir: (e) => m.eventos.push(e),
@@ -160,6 +167,33 @@ describe('gerar', () => {
     expect(xml()).toContain('Location="file://localhost/C:/DJ/Musics/Hard%20Techno/Azyr/A.flac"');
     // o cartão acompanha: começou (gerando) e terminou
     expect(estados().map((e) => e.gerando)).toEqual([true, false]);
+  });
+
+  it('a escolha do Rekordbox por gênero e artista: cada gênero vira pasta com Todas e uma playlist por artista', async () => {
+    m.organizacao = 'genero-artista';
+    await svc.gerar();
+    expect(xml()).toContain('<NODE Type="0" Name="Acid Techno" Count="2">');
+    expect(xml()).toContain('<NODE Type="1" Name="Todas" KeyType="0" Entries="1">');
+    expect(xml()).toContain('<NODE Type="1" Name="Azyr" KeyType="0" Entries="1">');
+    expect(xml()).not.toContain('<NODE Type="1" Name="Acid Techno"');
+  });
+
+  it('Rekordbox por gênero e artista mesmo com o disco só por gênero: o artista sai do nome do arquivo', async () => {
+    m.organizacao = 'genero-artista';
+    const lida = await m.leitura;
+    if (!lida.ok) throw new Error('leitura do dublê');
+    m.leitura = {
+      ok: true,
+      leitura: {
+        ...lida.leitura,
+        faixas: [faixa(1, 'Hard Techno/Azyr - A.flac', 'A'), faixa(2, 'Hard Techno/Vendex - B.flac', 'B')],
+      },
+    };
+    await svc.gerar();
+    expect(xml()).toContain('<NODE Type="0" Name="Hard Techno" Count="3">');
+    expect(xml()).toContain('<NODE Type="1" Name="Azyr" KeyType="0" Entries="1">');
+    expect(xml()).toContain('<NODE Type="1" Name="Vendex" KeyType="0" Entries="1">');
+    expect(xml()).toContain('Location="file://localhost/C:/DJ/Musics/Hard%20Techno/Azyr%20-%20A.flac"');
   });
 
   it('uma playlist por lista que já rodou, na ordem da lista; a que nunca rodou nem é analisada', async () => {

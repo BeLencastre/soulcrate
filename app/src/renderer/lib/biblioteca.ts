@@ -18,6 +18,13 @@ export function useRekordbox() {
   return useQuery({ queryKey: CHAVE_REKORDBOX, queryFn: () => api.rekordbox.state(), retry: false });
 }
 
+/** Como as pastas são organizadas; lido do arquivo que o app grava na pasta do Soulcrate (não precisa da stack). */
+export const CHAVE_ORGANIZACAO = [...CHAVE_BIBLIOTECA, 'organizacao'] as const;
+
+export function useOrganizacao() {
+  return useQuery({ queryKey: CHAVE_ORGANIZACAO, queryFn: () => api.library.organization(), retry: false });
+}
+
 /** Enquanto o slskd varre a pasta, a tela relê o número a cada tanto. */
 const RELER_VARREDURA_MS = 3000;
 

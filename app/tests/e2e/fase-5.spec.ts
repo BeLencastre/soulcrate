@@ -162,7 +162,7 @@ test('lê a biblioteca do beets: faixas, pasta, indicadores e o caminho para o R
   expect(comandosDoBeets(amb, 'remove')).toHaveLength(0);
 });
 
-test('Rekordbox: cria o arquivo com uma playlist por gênero e uma por lista que já rodou, na ordem da lista', async () => {
+test('Rekordbox: cria o arquivo por gênero e artista e uma playlist por lista que já rodou; só por gênero refaz o arquivo', async () => {
   amb = criarAmbiente({ comScript: true, mundo: { containers: TODOS_NO_AR } });
   montarBiblioteca(amb);
   // a lista já rodou (tem estado); a segunda linha não está na biblioteca, a terceira está
@@ -183,13 +183,27 @@ test('Rekordbox: cria o arquivo com uma playlist por gênero e uma por lista que
 
   const xml = readFileSync(caminho, 'utf8');
   expect(xml).toContain('<COLLECTION Entries="5">');
-  expect(xml).toMatch(/<NODE Type="1" Name="Hard Techno" KeyType="0" Entries="4">/);
-  expect(xml).toMatch(/<NODE Type="1" Name="_Sem Genero" KeyType="0" Entries="1">/);
+  // o padrão no Rekordbox é por gênero e artista: cada gênero é uma pasta com Todas e uma playlist por artista
+  expect(xml).toMatch(
+    /<NODE Type="0" Name="Hard Techno" Count="\d+">\s*<NODE Type="1" Name="Todas" KeyType="0" Entries="4">/,
+  );
+  expect(xml).toMatch(/<NODE Type="1" Name="Azyr" KeyType="0" Entries="\d+">/);
+  expect(xml).toMatch(/<NODE Type="0" Name="_Sem Genero" Count="2">/);
   expect(xml).toMatch(
     /<NODE Type="1" Name="techno" KeyType="0" Entries="2">\s*<TRACK Key="4" \/>\s*<TRACK Key="1" \/>/,
   );
   expect(xml).not.toContain('Name="nunca"');
 
+  // só por gênero no Rekordbox (o disco não muda): o arquivo se refaz sozinho, com uma playlist por gênero
+  await janela.locator('[data-alvo="rekordbox"] [data-organizacao="genero"] input').check();
+  await expect
+    .poll(() => readFileSync(caminho, 'utf8'), { timeout: 60_000 })
+    .toMatch(/<NODE Type="1" Name="Hard Techno" KeyType="0" Entries="4">/);
+  expect(readFileSync(caminho, 'utf8')).toMatch(/<NODE Type="1" Name="_Sem Genero" KeyType="0" Entries="1">/);
+  expect(JSON.parse(readFileSync(join(amb.projeto, 'soulbeet', 'data', 'pastas.json'), 'utf8'))).toEqual({
+    disco: 'genero-artista',
+    rekordbox: 'genero',
+  });
   expect(xml).toContain('/music/Hard%20Techno/Azyr/No%20Escape.flac"');
 });
 

@@ -1,7 +1,7 @@
 // Tela Biblioteca (protótipo "Biblioteca", Fase 5): o caixote. A tabela das faixas (artista, título, BPM, tom, gênero,
-// formato) lida do beets, os indicadores que filtram o que está faltando, a manutenção, o compartilhamento do slskd e
-// as playlists para o Rekordbox. Remover e as tarefas que mexem nos arquivos passam por diálogos com pré-visualização.
-// A tela é a mesma nos dois modos (Modo DJ e Modo Dev).
+// formato) lida do beets, os indicadores que filtram o que está faltando, a manutenção, a organização das pastas, o
+// compartilhamento do slskd e as playlists para o Rekordbox. Remover e as tarefas que mexem nos arquivos passam por
+// diálogos com pré-visualização. A tela é a mesma nos dois modos (Modo DJ e Modo Dev).
 import { useMemo, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { Link } from 'react-router';
@@ -18,6 +18,7 @@ import { msg } from '@shared/mensagens';
 import { servicoDe, servicoSaudavel } from '@shared/stack';
 import { DialogoManutencao } from '../components/biblioteca/DialogoManutencao';
 import { CartaoCompartilhamento } from '../components/biblioteca/CartaoCompartilhamento';
+import { CartaoOrganizacao } from '../components/biblioteca/CartaoOrganizacao';
 import { CartaoRekordbox } from '../components/biblioteca/CartaoRekordbox';
 import { DialogoRemover } from '../components/biblioteca/DialogoRemover';
 import { CartaoErro } from '../components/CartaoErro';
@@ -392,6 +393,7 @@ export function Biblioteca() {
             />
             <aside className="flex min-w-0 flex-[1_1_300px] flex-col gap-4">
               <CartaoManutencao leitura={lida} agora={agora} aoEscolher={setTarefa} />
+              <CartaoOrganizacao aoReorganizar={() => setTarefa('move')} />
               <CartaoCompartilhamento slskdNoAr={slskdNoAr} />
               <CartaoRekordbox agora={agora} />
             </aside>

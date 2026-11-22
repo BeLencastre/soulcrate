@@ -13,6 +13,8 @@ import {
   exigirNomeSugerido,
   exigirOpcoesDaCorrecao,
   exigirOpcoesSetup,
+  exigirAlvoDaOrganizacao,
+  exigirOrganizacao,
   exigirTarefa,
   exigirTituloEscolhido,
   exigirToken,
@@ -146,6 +148,17 @@ describe('Fase 5: biblioteca', () => {
     for (const t of ['update', 'move', 'tomEBpm', 'importLeftovers']) expect(exigirTarefa(t)).toBe(t);
     for (const ruim of ['ls', 'remove', 'modify', 'shell', '', null, 4]) {
       expect(() => exigirTarefa(ruim), String(ruim)).toThrow();
+    }
+  });
+
+  it('organização: só as duas que o plugin do beets conhece, e só para o disco ou o Rekordbox', () => {
+    for (const o of ['genero', 'genero-artista']) expect(exigirOrganizacao(o)).toBe(o);
+    for (const ruim of ['artista', 'Genero', '', null, 1, { organizacao: 'genero' }]) {
+      expect(() => exigirOrganizacao(ruim), String(ruim)).toThrow();
+    }
+    for (const a of ['disco', 'rekordbox']) expect(exigirAlvoDaOrganizacao(a)).toBe(a);
+    for (const ruim of ['Disco', 'navidrome', '', null, 0]) {
+      expect(() => exigirAlvoDaOrganizacao(ruim), String(ruim)).toThrow();
     }
   });
 

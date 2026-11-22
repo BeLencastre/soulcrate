@@ -49,6 +49,12 @@ import type {
 } from './lote.js';
 import type { OpcoesLote } from './opcoes-lote.js';
 import type { ResultadoBuscaPlaylist } from './playlists.js';
+import type {
+  AlvoDaOrganizacao,
+  EstadoOrganizacao,
+  OrganizacaoDasPastas,
+  ResultadoOrganizacao,
+} from './organizacao.js';
 import type { EstadoRekordbox, ResultadoRekordbox } from './rekordbox.js';
 import type { ArquivoDeLicencaId, CreditosELicenca, InfoSobre, ResultadoPacoteSuporte } from './sobre.js';
 import type { ServicoId } from './servicos.js';
@@ -356,6 +362,13 @@ export interface SoulcrateApi {
     sharing(): Promise<ResultadoCompartilhamento>;
     /** pede ao slskd uma nova varredura de `music/` */
     rescanSharing(): Promise<ResultadoCompartilhamento>;
+    /** como a biblioteca se organiza no disco e no Rekordbox (só gênero, ou gênero e artista); null sem pasta */
+    organization(): Promise<EstadoOrganizacao | null>;
+    /**
+     * grava uma das escolhas (a outra fica como estava); não move arquivos (isso é "Reorganizar as pastas") e não
+     * precisa da stack no ar
+     */
+    setOrganization(alvo: AlvoDaOrganizacao, organizacao: OrganizacaoDasPastas): Promise<ResultadoOrganizacao>;
   };
   rekordbox: {
     /** o arquivo de playlists para o Rekordbox: onde fica, quando foi gerado, se está gerando; null sem pasta */
@@ -498,6 +511,11 @@ export interface IpcInvoke {
   'library:openMusicFolder': { args: []; result: void };
   'library:sharing': { args: []; result: ResultadoCompartilhamento };
   'library:rescanSharing': { args: []; result: ResultadoCompartilhamento };
+  'library:organization': { args: []; result: EstadoOrganizacao | null };
+  'library:setOrganization': {
+    args: [alvo: AlvoDaOrganizacao, organizacao: OrganizacaoDasPastas];
+    result: ResultadoOrganizacao;
+  };
   'rekordbox:state': { args: []; result: EstadoRekordbox | null };
   'rekordbox:generate': { args: []; result: ResultadoRekordbox };
   'logs:subscribe': { args: [alvo: AlvoLog]; result: SubscriptionId };

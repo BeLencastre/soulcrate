@@ -1464,6 +1464,49 @@ export const msg = {
       },
       move: { titulo: 'Reorganizar as pastas', descricao: 'Depois de mudar o jeito de nomear as pastas.' },
     },
+    organizacao: {
+      titulo: 'Organização',
+      explicacao: 'Escolha à parte como organizar as pastas no disco e as playlists no Rekordbox.',
+      disco: {
+        legenda: 'No disco',
+        opcoes: {
+          'genero-artista': {
+            titulo: 'Por gênero e artista',
+            descricao: 'Uma pasta por gênero e, dentro dela, uma por artista.',
+            exemplo: 'Hard Techno/Azyr/No Escape',
+          },
+          genero: {
+            titulo: 'Só por gênero',
+            descricao: 'Uma pasta por gênero, com as músicas direto nela.',
+            exemplo: 'Hard Techno/Azyr - No Escape',
+          },
+        },
+        guardado: 'Guardado. Vale para as próximas músicas. Para mudar as que já estão no disco, reorganize as pastas.',
+        reorganizar: 'Reorganizar as pastas',
+        avisoRekordbox:
+          'Reorganizar muda o lugar dos arquivos: as faixas que já estão na Coleção do Rekordbox aparecem como não encontradas até você apontar o lugar novo delas no Rekordbox.',
+        configAntigo:
+          'O config.yaml da pasta do Soulcrate foi editado e ainda não usa esta escolha: o beets continua organizando do jeito antigo. Junte nele as mudanças do config.yaml.novo, que está ao lado.',
+      },
+      rekordbox: {
+        legenda: 'No Rekordbox',
+        opcoes: {
+          'genero-artista': {
+            titulo: 'Por gênero e artista',
+            descricao: 'Uma pasta por gênero, com a playlist Todas e uma playlist por artista.',
+            exemplo: 'Gêneros › Hard Techno › Azyr',
+          },
+          genero: {
+            titulo: 'Só por gênero',
+            descricao: 'Uma playlist por gênero.',
+            exemplo: 'Gêneros › Hard Techno',
+          },
+        },
+        guardado:
+          'Guardado. Se as playlists já foram criadas, o arquivo se refaz agora: importe a pasta Soulcrate de novo no Rekordbox.',
+      },
+      guardando: 'Guardando…',
+    },
     compartilhamento: {
       titulo: 'Compartilhamento',
       /** vem depois do número: `1.204` + `arquivos anunciados no Soulseek` */
@@ -1479,7 +1522,7 @@ export const msg = {
     rekordbox: {
       titulo: 'Rekordbox',
       explicacao:
-        'Suas músicas viram playlists no Rekordbox, dentro da pasta Soulcrate: uma por gênero e uma por lista baixada.',
+        'Suas músicas viram playlists no Rekordbox, dentro da pasta Soulcrate: por gênero (do jeito escolhido em Organização) e uma por lista baixada.',
       criar: 'Criar as playlists',
       atualizar: 'Atualizar agora',
       gerando: 'Montando as playlists…',
@@ -1802,6 +1845,7 @@ export const msg = {
       'atualizacao.lote-rodando': 'Atualização · espera',
       'stack.atualizacao-falhou': 'Erro · stack',
       'rekordbox.nao-gravou': 'Erro · Rekordbox',
+      'organizacao.nao-gravou': 'Erro · pastas',
       inesperado: 'Erro inesperado',
     } satisfies Record<ErroCodigo, string>,
     inesperado: { titulo: 'Algo deu errado', mensagem: 'O app não conseguiu terminar o que você pediu.' },
@@ -1958,6 +2002,10 @@ export const msg = {
       titulo: 'Não consegui gravar o arquivo para o Rekordbox',
       mensagem:
         'Nada mudou no Rekordbox. Veja se a pasta do Soulcrate permite gravação e se nenhum outro programa está com o arquivo aberto, e tente de novo.',
+    },
+    organizacaoNaoGravou: {
+      titulo: 'Não consegui guardar a organização das pastas',
+      mensagem: 'As pastas continuam como estavam. Veja se a pasta do Soulcrate permite gravação e tente de novo.',
     },
     operacaoFalhou: {
       titulo: (op: OperacaoStack | 'reiniciando') =>

@@ -7,22 +7,36 @@ Problema: o caminho usava o gênero e o artista do jeito que vinham no arquivo.
     "Hard Dance / Hardcore / Neo Rave", "Hard Dance;Hardcore;Neo Rave",
     "Psy-Trance" e "psytrance", "Techno (Peak Time / Driving)" e "Techno".
 
-O plugin oferece três campos para o `paths:` do config.yaml:
-  $genero_pasta        o primeiro gênero, limpo e com a grafia canônica
-                       ("_Sem Genero" quando não há gênero aproveitável)
-  $artista_pasta       o primeiro artista da faixa
-  $albumartista_pasta  o primeiro artista do álbum
+O plugin oferece quatro campos para o `paths:` do config.yaml:
+  $genero_pasta           o primeiro gênero, limpo e com a grafia canônica
+                          ("_Sem Genero" quando não há gênero aproveitável)
+  $artista_pasta          o primeiro artista da faixa
+  $albumartista_pasta     o primeiro artista do álbum
+  $organizar_por_artista  "1" quando cada artista tem a sua pasta dentro do gênero,
+                          "0" quando as faixas ficam direto na pasta do gênero
+
+A organização é escolhida no app (Suas músicas → Organização), que a grava em
+/data/pastas.json: {"disco": "genero-artista" | "genero", "rekordbox": ...}. O plugin
+só usa "disco"; "rekordbox" é do app (a árvore de playlists do Rekordbox).
+Sem o arquivo, ou com ele ilegível, vale "genero-artista" (o jeito de sempre).
 
 Só o nome da pasta muda: as tags do arquivo (gênero e artista) ficam como estão.
 As regras são funções puras (sem beets) para poderem ser testadas sem o contêiner.
 """
 
+import json
 import re
 import unicodedata
 
 from beets.plugins import BeetsPlugin
 
 SEM_GENERO = "_Sem Genero"
+
+# O app grava a escolha aqui (soulbeet/data/pastas.json na pasta do Soulcrate). É dado do
+# usuário: a atualização dos arquivos da stack não toca nele.
+ARQUIVO_DA_ORGANIZACAO = "/data/pastas.json"
+ORGANIZACAO_PADRAO = "genero-artista"
+ORGANIZACOES = ("genero-artista", "genero")
 
 # Grafia canônica dos gêneros mais comuns em música eletrônica (a do Beatport,
 # quando ele tem o gênero), seguida das outras grafias que significam o mesmo.
@@ -163,14 +177,34 @@ def primeiro_artista(artistas, artista):
     return (artista or "").strip()
 
 
+def organizacao_do_texto(texto):
+    """A organização do disco gravada pelo app; o padrão quando o texto não existe ou não é o esperado."""
+    try:
+        valor = json.loads(texto).get("disco") if texto else None
+    except (ValueError, AttributeError):
+        return ORGANIZACAO_PADRAO
+    return valor if valor in ORGANIZACOES else ORGANIZACAO_PADRAO
+
+
+def ler_organizacao(caminho=ARQUIVO_DA_ORGANIZACAO):
+    try:
+        with open(caminho, encoding="utf-8") as arquivo:
+            return organizacao_do_texto(arquivo.read())
+    except OSError:
+        return ORGANIZACAO_PADRAO
+
+
 class PastasPlugin(BeetsPlugin):
     def __init__(self):
         super().__init__()
         self.config.add({"apelidos": {}})
         self._tabela = montar_tabela(self.config["apelidos"].get(dict))
+        # lido uma vez por comando: cada `beet` (do app ou do Soulbeet) é um processo novo
+        self._por_artista = "1" if ler_organizacao() == "genero-artista" else "0"
         self.template_fields["genero_pasta"] = self._genero
         self.template_fields["artista_pasta"] = self._artista
         self.template_fields["albumartista_pasta"] = self._albumartista
+        self.template_fields["organizar_por_artista"] = lambda _item: self._por_artista
 
     def _genero(self, item):
         # beets >= 2.11 guarda a lista em "genres"; "genre" é o campo antigo (texto).

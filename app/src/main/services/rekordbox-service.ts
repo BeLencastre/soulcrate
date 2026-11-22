@@ -1,4 +1,5 @@
-// RekordboxService: grava o rekordbox XML com as playlists do Soulcrate (uma por gênero e uma por lista baixada).
+// RekordboxService: grava o rekordbox XML com as playlists do Soulcrate (por gênero, ou por gênero e artista, conforme
+// a escolha do Rekordbox em Suas músicas, e uma por lista baixada).
 // O Rekordbox lê o arquivo em Preferências › Avançado › Banco de dados › rekordbox xml; o app nunca toca no banco do
 // Rekordbox, então funciona com ele aberto (ADR 0004). As regras (árvore, Location, XML) são puras, em
 // `@shared/rekordbox`; aqui ficam a leitura do beets, a análise das listas e a gravação.
@@ -10,6 +11,7 @@ import { join } from 'node:path';
 import { criarErro, erroInesperado, type AppError } from '@shared/erros';
 import type { MainEvent } from '@shared/ipc';
 import { nomeDoEstado, type ListaRef, type OpcoesAnalise, type ResultadoAnalise } from '@shared/lote';
+import type { OrganizacaoDasPastas } from '@shared/organizacao';
 import {
   ARQUIVO_REKORDBOX_XML,
   gerarXml,
@@ -58,6 +60,8 @@ export interface DependenciasRekordbox {
     ): Promise<ResultadoAnalise>;
   };
   projeto(): ProjetoStatus;
+  /** a organização escolhida para o Rekordbox na pasta do Soulcrate `dir` (independente da do disco) */
+  organizacao(dir: string): OrganizacaoDasPastas;
   fs: FsRekordbox;
   /** versão do app, no `PRODUCT` do XML */
   versao: string;
@@ -134,7 +138,7 @@ export class RekordboxService {
       if (!lida.ok) return this.falhar(caminho, lida.erro);
       const { faixas, pastaMusica } = lida.leitura;
       const { listas, comFalha } = await this.lerListas(dir);
-      const arvore = montarArvore(faixas, listas);
+      const arvore = montarArvore(faixas, listas, this.dep.organizacao(dir));
       const xml = gerarXml({ pastaMusica, faixas, arvore, versao: this.dep.versao });
       try {
         this.dep.fs.escreverAtomico(caminho, xml);

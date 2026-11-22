@@ -115,6 +115,8 @@ const api: SoulcrateApi = {
     openMusicFolder: () => chamar('library:openMusicFolder'),
     sharing: () => chamar('library:sharing'),
     rescanSharing: () => chamar('library:rescanSharing'),
+    organization: () => chamar('library:organization'),
+    setOrganization: (alvo, organizacao) => chamar('library:setOrganization', alvo, organizacao),
   },
   rekordbox: {
     state: () => chamar('rekordbox:state'),

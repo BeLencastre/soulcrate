@@ -42,6 +42,8 @@ import {
   exigirOpcoesAnalise,
   exigirOpcoesDaCorrecao,
   exigirOpcoesSetup,
+  exigirAlvoDaOrganizacao,
+  exigirOrganizacao,
   exigirRunId,
   exigirTarefa,
   exigirTextoDaLista,
@@ -61,6 +63,7 @@ import type { LogsService } from './services/logs-service';
 import type { OperacoesService } from './services/operacoes-service';
 import type { PastaService } from './services/pasta-service';
 import type { PlaylistsService } from './services/playlists-service';
+import type { OrganizacaoService } from './services/organizacao-service';
 import type { RekordboxService } from './services/rekordbox-service';
 import type { RelatoriosService } from './services/relatorios-service';
 import { ehPastaDoSoulcrate } from './services/project-service';
@@ -90,6 +93,7 @@ export interface ContextoIpc {
   lote: LoteService;
   relatorios: RelatoriosService;
   biblioteca: BibliotecaService;
+  organizacao: OrganizacaoService;
   rekordbox: RekordboxService;
   slskd: SlskdService;
   sobre: SobreService;
@@ -460,6 +464,10 @@ export function registrarIpc(ctx: ContextoIpc): void {
   });
   tratar('library:sharing', () => ctx.slskd.compartilhamento());
   tratar('library:rescanSharing', () => ctx.slskd.reescanear());
+  tratar('library:organization', () => ctx.organizacao.estado());
+  tratar('library:setOrganization', (_e, alvo, organizacao) =>
+    ctx.organizacao.definir(exigirAlvoDaOrganizacao(alvo), exigirOrganizacao(organizacao)),
+  );
   tratar('rekordbox:state', () => ctx.rekordbox.estado());
   tratar('rekordbox:generate', () => ctx.rekordbox.gerar());
 
