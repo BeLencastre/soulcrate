@@ -37,7 +37,7 @@ O porquê de não escrever no `master.db` (pyrekordbox, [rekordbox-mcp](https://
 | IPC e evento | `rekordbox:state`, `rekordbox:generate` e o evento `rekordbox.state` (`app/src/shared/ipc.ts`, preload) |
 | Erro do catálogo | `rekordbox.nao-gravou` (`erros.ts`, `mensagens.ts`) |
 | Cartão na Biblioteca, igual nos dois modos | `app/src/renderer/components/biblioteca/CartaoRekordbox.tsx` (testes em `biblioteca-telas.test.tsx`) |
-| Análise da lista com o `libraryId` (stack 1.3.0) | `baixar-lista.ps1`, `Find-InLibrary` em `baixar-lista.lib.ps1`, [`eventos-lote.md`](eventos-lote.md#análise-da-lista--soanalisar) |
+| Análise da lista com o `libraryId` (stack 1.4.0) | `baixar-lista.ps1`, `Find-InLibrary` em `baixar-lista.lib.ps1`, [`eventos-lote.md`](eventos-lote.md#análise-da-lista--soanalisar) |
 | Ponta a ponta com o script de verdade e o dublê do docker | `app/tests/e2e/fase-5.spec.ts` (`dockerDoDubleNosScripts`) |
 
 O arquivo fica em `<pasta do Soulcrate>\rekordbox\soulcrate.xml`. Cada faixa leva só `TrackID` (o `$id` do beets), `Name`, `Artist` e `Location`.

@@ -222,7 +222,7 @@ describe('gerar', () => {
     m.analises['quebrada.txt'] = () => Promise.reject(new Error('A análise da lista demorou demais.'));
     m.analises['sem-beets.txt'] = () =>
       Promise.resolve(analise([linha(1, { libraryId: 1 })], { libraryChecked: false }));
-    // script anterior à stack 1.3.0: a análise não traz o libraryId
+    // script anterior à stack 1.4.0: a análise não traz o libraryId
     m.analises['antiga.txt'] = () => {
       const semId: LinhaAnalise = linha(1, {});
       delete semId.libraryId;

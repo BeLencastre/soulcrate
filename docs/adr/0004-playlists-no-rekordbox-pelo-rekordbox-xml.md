@@ -34,5 +34,5 @@ O Rekordbox tem dois caminhos de escrita de fora:
 - O app não corre risco de estragar a biblioteca do Rekordbox, e o arquivo pode ser gerado com o Rekordbox aberto.
 - Sobra um passo manual a cada atualização: atualizar o *rekordbox xml* e importar a pasta `Soulcrate`. O que acontece ao reimportar (duplica, substitui ou atualiza; se a análise e os cues ficam) **não está documentado** e só o teste no Rekordbox responde. Se reimportar apagar a análise, o XML terá de levar só as faixas novas.
 - A análise de cada lista roda o PowerShell e um `beet ls`: com muitas listas, gerar leva alguns segundos por lista. Listas que falham ficam de fora e são avisadas no cartão.
-- Um script anterior à stack 1.3.0 não diz qual faixa casou: as listas ficam de fora até os arquivos da stack serem atualizados.
+- Um script anterior à stack 1.4.0 não diz qual faixa casou: as listas ficam de fora até os arquivos da stack serem atualizados.
 - O `Location` de um caminho de rede (`\\servidor\pasta`) não foi conferido no Rekordbox.

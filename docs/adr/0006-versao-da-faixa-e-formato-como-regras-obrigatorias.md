@@ -159,4 +159,4 @@ Com isso, as descrições do card Qualidade mudam ("Só quando a faixa não exis
   - **App:** `opcoes-lote.ts` (as opções, o padrão e os atalhos), `motivos.ts`, `mensagens.ts` e `mensagens-dj.ts`, o card na aba Ajustes, a duração na pré-visualização da Lista e o resumo.
   - **Documentação:** o formato da lista (a duração opcional), a tabela "Decida pelo motivo" e a seção de opções do README, e as capturas da aba Ajustes e da Lista.
   - **Testes:** Pester (unitários de versão, duração e veredito; integração com o slskd falso), Vitest (`motivos.test.ts`, `opcoes-lote.test.ts`, o card) e um e2e do card com axe.
-- O script ganha parâmetros, então a stack muda de versão (minor). A mudança entra na stack 1.3.0, que ainda não foi lançada; o CHANGELOG registra em "Não lançado", com o aviso sobre listas que já tinham duração.
+- O script ganha parâmetros, então a stack muda de versão (minor). A mudança entra na stack 1.4.0; o CHANGELOG registra na versão 1.3.0 do app, com o aviso sobre listas que já tinham duração.

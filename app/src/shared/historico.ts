@@ -648,7 +648,7 @@ export function lerDiagnosticoTexto(texto: string): Record<string, DiagBruto> {
 /** As opções do `run.start` que o app conhece, no formato do formulário; o resto (`SlskdUrl`) fica de fora. */
 export function opcoesDaExecucao(opcoes: Record<string, string | number | boolean> | undefined): OpcoesLote | null {
   if (!opcoes) return null;
-  // sem `Versoes` no run.start, o lote rodou com a regra antiga da versão (anterior à stack 1.3.0)
+  // sem `Versoes` no run.start, o lote rodou com a regra antiga da versão (anterior à stack 1.4.0)
   const r: OpcoesLote = { ...novasOpcoes(), Versoes: '' };
   for (const [id, v] of Object.entries(opcoes)) {
     if (ehOpcaoBooleana(id) && typeof v === 'boolean') r[id] = v;
