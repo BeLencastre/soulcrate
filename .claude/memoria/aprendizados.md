@@ -32,6 +32,7 @@ Formato: `- AAAA-MM-DD · o aprendizado. **Por quê:** o motivo ou a consequênc
 
 ## Comandos
 
+- 2026-11-22 · Para rodar só um e2e (`npx playwright test tests/e2e/fase-5.spec.ts:170`), rode `npm run build` antes: o Playwright abre o app compilado em `out/`, e só o `npm run test:e2e` compila sozinho. **Por quê:** sem o build, o e2e testa o código antigo e passa sem enxergar a mudança (aconteceu com a organização das pastas: o teste do Rekordbox só falhou depois de um build).
 - 2026-11-22 · Para refazer só uma captura do README: `cd app && npm run build && npx playwright test -c playwright.capturas.config.ts -g biblioteca` (o `-g` filtra pelo nome do teste em `tests/capturas/readme.spec.ts`). **Por quê:** `npm run capturas` refaz todas; e a captura roda em janela de 1264×801, então ela não mostra como a tela fica em janela alta.
 
 - 2026-10-13 · Para regenerar e conferir o mapa de dependências: `node scripts/dependencias.mjs`, depois `--check`. Os testes dos scripts e dos hooks rodam com `node --test "scripts/*.test.mjs" ".claude/hooks/*.test.mjs"`.
