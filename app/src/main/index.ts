@@ -57,10 +57,11 @@ import { urlDoServico, type ServicoId } from '@shared/servicos';
 const SMOKE = process.argv.includes('--smoke-test');
 const TIMEOUT_SMOKE_MS = 60_000;
 
+const APP_ID = 'br.com.soulcrate.app';
 // A pasta de dados é a mesma em desenvolvimento e instalado (%APPDATA%\Soulcrate).
 app.setName('Soulcrate');
 // as notificações do Windows precisam do mesmo id do instalador (electron-builder.yml: appId)
-app.setAppUserModelId('br.com.soulcrate.app');
+app.setAppUserModelId(APP_ID);
 if (SMOKE) app.setPath('userData', join(tmpdir(), `soulcrate-smoke-${process.pid}`));
 else if (!app.isPackaged && process.env.SOULCRATE_USER_DATA) app.setPath('userData', process.env.SOULCRATE_USER_DATA);
 else app.setPath('userData', join(app.getPath('appData'), 'Soulcrate'));
@@ -535,7 +536,9 @@ async function principal(): Promise<void> {
 
   janela = criarJanelaPrincipal({
     preload: join(import.meta.dirname, '../preload/index.cjs'),
-    icone: join(pastaRecursos, 'icon.png'),
+    // .ico (16–256 px): o Windows escolhe o tamanho da barra de tarefas; com o .png ela cai no ícone do Electron
+    icone: join(pastaRecursos, 'icon.ico'),
+    appId: APP_ID,
     urlDev,
     indexHtml: join(import.meta.dirname, '../renderer/index.html'),
     devTools: !app.isPackaged,
