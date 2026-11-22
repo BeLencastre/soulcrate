@@ -2,6 +2,7 @@
 ### Vendex - Plague
     buscas: [artista] Vendex | Vendex Plague | Plague
     (1 busca(s) pulada(s): a busca so pelo artista ja veio completa)
+    recusada pela regra: formato
     motivos: formato aiff (use -AceitarAacAiff) x2; titulo diferente x1
     arquivos mais parecidos:
       formato aiff (use -AceitarAacAiff)       u3 :: @@c\Music\Vendex\Vendex - Plague.aiff

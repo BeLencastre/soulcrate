@@ -25,6 +25,8 @@ soulbeet/data/
 
 # ===================== Relatorios e logs ==============================
 /lotes/
+# o arquivo de playlists para o Rekordbox que o app grava na pasta do Soulcrate (rekordbox-service)
+/rekordbox/
 *.log
 diagnostico*.txt
 # fixtures reais do script (o diagnostico-exemplo.txt cai na regra acima)
@@ -67,3 +69,5 @@ app/test-results/
 app/playwright-report/
 # estado do app na pasta do Soulcrate (manifesto dos arquivos da stack)
 .soulcrate/
+# mapa do projeto gerado pelo graphify (local, refeito com: python -m graphify update .)
+graphify-out/

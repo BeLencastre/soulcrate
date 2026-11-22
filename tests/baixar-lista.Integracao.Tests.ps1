@@ -207,6 +207,11 @@ Describe 'baixar-lista.ps1 (integracao)' -Tag 'Integracao' {
       @($p.searches).Count | Should -BeGreaterThan 0
       ($d | Where-Object line -eq 'Fulano Inexistente - Nada Aqui').responses | Should -Be 0
     }
+    It 'item.diagnostic diz a regra que recusou (docs/adr/0006), so quando foi uma regra' {
+      $d = @($ev | Where-Object type -eq 'item.diagnostic')
+      ($d | Where-Object line -eq 'Vendex - Plague').rejectedBy | Should -Be 'formato'
+      ($d | Where-Object line -eq 'Fulano Inexistente - Nada Aqui').PSObject.Properties.Name | Should -Not -Contain 'rejectedBy'
+    }
     It 'emite a busca de teste (search.check) quando as buscas voltam vazias' {
       $c = @($ev | Where-Object type -eq 'search.check')
       $c[0].phase | Should -Be 'start'
@@ -283,6 +288,60 @@ Describe 'baixar-lista.ps1 (integracao)' -Tag 'Integracao' {
     }
   }
 
+  Context 'versao da faixa: -Versoes e duracao (docs/adr/0006)' {
+    BeforeAll {
+      $amb = New-AmbienteLote -Arquivos @(
+        @{ usuario = 'u1'; arquivo = '@@a\Music\Azyr\Azyr - No Escape (Radio Edit).flac'; duracao = 200 }
+        @{ usuario = 'u2'; arquivo = '@@b\Music\Azyr\Azyr - No Escape (Extended Mix).mp3'; duracao = 418; bitrate = 320 }
+        @{ usuario = 'u3'; arquivo = '@@c\Music\Creeds\Creeds - Push Up (Original Mix).flac'; duracao = 300 }
+        @{ usuario = 'u4'; arquivo = '@@d\Music\Creeds\Creeds - Push Up (Extended Mix).mp3'; duracao = 420; bitrate = 320 }
+        @{ usuario = 'u5'; arquivo = '@@e\Music\Vendex\Vendex - Plague (Radio Edit).flac'; duracao = 190 }
+        @{ usuario = 'u6'; arquivo = '@@f\Music\Kobosil\Kobosil - Hora.flac'; duracao = 190 }
+      )
+      $r = Invoke-Lote $amb -Linhas @('Azyr - No Escape', 'Creeds - Push Up', 'Vendex - Plague', 'Kobosil - Hora 6:58') `
+        -Extra @('-Versoes', 'extended,club,original+semnome', '-AceitarMp3320', '-Eventos', 'lotes\eventos-versao.jsonl', '-IdExecucao', 'versao')
+      $ev = Get-EventosLote (Join-Path $amb.Raiz 'lotes\eventos-versao.jsonl')
+      $diag = @($ev | Where-Object type -eq 'item.diagnostic')
+    }
+    AfterAll { Remove-AmbienteLote $amb }
+
+    It 'termina com codigo 0 e registra as opcoes no run.start' {
+      $r.ExitCode | Should -Be 0
+      $ev[0].options.Versoes | Should -Be 'extended,club,original+semnome'
+      $ev[0].options.DuracaoMinima | Should -Be 0
+    }
+    It 'a versao vem antes do formato: baixa a Extended em MP3 320, nao a Original em FLAC' {
+      Join-Path $amb.Raiz 'downloads\Creeds\Creeds - Push Up (Extended Mix).mp3' | Should -Exist
+      Join-Path $amb.Raiz 'downloads\Creeds\Creeds - Push Up (Original Mix).flac' | Should -Not -Exist
+    }
+    It 'Extended em MP3 320 e Radio Edit em FLAC, com MP3 320 aceito: baixa a Extended' {
+      Join-Path $amb.Raiz 'downloads\Azyr\Azyr - No Escape (Extended Mix).mp3' | Should -Exist
+    }
+    It 'so a Radio Edit: recusada pela versao' {
+      $p = $diag | Where-Object line -eq 'Vendex - Plague'
+      $p.rejectedBy | Should -Be 'versao'
+      $p.reasons."versao nao aceita ('radio edit')" | Should -BeGreaterThan 0
+    }
+    It 'duracao da linha diferente da do arquivo: recusada pela versao, com a duracao no diagnostico' {
+      $p = $diag | Where-Object line -eq 'Kobosil - Hora'
+      $p.rejectedBy | Should -Be 'versao'
+      $p.duration | Should -Be 418
+      $p.reasons.'duracao diferente (3:10, a linha pede 6:58)' | Should -BeGreaterThan 0
+    }
+    It 'sem MP3: nenhum arquivo cumpre as duas regras' {
+      $r2 = Invoke-Lote $amb -Linhas @('Azyr - No Escape') -Nome 'so-azyr.txt' `
+        -Extra @('-Versoes', 'extended,club,original+semnome', '-Eventos', 'lotes\eventos-azyr.jsonl', '-IdExecucao', 'azyr')
+      $r2.ExitCode | Should -Be 0
+      $d = @(Get-EventosLote (Join-Path $amb.Raiz 'lotes\eventos-azyr.jsonl') | Where-Object type -eq 'item.diagnostic')
+      $d[0].rejectedBy | Should -Be 'versao-e-formato'
+      $fin = Get-Content -LiteralPath (Join-Path $amb.Raiz 'lotes\resultado-azyr.txt') -Encoding UTF8
+      ($fin -match 'nenhum arquivo cumpre a versao e o formato juntos').Count | Should -Be 1
+    }
+    It '-Versoes invalido: sai com 4' {
+      (Invoke-Lote $amb -Linhas @('Azyr - No Escape') -Nome 'invalida.txt' -Extra @('-Versoes', 'extended,remix')).ExitCode | Should -Be 4
+    }
+  }
+
   Context '-SoAnalisar (P5)' {
     BeforeAll {
       $amb = New-AmbienteLote -Arquivos $Catalogo
@@ -320,6 +379,12 @@ Describe 'baixar-lista.ps1 (integracao)' -Tag 'Integracao' {
       $j.lines[1].duplicateOf | Should -Be 1
       $j.lines[2].warnings[0] | Should -Match "sem ' - '"
       $j.lines[3].remixer | Should -BeTrue
+    }
+    It 'devolve a duracao do fim da linha (null sem duracao), sem ela na linha' {
+      $j = (Invoke-Analise @('Creeds - Push Up (Extended Mix) 6:58', 'Azyr - No Escape')).Json
+      $j.lines[0].line | Should -Be 'Creeds - Push Up (Extended Mix)'
+      $j.lines[0].duration | Should -Be 418
+      $j.lines[1].duration | Should -BeNullOrEmpty
     }
     It 'mantem acentos no JSON' {
       (Invoke-Analise @('Byørn – 2 LOUD')).Json.lines[0].line | Should -Be 'Byørn - 2 LOUD'

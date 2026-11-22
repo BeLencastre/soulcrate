@@ -92,7 +92,7 @@ O Soulcrate é um **garimpeiro de músicas para DJs**. Você diz quais faixas qu
 1. **Procura** cada faixa na rede [Soulseek](https://www.slsknet.org), uma rede de compartilhamento de músicas entre usuários;
 2. **Escolhe e baixa** a melhor versão disponível (FLAC ou WAV; AIFF, AAC e MP3 se você permitir);
 3. **Etiqueta** a faixa com BPM, tom harmônico e capa;
-4. **Organiza** tudo em pastas por gênero e artista;
+4. **Organiza** tudo em pastas por gênero e artista (ou só por gênero, se preferir);
 5. **Entrega** uma biblioteca que o Rekordbox lê direto, pronta para ir para o pendrive.
 
 Ele roda **no seu próprio computador**, e os arquivos ficam com você. Não há assinatura nem serviço online do Soulcrate (só uma conta no Soulseek, criada no primeiro login): é um conjunto de ferramentas open source já configuradas para trabalhar juntas, com scripts de um clique no Windows.
@@ -375,7 +375,7 @@ O **diagnóstico** explica por que cada faixa não veio, na linguagem da tabela 
 
 #### Biblioteca
 
-"Suas músicas": as faixas do beets com artista, título, BPM, tom, gênero e formato, com busca e indicadores do que falta (sem BPM, sem tom, sem gênero, esperando organizar em `downloads/`). **Remover uma faixa nunca é imediato**: o app mostra tudo o que o filtro pega, avisa que o arquivo é apagado de vez (sem Lixeira) e só apaga depois da sua confirmação. Em **Cuidar da biblioteca** faz a [manutenção](#manutenção-da-biblioteca) sem linha de comando (calcular tom e BPM que faltam, organizar o que ficou em `downloads/`, atualizar depois de mexer nos arquivos e reorganizar as pastas, os dois últimos com pré-visualização), mostra quantas músicas estão compartilhadas no Soulseek (com **Atualizar a lista**) e a pasta para monitorar no Rekordbox. O botão **Abrir … no Explorer** diz qual pasta abre (por exemplo, "Abrir DJ/Musics no Explorer"). Nada disso roda com a stack desligada nem com um lote em andamento.
+"Suas músicas": as faixas do beets com artista, título, BPM, tom, gênero e formato, com busca e indicadores do que falta (sem BPM, sem tom, sem gênero, esperando organizar em `downloads/`), numa tabela que vai até o fim da janela. Ao lado, as ferramentas ficam em abas, um cartão por vez: **Cuidar**, **Organizar**, **Rekordbox** e **Compartilhar**. **Remover uma faixa nunca é imediato**: o app mostra tudo o que o filtro pega, avisa que o arquivo é apagado de vez (sem Lixeira) e só apaga depois da sua confirmação. Em **Cuidar da biblioteca** faz a [manutenção](#manutenção-da-biblioteca) sem linha de comando (calcular tom e BPM que faltam, organizar o que ficou em `downloads/`, atualizar depois de mexer nos arquivos e reorganizar as pastas, os dois últimos com pré-visualização), mostra quantas músicas estão compartilhadas no Soulseek (com **Atualizar a lista**) e cria as [playlists para o Rekordbox](#rekordbox-e-pendrive) (por gênero e uma por lista baixada). Na aba **Organizar**, escolha à parte como organizar **no disco** e **no Rekordbox**, cada um entre **Por gênero e artista** (o padrão) e **Só por gênero**. No disco: `Hard Techno/Azyr/No Escape` ou `Hard Techno/Azyr - No Escape`; a escolha vale para o que for importado daqui em diante, e para mudar o que já está no disco use **Reorganizar as pastas**, com prévia. No Rekordbox: uma pasta por gênero com a playlist `Todas` e uma playlist por artista, ou uma playlist por gênero. O botão **Abrir … no Explorer** diz qual pasta abre (por exemplo, "Abrir DJ/Musics no Explorer"). Nada disso roda com a stack desligada nem com um lote em andamento.
 
 ![Tela Biblioteca: as faixas com BPM, tom e gênero, os indicadores e a manutenção](docs/img/09-biblioteca.png)
 
@@ -439,7 +439,7 @@ Mais detalhes em [`docs/distribuicao.md`](docs/distribuicao.md) (instalar, atual
 1. Abra o **Docker Desktop** e espere ele ficar verde (o app abre para você).
 2. Rode o `subir.bat` ou use **Ligar** no app. Se nada mudou, sobe em segundos.
 3. Baixe faixas pelo [Soulbeet](#baixar-uma-faixa-pelo-soulbeet) ou por [lista](#download-em-lote).
-4. Abra o Rekordbox. Se a `music` for pasta monitorada, as faixas novas aparecem sozinhas ([Rekordbox e pendrive](#rekordbox-e-pendrive)).
+4. Abra o Rekordbox e importe de novo a pasta `Soulcrate` de *rekordbox xml* para trazer as faixas e as playlists novas ([Rekordbox e pendrive](#rekordbox-e-pendrive)).
 5. Quando terminar, rode o `parar.bat` (ou **Desligar** no app), ou só feche o Docker Desktop.
 
 Os contêineres têm `restart: unless-stopped`: se o Docker Desktop abrir com o Windows, a stack volta sozinha.
@@ -469,11 +469,14 @@ O separador é **espaço-hífen-espaço**.
 ```text
 # Comentários começam com #. Linhas em branco são ignoradas.
 
-# Sem mix: prefere Original/Extended Mix e recusa Remix/Edit/Radio...
+# Sem mix: vale o card "Versão da faixa" (no app: Extended, depois Club, depois Original)
 Azyr - No Escape
 
-# "Original Mix" equivale a não escrever nada
+# "Original Mix" pede o original (com ou sem o nome no arquivo)
 Creeds - Push Up (Original Mix)
+
+# Duração no fim (opcional): o arquivo precisa ter essa duração, com folga de 5 s
+Creeds - Push Up (Extended Mix) 6:58
 
 # Remix específico: o nome do remixer vai DENTRO do parêntese
 RIOT CODE - Direct It To The Roof (Azyr Remix)
@@ -497,13 +500,14 @@ Cloudy - Yeah (Cloudy Remix)
 - **Título exato:** palavras a mais no título do arquivo fazem ele ser recusado. Por isso "Azyr - Power" não aceita "Northern Power". Se o título oficial tem uma palavra, escreva-a.
 - **Grafia:** acentos, maiúsculas e letras como `ø`/`æ`/`ß` não importam (`Byørn` também acha `BYORN`). Erros pequenos de digitação são tolerados (`Abaddon` acha `Abbadon`). Censura ("Mxther Fxcker") importa: escreva como a faixa costuma aparecer nos arquivos.
 - **Confira os títulos:** listas montadas de memória ou por IA costumam ter títulos que não existem. O script confere cada título no MusicBrainz antes de buscar, e quando uma faixa não vem o diagnóstico mostra **os títulos daquele artista que existem no Soulseek** ([Faixas que não vieram](#faixas-que-não-vieram)).
-- **Versões:** remix, edit, rework, bootleg, dub, VIP, live, acapella, instrumental, radio, mashup, cover, sped/slowed etc. só entram se a palavra estiver na sua linha.
+- **Versões:** remix, edit, rework, bootleg, dub, VIP, live, acapella, instrumental, radio, mashup, cover, sped/slowed etc. só entram se a palavra estiver na sua linha. Nas linhas sem mix, quais versões da própria faixa entram (Extended, Club, Original, sem versão no nome, Radio Edit) e em que ordem você escolhe no card **Versão da faixa** ([Versão da faixa](#versão-da-faixa)).
+- **Duração:** com uma duração no fim da linha (`Título 6:58`), só entra o arquivo com essa duração, com folga de 5 s (ou 2% em faixas longas). É o jeito mais preciso de garantir a versão certa: a Radio Edit de 3:10 não passa por uma Extended de 6:58.
 
-**Colando de outros lugares:** o script limpa sozinho a numeração (`01.`, `1)`, `-` , `*` ), o traço longo (`–` e `—` viram `-`) e a duração no fim (`3:45`). Dá para colar tracklist do 1001Tracklists, Beatport ou YouTube quase direto.
+**Colando de outros lugares:** o script limpa sozinho a numeração (`01.`, `1)`, `-` , `*` ) e o traço longo (`–` e `—` viram `-`). A duração no fim (`3:45`) sai da linha e passa a ser conferida no arquivo (veja **Duração** acima). Dá para colar tracklist do 1001Tracklists, Beatport ou YouTube quase direto.
 
 **Playlist de streaming no app:** em *Baixar lista → Importar playlist*, escolha Spotify, Apple Music, YouTube Music ou Deezer e cole o link de uma playlist **pública**. O app revisa as faixas e cria a `.txt`; *Atualizar da playlist* traz depois só as faixas novas. Pelo link, o Spotify entrega no máximo 100 faixas: para playlists maiores, use o CSV abaixo.
 
-**Playlist do Spotify:** exporte em CSV (pelo [Exportify](https://exportify.app) ou TuneMyMusic, por exemplo) e use o `.csv` no lugar do `.txt`. Ele lê as colunas *Track Name* e *Artist Name(s)*, e o "Título - X Remix" do Spotify vira "Título (X Remix)".
+**Playlist do Spotify:** exporte em CSV (pelo [Exportify](https://exportify.app) ou TuneMyMusic, por exemplo) e use o `.csv` no lugar do `.txt`. Ele lê as colunas *Track Name* e *Artist Name(s)*, e o "Título - X Remix" do Spotify vira "Título (X Remix)". A coluna *Duration (ms)*, quando existe, vira a duração de cada faixa.
 
 ### Rodando
 
@@ -532,16 +536,24 @@ A **mesma lista não roda duas vezes ao mesmo tempo**: se você abrir o `baixar-
 
 ## Rekordbox e pendrive
 
+O Rekordbox não tem pasta monitorada: ele não enxerga sozinho as faixas que chegam depois. O app resolve isso com as **playlists do Soulcrate**: um arquivo no formato oficial *rekordbox xml* com a pasta `Soulcrate`, que organiza `Gêneros` do jeito escolhido em **Suas músicas → Organizar → No Rekordbox**, independente das pastas do disco (só por gênero: uma playlist por gênero; por gênero e artista: uma pasta por gênero, com a playlist `Todas` e uma playlist por artista, tirado da pasta do artista ou, com o disco só por gênero, do começo do nome do arquivo) e tem uma playlist por lista baixada (`Listas`, na ordem da lista). O app não mexe no banco do Rekordbox, então pode deixar o Rekordbox aberto. A decisão está no [ADR 0004](docs/adr/0004-playlists-no-rekordbox-pelo-rekordbox-xml.md).
+
 **Configuração (uma vez):**
 
-1. Em **Preferências → Avançado → Banco de dados → Pasta monitorada** (Auto Import / Watch Folder), ative e escolha a pasta `music` do projeto (ou o caminho de `MUSIC_DIR`). As faixas novas aparecem sozinhas. Outra opção é arrastar a pasta para a coleção.
-2. Em **Preferências → Análise**, desative a **detecção de tom** se quiser manter o tom do keyfinder (gravado na tag padrão `TKEY`). Deixe o **beatgrid** ativo: o BPM é gravado como número inteiro.
+1. No app, em **Biblioteca → Rekordbox**, clique em **Criar as playlists**. O arquivo fica em `rekordbox\soulcrate.xml`, na pasta do Soulcrate (o cartão mostra o caminho, com **Copiar**). Daí em diante, ele se atualiza sozinho ao fim de cada download e de cada tarefa de **Cuidar da biblioteca**.
+2. No Rekordbox, em **Preferências → Avançado → Banco de dados → rekordbox xml → Imported Library** (*Preferences → Advanced → Database → rekordbox xml → Imported Library*), escolha esse arquivo. Se *rekordbox xml* não aparecer na árvore à esquerda, ligue em **Preferências → Exibição → Layout → Media Browser** (*Preferences → View → Layout → Media Browser*).
+3. Em **Preferências → Análise**, desative a **detecção de tom** se quiser manter o tom do keyfinder (gravado na tag padrão `TKEY`). Deixe o **beatgrid** ativo: o BPM é gravado como número inteiro.
 
 **Depois de cada lote:**
 
-1. Analise as faixas novas no Rekordbox (beatgrid e waveform).
-2. Faça hot cues e memory cues e coloque nas playlists.
-3. Exporte para o pendrive como de costume.
+1. Na árvore do Rekordbox, em *rekordbox xml*, clique em atualizar. Depois, clique com o botão direito na pasta `Soulcrate` e escolha **Importar playlist** (*Import Playlist*). As faixas novas entram na Coleção junto com as playlists.
+2. Analise as faixas novas no Rekordbox (beatgrid e waveform).
+3. Faça hot cues e memory cues.
+4. Exporte a pasta `Soulcrate` (ou as playlists que quiser) para o pendrive, como de costume.
+
+Reorganizar as pastas (por exemplo, depois de trocar a organização) muda o lugar dos arquivos: as faixas que já estão na Coleção do Rekordbox aparecem como não encontradas até você apontar o lugar novo delas no Rekordbox.
+
+Prefere montar as suas playlists à mão? Importe só as faixas em **Arquivo → Importar → Importar pasta** (*File → Import → Import Folder*), escolhendo a pasta `music` (ou a de `MUSIC_DIR`), e repita depois de cada lote.
 
 **Formato:** FLAC toca no Rekordbox e nos XDJ/CDJ recentes (XDJ-XZ, XDJ-RX3, XDJ-AZ, CDJ-3000). Se for tocar num equipamento antigo, confirme o suporte a FLAC antes da gig ou mantenha AIFF ou MP3 320 dessas faixas (e rode com `-AceitarAacAiff` ou `-AceitarMp3320` para baixá-los).
 
@@ -823,17 +835,18 @@ Cada arquivo encontrado passa por estes filtros. O motivo de cada recusa aparece
 | Mix                      | Se você pediu um mix, o nome dele precisa estar no parêntese do arquivo. Isso evita pegar o remix invertido                                                                                                                                                                                                                                                                                                                                 |
 | Palavras extras          | Proibidas no trecho do título; permitidas no trecho do artista (feat. etc.). Números e tons Camelot (`5A`, `12B`) são liberados (`Paranoia 5A 160`). Nomes estilo scene (`09-kobosil-while_the_stars`) e com colchetes (`[01][Vendex][Emotional_Khaos]`) são separados em trechos. Com `-TituloAproximado`, um título com palavras a mais é aceito **por último** (`Vendex - Vengeance` → `Vengeance Of The Masked`) e marcado no relatório |
 | Outro artista            | Se o artista pedido só aparece na **pasta** e o nome do arquivo traz outro artista, é recusado. Ex.: pasta "Novah Curates Hard Dance", arquivo "Acid - Marie Vaunt"                                                                                                                                                                                                                                                                         |
-| Versão                   | Remix/edit/radio... só se estiverem na sua linha                                                                                                                                                                                                                                                                                                                                                                                            |
+| Versão                   | Remix/edit/radio... só se estiverem na sua linha. Nas linhas sem mix, com `-Versoes`, só as versões aceitas no card (Extended Mix, Club Mix, Original Mix, sem versão no nome, Radio Edit), reconhecidas pelo parêntese ou pelo trecho depois de " - " (`(Extended)`, `- Extended Mix`)                                                                                                                                                     |
+| Duração da versão        | Com `-Versoes`, a duração no fim da linha (ou a do CSV) precisa bater com a do arquivo, com folga de 5 s ou 2%. Com `-DuracaoMinima`, as linhas sem mix e sem duração recusam arquivos mais curtos. Arquivo sem duração informada passa (fica atrás dos que têm a duração conferida)                                                                                                                                                         |
 | Formato (por último)     | **FLAC e WAV são sempre aceitos.** AIFF e AAC (256 kbps ou mais) só com `-AceitarAacAiff`; MP3 **320 kbps** só com `-AceitarMp3320`; MP3 256 ou VBR (V0, ~220–300 kbps) só com `-AceitarMp3Menor` (que já inclui o 320). Quando o usuário não informa o bitrate do MP3 ou do AAC, ele é estimado por tamanho ÷ duração                                                                                                                                                                                                                              |
 
 
-O formato é conferido **por último**. Assim o diagnóstico diz "era a faixa certa, mas em AIFF" em vez de esconder o arquivo certo atrás de um motivo genérico.
+A **versão** (nome e duração) e o **formato** são as duas regras obrigatórias: o arquivo precisa cumprir as duas. Elas são conferidas por último e **juntas**, sem parar na primeira que falha. Assim o diagnóstico diz "era a faixa certa, mas em AIFF", "era a faixa certa, mas Radio Edit" ou as duas coisas, em vez de esconder o arquivo certo atrás de um motivo genérico. Quando a faixa não vem, o diagnóstico diz qual regra impediu: a da versão, a do formato ou as duas ([ADR 0006](docs/adr/0006-versao-da-faixa-e-formato-como-regras-obrigatorias.md)).
 
 #### Preferência entre os arquivos aprovados
 
 1. Título exato antes de título aproximado (`-TituloAproximado`).
-2. O melhor formato (FLAC > WAV > AIFF > MP3 320 > AAC > MP3 256/VBR; só entram os que você aceitou).
-3. Original, Extended ou Club Mix no nome (quando você não pediu um mix).
+2. Com `-Versoes` (o app sempre manda): a **versão** na ordem do card, depois a duração conferida antes da não informada, depois o melhor formato. Uma Extended em MP3 320 ganha de uma Original em FLAC, se você aceitou MP3 320 e pôs a Extended na frente.
+3. Sem `-Versoes` (como sempre foi): o melhor formato (FLAC > WAV > AIFF > MP3 320 > AAC > MP3 256/VBR; só entram os que você aceitou), depois Original, Extended ou Club Mix no nome (quando você não pediu um mix).
 4. Um usuário com **slot livre**, depois **fila menor**, depois **velocidade maior**.
 
 Usuários que travaram (fila longa, recusa, erro) **2 vezes ou mais** na execução vão para o fim da lista nas faixas seguintes; com 1 vez, perdem o desempate dentro do mesmo formato.
@@ -951,6 +964,10 @@ Esses arquivos podem ser apagados quando quiser (o `.lock`, só com o lote parad
 | `artista nao aparece`                                                                     | Troque o artista principal na linha (ex.: o outro colaborador)                                                    |
 | `mix diferente`                                                                           | Confira o nome exato do remix                                                                                     |
 | `outra versao ('edit')`                                                                   | Só existe a edit. Se servir, escreva `(... Edit)` na linha                                                        |
+| `versao nao aceita ('radio edit')`                                                        | Só existe uma versão que você deixou em "Não baixar" no card Versão da faixa. Se servir, leve-a para "Baixar"     |
+| `duracao diferente (3:10, a linha pede 6:58)`                                             | Achou a faixa com outra duração, ou seja, outra versão. Confira a duração na lista, ou apague-a                   |
+| `curta para a versao (3:10, minimo 5:00)`                                                 | Só existe mais curta que a duração mínima. Diminua ou desligue a duração mínima (`-DuracaoMinima`)              |
+| `versao e formato: ...`                                                                   | O arquivo falha nas duas regras. Mudar só uma não basta: aceite a versão e o formato                              |
 | `0 respostas` (mesmo após a busca pelo artista)                                           | Ninguém compartilha nada desse artista no momento. Confira a grafia do artista, tente outro dia ou compre a faixa |
 
 
@@ -989,6 +1006,18 @@ O `-Retentar` é necessário quando você roda **a mesma lista** de novo. Sem el
 | `-Retentar`            | —      | Tenta de novo o que falhou em execuções anteriores     |
 | `-NaoPularExistentes`  | —      | Baixa mesmo o que já existe na biblioteca              |
 | `-SemBeets`            | —      | Só baixa, sem importar                                 |
+| `-Versoes "..."`       | —      | Versões aceitas nas linhas sem mix, em ordem ([Versão da faixa](#versão-da-faixa)) |
+| `-DuracaoMinima N`     | 0      | Segundos: recusa versões mais curtas nas linhas sem mix e sem duração (0 desliga) |
+
+#### Versão da faixa
+
+`-Versoes` lista as versões aceitas nas linhas sem mix, em ordem de preferência: `extended`, `club`, `original`, `semnome` (arquivo sem versão no nome, quase sempre o original) e `radioedit`. A vírgula separa as posições e o `+` põe versões na mesma posição. No `.bat`, ponha o valor entre aspas (o `cmd` separa na vírgula):
+
+```bat
+baixar-lista.bat lista.txt -Versoes "extended,club,original+semnome"
+```
+
+Com ela, a versão passa na frente do formato na escolha do arquivo, e a duração no fim da linha passa a ser conferida. Sem ela, vale a regra de sempre. O app sempre a manda, com o que está no card **Versão da faixa** da aba Ajustes (o padrão é o do exemplo). A linha que pede um mix (`(Azyr Remix)`, `(Extended Mix)`) não usa a lista; `(Original Mix)` na linha aceita o original, com ou sem o nome no arquivo.
 
 
 Há também opções para programas que controlam o lote, como o app: `-Eventos` (andamento em JSON), `-ArquivoParada` (parada segura), `-IdExecucao` (nome dos arquivos) e `-SoAnalisar` (analisa a lista sem baixar, com `-AnalisarBiblioteca` e `-SaidaAnalise`). Elas e os códigos de saída estão em [`docs/eventos-lote.md`](docs/eventos-lote.md). Para apontar o script para outro endereço, há `-SlskdUrl` (padrão `http://localhost:5030`), `-BeetsLib` e `-BeetsDir`.
@@ -1031,7 +1060,7 @@ docker compose exec soulbeet /usr/bin/python3 -c "import sys; from beets.ui impo
 | Recalcular BPM das faixas sem BPM                                          | `autobpm`                                                  |
 | **Apagar uma faixa errada** (do banco e do disco)                          | `remove -d "title:Northern Power"`                         |
 | Corrigir tags na mão                                                       | `modify "title:..." genre=Techno`                          |
-| Mover arquivos depois de mudar `paths:`                                    | `move`                                                     |
+| Mover arquivos depois de mudar `paths:` ou a organização no disco          | `move`                                                     |
 | Sincronizar o banco com o disco (arquivos apagados/editados fora do beets) | `update`                                                   |
 | Importar na mão o que sobrou em `downloads/`                               | `import -q -s /downloads/<pasta>`                          |
 

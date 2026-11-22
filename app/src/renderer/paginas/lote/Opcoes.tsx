@@ -1,6 +1,6 @@
 // Etapa 02 do lote, Ajustes (protótipos "Baixar lista · Opções" e "DJ · Baixar lista › Ajustes"): receitas de um
-// clique, a qualidade em caixas de marcar, os outros grupos em interruptores, as avançadas recolhidas em duas colunas e
-// o resumo. O layout é o mesmo nos dois modos; o que muda é o texto: o Modo DJ explica cada ajuste em palavras (com os
+// clique, a qualidade em caixas de marcar, a versão da faixa (docs/adr/0006), os outros grupos em interruptores, as
+// avançadas recolhidas em duas colunas e o resumo. O layout é o mesmo nos dois modos; o que muda é o texto: o Modo DJ explica cada ajuste em palavras (com os
 // interruptores invertidos onde o script diz "Sem") e resume em frases, o Modo Dev mostra o parâmetro do script e o
 // comando equivalente. As opções gravadas são as mesmas.
 import { useState } from 'react';
@@ -27,6 +27,7 @@ import {
 } from '@shared/opcoes-lote';
 import { CartaoErro } from '../../components/CartaoErro';
 import { IconePlay, IconeSeta } from '../../components/icones';
+import { CartaoVersoes } from '../../components/lote/CartaoVersoes';
 import { EtapasDoLote } from '../../components/lote/Etapas';
 import { useIniciarLote } from '../../components/lote/IniciarLote';
 import { Botao, Cartao, classeBotao, Rotulo } from '../../components/ui';
@@ -269,6 +270,8 @@ export function Opcoes() {
               </fieldset>
             </Cartao>
           ) : null}
+
+          <CartaoVersoes opcoes={opcoes} dj={dj} aoMudar={mudar} />
 
           {outrosGrupos.map((g) => (
             <Cartao

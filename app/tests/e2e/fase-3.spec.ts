@@ -178,7 +178,18 @@ test('uma lista de 30 faixas roda do começo ao fim pelo app com o mesmo resulta
   writeFileSync(join(amb2.projeto, 'set.txt'), lista);
   const peloScript = rodarScript(
     amb2,
-    ['-Lista', 'set.txt', '-SlskdUrl', slskd2.url, '-BuscasPorJanela', '60', '-SemCatalogo', '-SemBeets'],
+    [
+      '-Lista',
+      'set.txt',
+      '-SlskdUrl',
+      slskd2.url,
+      '-BuscasPorJanela',
+      '60',
+      '-SemCatalogo',
+      '-SemBeets',
+      '-Versoes',
+      'extended,club,original+semnome',
+    ],
     ambienteDoLote(amb2, slskd2).PATH as string,
   );
 
@@ -199,7 +210,7 @@ test('uma lista de 30 faixas roda do começo ao fim pelo app com o mesmo resulta
   await janela.getByRole('button', { name: /Avançadas/ }).click();
   for (let i = 0; i < 6; i++) await janela.getByRole('button', { name: 'Aumentar: Buscas a cada 220 s' }).click();
   await expect(janela.getByTestId('comando-equivalente')).toHaveText(
-    'baixar-lista.bat set.txt -BuscasPorJanela 60 -SemCatalogo -SemBeets',
+    'baixar-lista.bat set.txt -BuscasPorJanela 60 -SemCatalogo -SemBeets -Versoes "extended,club,original+semnome"',
   );
   await expect(janela.getByTestId('resumo-opcoes')).toContainText('3 ajustes diferentes do padrão do script');
   await capturar(janela, 'f3-02-opcoes');
@@ -244,6 +255,13 @@ test('uma lista de 30 faixas roda do começo ao fim pelo app com o mesmo resulta
   expect(arquivosEm(amb.projeto, 'nao-baixadas-')).toHaveLength(1);
   expect(arquivosEm(amb.projeto, 'diagnostico-')).toHaveLength(1);
   expect(arquivosEm(amb.projeto, 'eventos-')).toHaveLength(1);
+  // o card Versão da faixa chega ao script (docs/adr/0006)
+  const inicio = JSON.parse(
+    semBom(readFileSync(join(amb.projeto, 'lotes', arquivosEm(amb.projeto, 'eventos-')[0] as string), 'utf8')).split(
+      '\n',
+    )[0] ?? '{}',
+  ) as { options?: { Versoes?: string } };
+  expect(inicio.options?.Versoes).toBe('extended,club,original+semnome');
   expect(
     readdirSync(join(amb.projeto, 'downloads'), { recursive: true }).filter((f) => String(f).endsWith('.flac')),
   ).toHaveLength(27);

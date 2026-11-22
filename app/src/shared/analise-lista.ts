@@ -14,12 +14,22 @@ export interface LinhaAnalise {
   original: boolean;
   remixer: boolean;
   queries: string[];
+  /**
+   * Duração no fim da linha (`Título 6:58`) ou no CSV, em segundos: com o card Versão da faixa, o arquivo precisa
+   * ter essa duração. `null` sem duração; ausente nos scripts anteriores à stack 1.3.0.
+   */
+  duration?: number | null;
   status: StatusLinhaAnalise;
   /** em "repetida": sourceLine da primeira ocorrência */
   duplicateOf: number | null;
   /** status da execução anterior desta lista, se houver */
   previous: string | null;
   warnings: string[];
+  /**
+   * `$id` do beets da faixa que casa com a linha (com `-AnalisarBiblioteca`), também nas "ja feita": é com ele que a
+   * playlist da lista no Rekordbox é montada. Ausente nos scripts anteriores à stack 1.3.0.
+   */
+  libraryId?: number | null;
 }
 
 export interface AnaliseListaOk {

@@ -13,6 +13,12 @@ import {
   type OpcoesAnalise,
 } from '@shared/lote';
 import { validarOpcoes, type OpcoesLote } from '@shared/opcoes-lote';
+import {
+  ehAlvoDaOrganizacao,
+  ehOrganizacao,
+  type AlvoDaOrganizacao,
+  type OrganizacaoDasPastas,
+} from '@shared/organizacao';
 import { LIMITE_LINK } from '@shared/playlists';
 
 /** Nenhum campo do formulário tem motivo para passar disto (uma senha de 255 caracteres já é enorme). */
@@ -210,6 +216,16 @@ export function exigirToken(valor: unknown): string {
 
 export function exigirTarefa(valor: unknown): TarefaManutencao {
   if (!ehTarefaDeManutencao(valor)) throw new Error('Tarefa de manutenção desconhecida.');
+  return valor;
+}
+
+export function exigirAlvoDaOrganizacao(valor: unknown): AlvoDaOrganizacao {
+  if (!ehAlvoDaOrganizacao(valor)) throw new Error('Alvo da organização desconhecido.');
+  return valor;
+}
+
+export function exigirOrganizacao(valor: unknown): OrganizacaoDasPastas {
+  if (!ehOrganizacao(valor)) throw new Error('Organização das pastas desconhecida.');
   return valor;
 }
 

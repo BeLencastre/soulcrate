@@ -1,5 +1,6 @@
 // Opções do baixar-lista.ps1 que o app expõe (README, "Opções"): padrões iguais aos do script, receitas, e a
 // montagem dos argumentos. Só aceita as opções conhecidas: nada do renderer vira argumento sem passar por aqui.
+import { DURACAO_MINIMA_MAX, VERSOES_PADRAO, versoesValidas } from './versoes.js';
 
 export const OPCOES_BOOLEANAS = [
   'AceitarAacAiff',
@@ -37,7 +38,21 @@ export type OpcaoBooleanaId = (typeof OPCOES_BOOLEANAS)[number];
 export type OpcaoNumericaId = (typeof OPCOES_NUMERICAS)[number];
 export type OpcaoId = OpcaoBooleanaId | OpcaoNumericaId;
 
-export type OpcoesLote = Record<OpcaoBooleanaId, boolean> & Record<OpcaoNumericaId, number>;
+/** As opções do card Versão da faixa (docs/adr/0006), que têm tela e regras próprias. */
+export type OpcaoVersaoId = 'Versoes' | 'DuracaoMinima';
+/** Tudo o que o lote recebe do app. */
+export type AjusteId = OpcaoId | OpcaoVersaoId;
+
+export type OpcoesLote = Record<OpcaoBooleanaId, boolean> &
+  Record<OpcaoNumericaId, number> & {
+    /**
+     * `-Versoes`: as versões aceitas, em ordem (`extended,club,original+semnome`; ver `lerVersoes`). Vazio só nas
+     * opções lidas de um lote antigo, que rodou sem ela (a regra antiga).
+     */
+    Versoes: string;
+    /** `-DuracaoMinima`, em segundos; 0 desliga */
+    DuracaoMinima: number;
+  };
 
 /** Faixa de valores aceitos e passo dos botões − e +. O mínimo é 1 em todas (o script não aceita 0). */
 export interface LimiteNumerico {
@@ -95,6 +110,8 @@ export const OPCOES_PADRAO: Readonly<OpcoesLote> = Object.freeze({
   FilaUltimoMin: LIMITES.FilaUltimoMin.padrao,
   DownloadMaxMin: LIMITES.DownloadMaxMin.padrao,
   LoteBeets: LIMITES.LoteBeets.padrao,
+  Versoes: VERSOES_PADRAO,
+  DuracaoMinima: 0,
 });
 
 export function novasOpcoes(): OpcoesLote {
@@ -130,6 +147,14 @@ export function validarOpcoes(bruto: unknown): OpcoesLote {
       const { min, max } = LIMITES[id];
       if (valor < min || valor > max) throw new Error(`Opção ${id} fora do intervalo (${min} a ${max}).`);
       r[id] = valor;
+    } else if (id === 'Versoes') {
+      if (typeof valor !== 'string' || !versoesValidas(valor)) throw new Error('Opção Versoes inválida.');
+      r.Versoes = valor;
+    } else if (id === 'DuracaoMinima') {
+      if (typeof valor !== 'number' || !Number.isInteger(valor) || valor < 0 || valor > DURACAO_MINIMA_MAX) {
+        throw new Error(`Opção DuracaoMinima inválida (0 a ${DURACAO_MINIMA_MAX} segundos).`);
+      }
+      r.DuracaoMinima = valor;
     } else {
       throw new Error(`Opção desconhecida: ${id}.`);
     }
@@ -137,9 +162,9 @@ export function validarOpcoes(bruto: unknown): OpcoesLote {
   return r;
 }
 
-/** Opções que diferem do padrão do script, na ordem do README. */
-export function opcoesAlteradas(opcoes: OpcoesLote): OpcaoId[] {
-  const ordem: OpcaoId[] = [...OPCOES_NUMERICAS, ...OPCOES_BOOLEANAS];
+/** Opções que diferem do padrão do app, na ordem do README. */
+export function opcoesAlteradas(opcoes: OpcoesLote): AjusteId[] {
+  const ordem: AjusteId[] = [...OPCOES_NUMERICAS, ...OPCOES_BOOLEANAS, 'Versoes', 'DuracaoMinima'];
   return ordem.filter((id) => opcoes[id] !== OPCOES_PADRAO[id]);
 }
 
@@ -147,20 +172,29 @@ export function alterouAlgo(opcoes: OpcoesLote): boolean {
   return opcoesAlteradas(opcoes).length > 0;
 }
 
-/** `-Paralelo 8 -AceitarAacAiff`: só o que difere do padrão (o script já assume os padrões). */
+/**
+ * `-Paralelo 8 -AceitarAacAiff`: só o que difere do padrão (o script já assume os padrões). A exceção é `-Versoes`:
+ * sem ela o script segue a regra antiga, então o app sempre a manda (vazia só nas opções de um lote antigo).
+ */
 export function argumentosDasOpcoes(opcoes: OpcoesLote): string[] {
   const args: string[] = [];
   for (const id of opcoesAlteradas(opcoes)) {
+    if (id === 'Versoes') continue;
     args.push(`-${id}`);
-    if (ehOpcaoNumerica(id)) args.push(String(opcoes[id]));
+    if (ehOpcaoNumerica(id) || id === 'DuracaoMinima') args.push(String(opcoes[id]));
   }
+  if (opcoes.Versoes) args.push('-Versoes', opcoes.Versoes);
   return args;
 }
 
-/** O comando equivalente no terminal, como no resumo da tela de Opções. */
+/**
+ * O comando equivalente no terminal, como no resumo da tela de Opções. O `.bat` (cmd.exe) separa argumentos também
+ * na vírgula: o valor com vírgula vai entre aspas.
+ */
 export function comandoEquivalente(lista: string, opcoes: OpcoesLote): string {
   const nome = /\s/.test(lista) ? `"${lista}"` : lista;
-  return ['baixar-lista.bat', nome, ...argumentosDasOpcoes(opcoes)].join(' ');
+  const args = argumentosDasOpcoes(opcoes).map((a) => (a.includes(',') ? `"${a}"` : a));
+  return ['baixar-lista.bat', nome, ...args].join(' ');
 }
 
 // ---------------------------------------------------------------- Receitas

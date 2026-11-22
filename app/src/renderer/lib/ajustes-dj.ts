@@ -6,10 +6,13 @@ import {
   GRUPOS_BOOLEANOS,
   LIMITES,
   ehOpcaoNumerica,
+  OPCOES_PADRAO,
   opcoesAlteradas,
   type OpcaoBooleanaId,
   type OpcoesLote,
 } from '@shared/opcoes-lote';
+import { msg } from '@shared/mensagens';
+import { formatarDuracao, lerVersoes, versoesValidas } from '@shared/versoes';
 
 const ITENS = msgDj.lote.ajustes.itens;
 
@@ -50,19 +53,31 @@ const ROTULO_CURTO: Partial<Record<OpcaoBooleanaId, { rotulo: string; desligado:
   },
 };
 
+/** `Extended → Club → Original e sem nome · mínimo 5 min` */
+export function valorDaVersao(opcoes: Pick<OpcoesLote, 'Versoes' | 'DuracaoMinima'>): string {
+  const l = msgDj.lote.ajustes.linhas;
+  const texto = versoesValidas(opcoes.Versoes) ? opcoes.Versoes : OPCOES_PADRAO.Versoes;
+  const posicoes = lerVersoes(texto).map((p) => p.map((v) => l.versaoCurta[v]).join(l.e));
+  const s = opcoes.DuracaoMinima;
+  const minimo = s <= 0 ? null : s % 60 === 0 ? msg.lote.versoes.duracao.minutos(s / 60) : formatarDuracao(s);
+  return l.versaoValor(posicoes, minimo);
+}
+
 /**
- * As linhas do resumo: a qualidade sempre (é a pergunta que todo DJ faz) e, depois, cada ajuste que difere do
- * padrão, com o valor de agora em poucas palavras.
+ * As linhas do resumo: a qualidade e a versão sempre (são as perguntas que todo DJ faz) e, depois, cada ajuste que
+ * difere do padrão, com o valor de agora em poucas palavras.
  */
 export function linhasDoResumoDj(opcoes: OpcoesLote): LinhaDoResumo[] {
   const l = msgDj.lote.ajustes.linhas;
   const aceitos = QUALIDADE.filter((q) => opcoes[q.id]).map((q) => q.nome);
+  const versaoMudou = opcoes.Versoes !== OPCOES_PADRAO.Versoes || opcoes.DuracaoMinima !== OPCOES_PADRAO.DuracaoMinima;
   const linhas: LinhaDoResumo[] = [
     { rotulo: l.qualidade, valor: l.qualidadeValor(aceitos), mudou: aceitos.length > 0 },
+    { rotulo: l.versao, valor: valorDaVersao(opcoes), mudou: versaoMudou },
   ];
   const qualidade = new Set<string>(GRUPOS_BOOLEANOS.find((g) => g.id === 'qualidade')?.itens ?? []);
   for (const id of opcoesAlteradas(opcoes)) {
-    if (qualidade.has(id)) continue;
+    if (qualidade.has(id) || id === 'Versoes' || id === 'DuracaoMinima') continue;
     if (ehOpcaoNumerica(id)) {
       const unidade = LIMITES[id].unidade;
       linhas.push({ rotulo: ITENS[id].titulo, valor: `${opcoes[id]}${unidade ? ` ${unidade}` : ''}`, mudou: true });

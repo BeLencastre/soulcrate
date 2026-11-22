@@ -9,6 +9,7 @@ import type {
   ItemDiagnostic,
   MotivoFim,
   Progress,
+  RegraRecusa,
   RunEnd,
   RunStart,
   ArquivosExecucao,
@@ -16,16 +17,23 @@ import type {
 import { ehStatusFinal, infoDoStatus, separarLinha, type CorStatus } from './lote-estado.js';
 import type { ArquivoExecucao, ListaRef } from './lote.js';
 import { msg } from './mensagens.js';
-import { opcoesSugeridas, traduzirMotivo, traduzirTentativas, type MotivoTraduzido } from './motivos.js';
+import {
+  opcoesSugeridas,
+  traduzirMotivo,
+  traduzirTentativas,
+  versaoRecusadaDoMotivo,
+  type MotivoTraduzido,
+} from './motivos.js';
 import {
   ehOpcaoBooleana,
   ehOpcaoNumerica,
   LIMITES,
   novasOpcoes,
   OPCOES_PADRAO,
-  type OpcaoId,
+  type AjusteId,
   type OpcoesLote,
 } from './opcoes-lote.js';
+import { adicionarVersoes, DURACAO_MINIMA_MAX, VERSOES_PADRAO, versoesValidas, type VersaoId } from './versoes.js';
 import { normalizar, semBom } from './texto.js';
 
 // ---------------------------------------------------------------- Tipos que atravessam o IPC
@@ -125,6 +133,8 @@ export interface DiagnosticoFaixa {
   corStatus: CorStatus;
   /** uma frase para a lista da esquerda */
   resumo: string;
+  /** a regra que impediu o download, quando algum arquivo era a faixa certa (docs/adr/0006); null: outro motivo */
+  regra: RegraRecusa | null;
   musicbrainz: { resultado: string; rotulo: string; cor: CorMusicbrainz; similares: string[] } | null;
   buscas: { tipo: 'q' | 'artist'; consulta: string }[];
   /** quantas respostas as buscas tiveram; null quando a execução não registrou */
@@ -149,7 +159,7 @@ export interface Retentativa {
   faixas: number;
   /** as opções com que o lote abre: as da execução, mais as sugeridas pelos motivos */
   opcoes: OpcoesLote;
-  sugeridas: OpcaoId[];
+  sugeridas: AjusteId[];
   /** a lista já rodou uma vez: o `-Retentar` é preciso para tentar de novo o que falhou */
   retentar: boolean;
 }
@@ -387,6 +397,8 @@ export type DiagBruto = Pick<
   | 'artistSearched'
   | 'artistCatalog'
   | 'artistCatalogTotal'
+  | 'rejectedBy'
+  | 'duration'
 >;
 
 export interface ExecucaoBruta {
@@ -620,6 +632,12 @@ export function lerDiagnosticoTexto(texto: string): Record<string, DiagBruto> {
       d.artistSearched = true;
     } else if (t.startsWith('(o artista da linha e o remixer')) {
       d.remixer = true;
+    } else if (t.startsWith('recusada pela regra: ')) {
+      const regra = t.slice('recusada pela regra: '.length);
+      d.rejectedBy = regra === 'versao e formato' ? 'versao-e-formato' : regra === 'versao' ? 'versao' : 'formato';
+    } else if (t.startsWith('duracao pedida: ')) {
+      const m = /^duracao pedida: (\d+):(\d{2})$/.exec(t);
+      if (m) d.duration = Number(m[1]) * 60 + Number(m[2]);
     }
   }
   return saida;
@@ -630,12 +648,16 @@ export function lerDiagnosticoTexto(texto: string): Record<string, DiagBruto> {
 /** As opções do `run.start` que o app conhece, no formato do formulário; o resto (`SlskdUrl`) fica de fora. */
 export function opcoesDaExecucao(opcoes: Record<string, string | number | boolean> | undefined): OpcoesLote | null {
   if (!opcoes) return null;
-  const r = novasOpcoes();
+  // sem `Versoes` no run.start, o lote rodou com a regra antiga da versão (anterior à stack 1.3.0)
+  const r: OpcoesLote = { ...novasOpcoes(), Versoes: '' };
   for (const [id, v] of Object.entries(opcoes)) {
     if (ehOpcaoBooleana(id) && typeof v === 'boolean') r[id] = v;
     else if (ehOpcaoNumerica(id) && typeof v === 'number' && Number.isInteger(v)) {
       const { min, max } = LIMITES[id];
       if (v >= min && v <= max) r[id] = v;
+    } else if (id === 'Versoes' && typeof v === 'string' && (v === '' || versoesValidas(v))) r.Versoes = v;
+    else if (id === 'DuracaoMinima' && typeof v === 'number' && Number.isInteger(v) && v >= 0) {
+      if (v <= DURACAO_MINIMA_MAX) r.DuracaoMinima = v;
     }
   }
   return r;
@@ -762,10 +784,14 @@ function resumoDaFalta(
   motivos: readonly MotivoTraduzido[],
   sugestoes: readonly string[],
   nota: string,
+  regra: RegraRecusa | null,
 ): string {
   const r = msg.historico.resumoDaFalta;
   if (status === 'falhou') return /^erro interno/i.test(nota) ? r.erroInterno : r.usuarios;
-  if (motivos.some((m) => TIPOS_DE_FORMATO.has(m.tipo))) return r.soFormato;
+  // o veredito do script (docs/adr/0006) vem primeiro; lotes antigos não o têm e caem nas regras de sempre
+  if (regra === 'versao') return r.soVersao;
+  if (regra === 'versao-e-formato') return r.versaoEFormato;
+  if (regra === 'formato' || motivos.some((m) => TIPOS_DE_FORMATO.has(m.tipo))) return r.soFormato;
   if (motivos.some((m) => m.tipo === 'titulo') || sugestoes.length > 0) return r.tituloErrado;
   if (motivos.some((m) => m.tipo === 'semRespostas')) return r.ninguemTem;
   if (motivos.some((m) => m.tipo === 'semCompativel')) return r.semCompativel;
@@ -787,6 +813,7 @@ export function diagnosticarFaixa(
 
   const respostas = diag && diag.responses >= 0 ? diag.responses : respostasDaNota(f.nota);
   const sugestoes = diag?.suggestions ?? [];
+  const regra = status === 'nao encontrada' ? (diag?.rejectedBy ?? null) : null;
 
   let motivos: MotivoTraduzido[];
   if (status === 'falhou') {
@@ -808,7 +835,8 @@ export function diagnosticarFaixa(
     status,
     rotuloStatus: info.rotulo,
     corStatus: info.cor,
-    resumo: resumoDaFalta(status, motivos, sugestoes, f.nota),
+    resumo: resumoDaFalta(status, motivos, sugestoes, f.nota, regra),
+    regra,
     musicbrainz: mb ? { resultado: mb.result, ...rotuloMusicbrainz(mb.result), similares: mb.similar } : null,
     buscas: (diag?.searches ?? []).map((s) => ({ tipo: s.kind, consulta: s.query })),
     respostas,
@@ -865,10 +893,16 @@ export function montarRetentativa(
 ): Retentativa | null {
   const faixas = bruta.faixas.filter((f) => f.status === 'nao encontrada' || f.status === 'falhou');
   if (faixas.length === 0) return null;
-  const base = opcoesDaExecucao(bruta.inicioEvento?.options) ?? novasOpcoes();
-  const sugerido = opcoesSugeridas(diagnosticos.flatMap((d) => d.motivos));
+  const daExecucao = opcoesDaExecucao(bruta.inicioEvento?.options) ?? novasOpcoes();
+  // um lote antigo rodou sem o card de versão: a retentativa usa o card como o app manda hoje
+  const base: OpcoesLote = daExecucao.Versoes ? daExecucao : { ...daExecucao, Versoes: VERSOES_PADRAO };
+  const motivos = diagnosticos.flatMap((d) => d.motivos);
+  const sugerido: Partial<OpcoesLote> = opcoesSugeridas(motivos);
+  // "versao nao aceita ('radio edit')": aceitar essa versão (no fim da ordem) resolve
+  const versoes = motivos.map(versaoRecusadaDoMotivo).filter((v): v is VersaoId => v !== null);
+  if (versoes.length > 0) sugerido.Versoes = adicionarVersoes(base.Versoes, versoes);
   const opcoes: OpcoesLote = { ...base, ...sugerido, Retentar: ctx.retentar };
-  const sugeridas = (Object.keys(sugerido) as OpcaoId[]).filter((id) => opcoes[id] !== base[id]);
+  const sugeridas = (Object.keys(sugerido) as AjusteId[]).filter((id) => opcoes[id] !== base[id]);
   return { arquivo: ctx.arquivoDaRetentativa, faixas: faixas.length, opcoes, sugeridas, retentar: ctx.retentar };
 }
 
@@ -891,6 +925,6 @@ export function detalharExecucao(
 }
 
 /** O que as opções da retentativa mudam em relação ao padrão do script, para o resumo do rodapé. */
-export function opcoesFora(opcoes: OpcoesLote): OpcaoId[] {
-  return (Object.keys(OPCOES_PADRAO) as OpcaoId[]).filter((id) => opcoes[id] !== OPCOES_PADRAO[id]);
+export function opcoesFora(opcoes: OpcoesLote): AjusteId[] {
+  return (Object.keys(OPCOES_PADRAO) as AjusteId[]).filter((id) => opcoes[id] !== OPCOES_PADRAO[id]);
 }

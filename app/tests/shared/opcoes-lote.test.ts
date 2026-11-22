@@ -62,26 +62,40 @@ describe('padrões', () => {
 });
 
 describe('argumentos', () => {
-  it('sem alterações não manda nada: o script já assume os padrões', () => {
-    expect(argumentosDasOpcoes(novasOpcoes())).toEqual([]);
+  const VERSOES = ['-Versoes', 'extended,club,original+semnome'];
+
+  it('sem alterações manda só -Versoes: sem ela o script segue a regra antiga da versão (ADR 0006)', () => {
+    expect(argumentosDasOpcoes(novasOpcoes())).toEqual(VERSOES);
     expect(alterouAlgo(novasOpcoes())).toBe(false);
   });
 
   it('manda só o que difere: números com o valor, liga/desliga sem valor', () => {
     const o = { ...novasOpcoes(), Paralelo: 8, AceitarAacAiff: true, FilaMaxMin: 10 };
     expect(opcoesAlteradas(o)).toEqual(['Paralelo', 'FilaMaxMin', 'AceitarAacAiff']);
-    expect(argumentosDasOpcoes(o)).toEqual(['-Paralelo', '8', '-FilaMaxMin', '10', '-AceitarAacAiff']);
+    expect(argumentosDasOpcoes(o)).toEqual(['-Paralelo', '8', '-FilaMaxMin', '10', '-AceitarAacAiff', ...VERSOES]);
   });
 
   it('voltar ao padrão tira o argumento', () => {
-    expect(argumentosDasOpcoes({ ...novasOpcoes(), Paralelo: 5 })).toEqual([]);
+    expect(argumentosDasOpcoes({ ...novasOpcoes(), Paralelo: 5 })).toEqual(VERSOES);
   });
 
-  it('o comando equivalente usa o baixar-lista.bat e põe aspas em nome com espaço', () => {
+  it('versão e duração mínima: a ordem do card e os segundos', () => {
+    const o = { ...novasOpcoes(), Versoes: 'extended', DuracaoMinima: 300 };
+    expect(opcoesAlteradas(o)).toEqual(['Versoes', 'DuracaoMinima']);
+    expect(argumentosDasOpcoes(o)).toEqual(['-DuracaoMinima', '300', '-Versoes', 'extended']);
+  });
+
+  it('opções de um lote antigo (Versoes vazia) não mandam -Versoes', () => {
+    expect(argumentosDasOpcoes({ ...novasOpcoes(), Versoes: '' })).toEqual([]);
+  });
+
+  it('o comando equivalente usa o baixar-lista.bat e põe aspas em nome com espaço e em valor com vírgula', () => {
     expect(comandoEquivalente('set-sabado.txt', { ...novasOpcoes(), Paralelo: 8 })).toBe(
-      'baixar-lista.bat set-sabado.txt -Paralelo 8',
+      'baixar-lista.bat set-sabado.txt -Paralelo 8 -Versoes "extended,club,original+semnome"',
     );
-    expect(comandoEquivalente('set de sábado.txt', novasOpcoes())).toBe('baixar-lista.bat "set de sábado.txt"');
+    expect(comandoEquivalente('set de sábado.txt', { ...novasOpcoes(), Versoes: 'extended' })).toBe(
+      'baixar-lista.bat "set de sábado.txt" -Versoes extended',
+    );
   });
 });
 
@@ -95,7 +109,20 @@ describe('validarOpcoes (o renderer não é confiável)', () => {
     const o = validarOpcoes({ AceitarWav: true, Paralelo: 8 });
     expect(o).toEqual({ ...novasOpcoes(), Paralelo: 8 });
     expect(Object.keys(o)).not.toContain('AceitarWav');
-    expect(argumentosDasOpcoes(o)).toEqual(['-Paralelo', '8']);
+    expect(argumentosDasOpcoes(o)).toEqual(['-Paralelo', '8', '-Versoes', 'extended,club,original+semnome']);
+  });
+
+  it('rascunho antigo, sem as opções de versão: usa o card padrão', () => {
+    const o = validarOpcoes({ Paralelo: 8 });
+    expect(o.Versoes).toBe('extended,club,original+semnome');
+    expect(o.DuracaoMinima).toBe(0);
+  });
+
+  it('aceita versões e duração mínima válidas', () => {
+    expect(validarOpcoes({ Versoes: 'radioedit,extended+club', DuracaoMinima: 270 })).toMatchObject({
+      Versoes: 'radioedit,extended+club',
+      DuracaoMinima: 270,
+    });
   });
 
   it('o padrão aceita só FLAC e WAV: AAC/AIFF, MP3 320 e MP3 menor começam desligados', () => {
@@ -117,6 +144,12 @@ describe('validarOpcoes (o renderer não é confiável)', () => {
     ['negativo', { FilaMaxMin: -1 }],
     ['lista no lugar de objeto', [1, 2]],
     ['texto no lugar de objeto', 'AceitarAacAiff'],
+    ['versão desconhecida', { Versoes: 'extended,remix' }],
+    ['versão repetida', { Versoes: 'extended,extended' }],
+    ['nenhuma versão aceita', { Versoes: '' }],
+    ['versões que não são texto', { Versoes: ['extended'] }],
+    ['duração mínima negativa', { DuracaoMinima: -1 }],
+    ['duração mínima acima de 1 h', { DuracaoMinima: 3601 }],
   ])('recusa %s', (_nome, entrada) => {
     expect(() => validarOpcoes(entrada)).toThrow();
   });

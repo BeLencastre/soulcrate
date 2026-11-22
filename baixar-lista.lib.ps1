@@ -99,11 +99,20 @@ $VersionWords = @('remix','edit','rework','bootleg','dub','vip','live','acapella
 $AllowedExtra = @('original','mix','extended','version','club','feat','ft','featuring','and','the','vs','x','e',
                   'official','audio','hq','kbps','mp3','flac','wav','aiff','www','free','download','master','mastered','remastered','remaster')
 
+# Duracao no fim da linha: "6:58", "(6:58)", "[6:58]". A linha limpa fica sem ela (a chave da faixa
+# no estado e no relatorio nao muda); Get-LineDuration a le antes, para a regra da versao.
+$LineDurationRe = '\s*[\[\(]?\b(\d{1,2}):(\d{2})\b[\]\)]?\s*$'
 function Clean-Line([string]$l) {
   $l = $l -replace "`t", ' ' -replace '\s+[–—]\s+', ' - ' -replace '\s+', ' '
   $l = $l -replace '^\s*(\d{1,4}\s*[\.\)\-:]\s+|[\-\*•]\s+)', ''     # "01. ", "1) ", "- ", "* "
-  $l = $l -replace '\s*[\[\(]?\b\d{1,2}:\d{2}\b[\]\)]?\s*$', ''          # duracao no fim "3:45"
+  $l = $l -replace $LineDurationRe, ''                                     # duracao no fim "3:45"
   return $l.Trim()
+}
+# Segundos da duracao no fim da linha, ou 0
+function Get-LineDuration([string]$l) {
+  $m = [regex]::Match(($l -replace "`t", ' '), $LineDurationRe)
+  if (-not $m.Success -or [int]$m.Groups[2].Value -gt 59) { return 0 }
+  return [int]$m.Groups[1].Value * 60 + [int]$m.Groups[2].Value
 }
 function Clean-Query([string]$q) { return ($q -replace '[^\w\s]', ' ' -replace '\s+', ' ').Trim() }
 
@@ -159,6 +168,8 @@ function Parse-Line([string]$line) {
   return [pscustomobject]@{
     Line = $line; Artist = $mainArtist; ArtistQuery = $artistQ; ArtistKey = ($artistT -join ' '); Base = $base; Mix = $mix
     IsOriginal = $isOriginal; Remixer = $remixer
+    AsksOriginal = ($isOriginal -and $mixN -ne "")                            # "(Original Mix)" escrito na linha
+    Duration = 0                                                             # duracao de referencia (s), preenchida por quem le a lista
     ArtistTokens = $artistT; ArtistJoined = ($artistT -join ''); BaseTokens = $baseT; MixTokens = $mixTokens
     AllTokens = $wanted; Banned = @($VersionWords | Where-Object { $wanted -notcontains $_ })
     Queries = $queries; TailQueries = $tail
@@ -231,8 +242,78 @@ function Split-Segments([string]$leafNoBr) {
   return @($s -split '\s+[-–—]\s+' | Where-Object { $_.Trim() })
 }
 
-# Avalia UM arquivo. Retorna @{Tier;Bonus;Approx} se servir; senao @{Reason;Score} (Score = quao parecido era).
-# Checa o CONTEUDO antes do formato, para o diagnostico mostrar o motivo real.
+# ---------------------------------------------------------------- versao da faixa e duracao (docs/adr/0006)
+# As versoes do card "Versao da faixa" (-Versoes) e o nome de cada uma nos motivos
+$VersoesConhecidas = [ordered]@{ extended = 'extended mix'; club = 'club mix'; original = 'original mix'; semnome = 'sem versao no nome'; radioedit = 'radio edit' }
+
+# "extended,club,original+semnome" -> @{ extended = 0; club = 1; original = 2; semnome = 2 } (posicao na ordem; "+"
+# junta versoes na mesma posicao). Vazio -> $null: a regra antiga, sem o card.
+function ConvertTo-VersionRanks([string]$s) {
+  if (-not $s -or -not $s.Trim()) { return $null }
+  $r = @{}; $pos = 0
+  foreach ($grupo in ($s -split ',')) {
+    $nomes = @($grupo -split '\+' | ForEach-Object { $_.Trim().ToLowerInvariant() } | Where-Object { $_ })
+    if ($nomes.Count -eq 0) { continue }
+    foreach ($n in $nomes) {
+      if (-not $VersoesConhecidas.Contains($n)) { throw "Versao desconhecida em -Versoes: '$n'. Use: $(@($VersoesConhecidas.Keys) -join ', ')." }
+      if ($r.ContainsKey($n)) { throw "Versao repetida em -Versoes: '$n'." }
+      $r[$n] = $pos
+    }
+    $pos++
+  }
+  if ($r.Count -eq 0) { throw "-Versoes precisa de pelo menos uma versao." }
+  return $r
+}
+
+# A versao do arquivo pelos rotulos do nome (cada parentese/colchete e cada trecho " - ", ja normalizados).
+# So um rotulo que e inteiro uma versao conta ("Extended Mix", nao "Extended Family"); sem nenhum, "semnome".
+function Get-FileVersion([string[]]$labelsN) {
+  $achou = @{}
+  foreach ($l in $labelsN) {
+    if ($l -match '^radio (edit|mix|version|cut)$') { $achou.radioedit = $true }
+    elseif ($l -match '^extended( mix| version)?$') { $achou.extended = $true }
+    elseif ($l -match '^club (mix|version)$') { $achou.club = $true }
+    elseif ($l -match '^original( mix| version)?$') { $achou.original = $true }
+  }
+  foreach ($v in @('radioedit', 'extended', 'club', 'original')) { if ($achou[$v]) { return $v } }
+  return 'semnome'
+}
+
+# As versoes aceitas para a linha: o card (-Versoes) nas linhas sem mix; "(Original Mix)" escrito na linha
+# pede o original (com ou sem o nome no arquivo). $null quando o card nao vale para a linha.
+function Get-AcceptedVersions($req) {
+  if (-not $VersionRank -or -not $req.IsOriginal) { return $null }
+  if ($req.AsksOriginal) { return @{ original = 0; semnome = 0 } }
+  return $VersionRank
+}
+
+function Format-Duracao([int]$s) { return ('{0}:{1:00}' -f [Math]::Floor($s / 60), ($s % 60)) }
+# Folga da duracao de referencia: 5 s ou 2%, o que for maior (silencio no comeco e no fim, outra codificacao)
+function Get-DurationTolerance([int]$ref) { return [Math]::Max(5, [int][Math]::Round($ref * 0.02)) }
+
+# A regra que recusou o arquivo, pelo texto do motivo: 'versao', 'formato', 'ambas' ou '' (nao era a faixa)
+function Get-ReasonRule([string]$reason) {
+  if ($reason -match '^versao e formato: ') { return 'ambas' }
+  if ($reason -match '^(mix diferente|outra versao|versao nao aceita|duracao diferente|curta para a versao)') { return 'versao' }
+  if ($reason -match '^(formato |mp3 |aac )') { return 'formato' }
+  return ''
+}
+# O veredito da faixa nao encontrada, pelos motivos dos arquivos (docs/adr/0006): 'versao', 'formato',
+# 'versao-e-formato' ou '' (nenhum arquivo era a faixa certa: valem os outros motivos)
+function Get-RejectedBy($reasons) {
+  $v = 0; $f = 0; $b = 0
+  foreach ($k in @($reasons.Keys)) {
+    switch (Get-ReasonRule ([string]$k)) { 'versao' { $v++ } 'formato' { $f++ } 'ambas' { $b++ } }
+  }
+  if ($v + $f + $b -eq 0) { return '' }
+  if ($f -eq 0 -and $b -eq 0) { return 'versao' }
+  if ($v -eq 0 -and $b -eq 0) { return 'formato' }
+  return 'versao-e-formato'
+}
+
+# Avalia UM arquivo. Retorna @{Tier;Bonus;Approx;VerRank;DurChecked} se servir; senao @{Reason;Score} (Score = quao
+# parecido era). Primeiro confere se e a faixa certa (titulo, artista...) e para no primeiro problema. Da faixa certa,
+# confere a regra da versao E a do formato sem parar na primeira, para o motivo dizer qual das duas (ou as duas) falhou.
 function Test-File($req, $f) {
   $fn = [string]$f.filename
   $ext = Get-Ext $fn
@@ -259,12 +340,14 @@ function Test-File($req, $f) {
   if ($f.length -and [int]$f.length -lt 90) { return @{ Reason = "curto demais (previa)"; Score = $score } }
   if (-not $titleOk)  { return @{ Reason = "titulo diferente"; Score = $score } }
   if (-not $artistOk) { return @{ Reason = "artista nao aparece"; Score = $score } }
+  $verWhy = ""                                                               # o que falhou na regra da versao
   if ($req.MixTokens.Count -gt 0) {
     $mixHay = $(if ($brText) { $brText } else { $leafNoBr })
-    if (-not (Has-AllTokensN $req.MixTokens (Normalize $mixHay))) { return @{ Reason = "mix diferente"; Score = $score } }
+    # outro mix: nao confere o resto do nome (o mix diferente explica as palavras a mais), so o formato
+    if (-not (Has-AllTokensN $req.MixTokens (Normalize $mixHay))) { $verWhy = "mix diferente" }
   }
   $artistInLeaf = Has-Artist $req (Normalize $leafNoExt)
-  $segs = @(Split-Segments $leafNoBr)
+  $segs = $(if ($verWhy) { @() } else { @(Split-Segments $leafNoBr) })
   $approx = ""
   $titleInOwnSeg = $false; $otherWords = $false
   $titleIsArtist = ($req.ArtistTokens.Count -gt 0 -and -not @($req.BaseTokens | Where-Object { $req.ArtistTokens -notcontains $_ }).Count)
@@ -296,9 +379,34 @@ function Test-File($req, $f) {
   if (-not $titleInOwnSeg -and $otherWords -and $segs.Count -gt 1 -and -not $titleIsArtist) {
     return @{ Reason = "titulo so aparece junto do nome do artista"; Score = $score }
   }
-  $leafWords = @((Normalize $leafNoExt) -split ' ')
-  foreach ($b in $req.Banned) { if ($leafWords -contains $b) { return @{ Reason = "outra versao ('$b')"; Score = $score } } }
-  # --- formato por ultimo
+  # --- regra da versao: o nome (card -Versoes ou palavras de versao fora da linha), depois a duracao
+  $aceitas = Get-AcceptedVersions $req
+  $verRank = 0; $fileVer = ''
+  if ($aceitas) {
+    $labels = @(@([regex]::Matches($leafNoExt, '[\(\[]([^\)\]]*)[\)\]]') | ForEach-Object { Normalize $_.Groups[1].Value }) + @($segs | ForEach-Object { Normalize $_ }))
+    $fileVer = Get-FileVersion $labels
+    if ($aceitas.ContainsKey($fileVer)) { $verRank = [int]$aceitas[$fileVer] }
+    elseif (-not $verWhy) { $verWhy = "versao nao aceita ('$($VersoesConhecidas[$fileVer])')" }
+  }
+  if (-not $verWhy) {
+    $leafWords = @((Normalize $leafNoExt) -split ' ')
+    $livres = $(if ($fileVer -eq 'radioedit') { @('radio', 'edit') } else { @() })   # Radio Edit aceita no card
+    foreach ($b in $req.Banned) { if ($livres -notcontains $b -and $leafWords -contains $b) { $verWhy = "outra versao ('$b')"; break } }
+  }
+  # a duracao confere se o arquivo e mesmo a versao que diz ser; sem duracao informada, nao ha o que conferir
+  $len = 0; if ($f.length) { $len = [int]$f.length }
+  $durChecked = $false
+  if (-not $verWhy -and $len -gt 0) {
+    $ref = $(if ($VersionRank) { [int]$req.Duration } else { 0 })
+    if ($ref -gt 0) {
+      $durChecked = $true
+      if ([Math]::Abs($len - $ref) -gt (Get-DurationTolerance $ref)) { $verWhy = "duracao diferente ($(Format-Duracao $len), a linha pede $(Format-Duracao $ref))" }
+    } elseif ($DuracaoMinima -gt 0 -and $req.IsOriginal) {
+      $durChecked = $true
+      if ($len -lt $DuracaoMinima) { $verWhy = "curta para a versao ($(Format-Duracao $len), minimo $(Format-Duracao $DuracaoMinima))" }
+    }
+  }
+  # --- regra do formato
   $tier = -1; $fmtWhy = ""
   $br = 0; if ($f.bitRate) { $br = [int]$f.bitRate }
   $vbr = [bool]$f.isVariableBitRate
@@ -332,10 +440,12 @@ function Test-File($req, $f) {
     }
     default { $fmtWhy = "formato $ext" }
   }
+  if ($verWhy -and $tier -lt 0) { return @{ Reason = "versao e formato: $verWhy + $fmtWhy"; Score = $score } }
+  if ($verWhy) { return @{ Reason = $verWhy; Score = $score } }
   if ($tier -lt 0) { return @{ Reason = $fmtWhy; Score = 4 } }               # era a faixa certa, so o formato nao serviu
   $bonus = 0
   if ($req.IsOriginal -and ((Normalize $leafNoExt) -match 'original mix|extended mix|extended version|club mix')) { $bonus = 1 }
-  return @{ Tier = $tier; Bonus = $bonus; Approx = $approx }
+  return @{ Tier = $tier; Bonus = $bonus; Approx = $approx; VerRank = $verRank; DurChecked = $durChecked }
 }
 
 function Add-Diag($item, [string]$reason, [int]$score, [string]$user, [string]$file) {
@@ -356,14 +466,21 @@ function Get-Candidates($item, $responses, $req = $null, [switch]$NoDiag) {
       if ($res.ContainsKey('Reason')) { if (-not $NoDiag) { Add-Diag $item $res.Reason $res.Score $r.username $f.filename }; continue }
       [void]$list.Add([pscustomobject]@{
         User = [string]$r.username; File = [string]$f.filename; Size = [long]$f.size; Tier = $res.Tier; Bonus = $res.Bonus
+        VerRank = [int]$res.VerRank; DurChecked = [bool]$res.DurChecked
         Approx = [string]$res.Approx; Free = [bool]$r.hasFreeUploadSlot; Queue = [int]$r.queueLength; Speed = [long]$r.uploadSpeed
       })
     }
   }
-  # titulo exato sempre antes do aproximado; usuarios que ja travaram 2+ vezes nesta execucao vao para o fim;
-  # depois formato, usuario sem falhas, mix preferido, slot livre, fila, velocidade
-  $sorted = $list | Sort-Object @{e={[int][bool]$_.Approx}}, @{e={[int]([int]$BadUsers[$_.User] -ge 2)}}, @{e={$_.Tier}}, @{e={[int]$BadUsers[$_.User]}},
-                                @{e={$_.Bonus}; Descending=$true}, @{e={$_.Free}; Descending=$true}, @{e={$_.Queue}}, @{e={$_.Speed}; Descending=$true}
+  # titulo exato sempre antes do aproximado; usuarios que ja travaram 2+ vezes nesta execucao vao para o fim.
+  # Com o card de versao (-Versoes): versao na ordem do card, duracao conferida antes da nao informada, formato.
+  # Sem ele (como sempre foi): formato, usuario sem falhas, mix preferido. Depois: slot livre, fila, velocidade.
+  if ($VersionRank) {
+    $sorted = $list | Sort-Object @{e={[int][bool]$_.Approx}}, @{e={[int]([int]$BadUsers[$_.User] -ge 2)}}, @{e={$_.VerRank}}, @{e={$_.DurChecked}; Descending=$true},
+                                  @{e={$_.Tier}}, @{e={[int]$BadUsers[$_.User]}}, @{e={$_.Free}; Descending=$true}, @{e={$_.Queue}}, @{e={$_.Speed}; Descending=$true}
+  } else {
+    $sorted = $list | Sort-Object @{e={[int][bool]$_.Approx}}, @{e={[int]([int]$BadUsers[$_.User] -ge 2)}}, @{e={$_.Tier}}, @{e={[int]$BadUsers[$_.User]}},
+                                  @{e={$_.Bonus}; Descending=$true}, @{e={$_.Free}; Descending=$true}, @{e={$_.Queue}}, @{e={$_.Speed}; Descending=$true}
+  }
   $seen = @{}; $out = New-Object System.Collections.ArrayList
   foreach ($c in $sorted) { if (-not $seen.ContainsKey($c.User)) { $seen[$c.User] = 1; [void]$out.Add($c) } }
   return ,$out
@@ -418,7 +535,8 @@ function Get-TitleSuggestions($req, $titles) {
 # Leitura da lista (.txt ou .csv)
 # ============================================================================
 # Linhas da lista ja limpas, com o numero da linha de origem no arquivo (SourceLine; no .csv,
-# o numero da linha do registro, contando o cabecalho como linha 1)
+# o numero da linha do registro, contando o cabecalho como linha 1) e a duracao de referencia
+# (Duration, em segundos; 0 sem duracao)
 function Read-ListaDetalhada([string]$path) {
   $out = New-Object System.Collections.ArrayList
   if ([IO.Path]::GetExtension($path).ToLowerInvariant() -eq '.csv') {
@@ -430,13 +548,21 @@ function Read-ListaDetalhada([string]$path) {
     $tCol = $cols | Where-Object { $_ -match '^(track name|track|title|titulo|título|name|song|musica|música|faixa)$' } | Select-Object -First 1
     $aCol = $cols | Where-Object { $_ -match '^(artist name\(s\)|artist name|artists?|artista\(s\)|artistas?)$' } | Select-Object -First 1
     if (-not $tCol -or -not $aCol) { throw "CSV sem colunas de titulo/artista reconhecidas. Colunas: $($cols -join ', ')" }
+    # duracao em milissegundos (Exportify: "Duration (ms)"; outros: "Track Duration (ms)", "duration_ms")
+    $dCol = $cols | Where-Object { $_ -match '^(track duration \(ms\)|duration \(ms\)|duration_ms|dura[cç][aã]o \(ms\))$' } | Select-Object -First 1
     $n = 1
     foreach ($r in $rows) {
       $n++
       $a = ([string]$r.$aCol -split '\s*[;|]\s*')[0]      # varios artistas -> o primeiro basta para a busca
       $t = [string]$r.$tCol
       $t = $t -replace '\s+-\s+((?:[^-]*?)\b(?:Remix|Mix|Edit|Version|Rework|Dub|VIP|Bootleg)\b.*)$', ' ($1)'   # "Title - X Remix" (Spotify) -> "Title (X Remix)"
-      if ($t) { [void]$out.Add([pscustomobject]@{ Line = (Clean-Line "$a - $t"); SourceLine = $n }) }
+      $dur = 0
+      if ($dCol) {
+        $ms = 0.0
+        $ok = [double]::TryParse([string]$r.$dCol, [Globalization.NumberStyles]::Float, [Globalization.CultureInfo]::InvariantCulture, [ref]$ms)
+        if ($ok -and $ms -gt 0) { $dur = [int][Math]::Round($ms / 1000) }
+      }
+      if ($t) { [void]$out.Add([pscustomobject]@{ Line = (Clean-Line "$a - $t"); SourceLine = $n; Duration = $dur }) }
     }
   } else {
     $n = 0
@@ -444,8 +570,9 @@ function Read-ListaDetalhada([string]$path) {
       $n++
       $t = $l.Trim()
       if (-not $t -or $t.StartsWith('#')) { continue }
+      $dur = Get-LineDuration $t
       $t = Clean-Line $t
-      if ($t) { [void]$out.Add([pscustomobject]@{ Line = $t; SourceLine = $n }) }
+      if ($t) { [void]$out.Add([pscustomobject]@{ Line = $t; SourceLine = $n; Duration = $dur }) }
     }
   }
   return ,$out
@@ -459,20 +586,22 @@ function Read-Lista([string]$path) {
 # ============================================================================
 # Biblioteca do beets (a leitura, que chama o docker, fica no baixar-lista.ps1)
 # ============================================================================
-function In-Library($lib, $req) {
-  if (-not $lib -or $req.ArtistTokens.Count -eq 0) { return $false }
+# A faixa da biblioteca que casa com a linha (com `Id`, o $id do beets), ou $null.
+function Find-InLibrary($lib, $req) {
+  if (-not $lib -or $req.ArtistTokens.Count -eq 0) { return $null }
   $bucket = $lib.Index[$req.ArtistTokens[0]]
-  if (-not $bucket) { return $false }
+  if (-not $bucket) { return $null }
   foreach ($e in $bucket) {
     if (-not (Has-AllTokensN $req.BaseTokens $e.T)) { continue }
     if (-not (Has-Artist $req $e.AT)) { continue }
     if ($req.MixTokens.Count -gt 0 -and -not (Has-AllTokensN $req.MixTokens $e.T)) { continue }
     $words = @($e.T -split ' '); $bad = $false
     foreach ($b in $req.Banned) { if ($words -contains $b) { $bad = $true; break } }
-    if (-not $bad) { return $true }
+    if (-not $bad) { return $e }
   }
-  return $false
+  return $null
 }
+function In-Library($lib, $req) { return ($null -ne (Find-InLibrary $lib $req)) }
 
 # ============================================================================
 # Catalogo (MusicBrainz): partes que nao acessam a rede

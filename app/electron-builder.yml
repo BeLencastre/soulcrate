@@ -19,8 +19,8 @@ files:
 extraResources:
   - from: resources/tray
     to: tray
-  - from: resources/icon.png
-    to: icon.png
+  - from: resources/icon.ico
+    to: icon.ico
   - from: resources/stack
     to: stack
 asar: true
