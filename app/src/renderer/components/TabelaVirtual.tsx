@@ -24,6 +24,53 @@ interface Props<T> {
   testId?: string;
 }
 
+/** Onde o elemento está, medido na área que rola (a `<main>`). */
+export interface MedidaNaRolagem {
+  /** topo do elemento na tela (px) */
+  topo: number;
+  /** topo da área que rola na tela (px) */
+  topoDaRolagem: number;
+  /** quanto a área já rolou (px) */
+  rolado: number;
+  /** altura visível da área que rola (px); 0 sem layout (jsdom) */
+  visivel: number;
+}
+
+/**
+ * A altura máxima que deixa a tabela terminar no fim da área visível da página (como se ela estivesse rolada até o
+ * topo), em vez de um número fixo: em janela alta, a tabela cresce até perto da lateral; em janela baixa, não passa de
+ * `minimo`. Sem layout (jsdom), fica no `minimo`.
+ */
+export function alturaAteOFim(m: MedidaNaRolagem, minimo: number, folga: number): number {
+  if (m.visivel <= 0) return minimo;
+  const topoNaPagina = m.topo - m.topoDaRolagem + m.rolado;
+  return Math.max(minimo, Math.floor(m.visivel - topoNaPagina - folga));
+}
+
+/** `alturaAteOFim` para o elemento do `ref`, medida de novo quando a janela muda de tamanho. */
+export function useAlturaAteOFim(minimo: number, folga: number) {
+  const ref = useRef<HTMLDivElement>(null);
+  const [altura, setAltura] = useState(minimo);
+  useLayoutEffect(() => {
+    const medir = () => {
+      const el = ref.current;
+      if (!el) return;
+      const rolagem = el.closest('main') ?? document.documentElement;
+      const medida = {
+        topo: el.getBoundingClientRect().top,
+        topoDaRolagem: rolagem.getBoundingClientRect().top,
+        rolado: rolagem.scrollTop,
+        visivel: rolagem.clientHeight,
+      };
+      setAltura(alturaAteOFim(medida, minimo, folga));
+    };
+    medir();
+    window.addEventListener('resize', medir);
+    return () => window.removeEventListener('resize', medir);
+  }, [minimo, folga]);
+  return [ref, altura] as const;
+}
+
 /** Quais linhas ficam no DOM: as que aparecem em [rolagem, rolagem + altura], mais a folga dos dois lados. */
 export function janelaVisivel(total: number, alturaLinha: number, rolagem: number, altura: number): [number, number] {
   // a lista pode ter encolhido (um filtro) antes de o navegador corrigir a rolagem: não passa do fim

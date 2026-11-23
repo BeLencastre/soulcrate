@@ -169,17 +169,25 @@ export class ListasService {
 
   /**
    * Roda `baixar-lista.ps1 -SoAnalisar` na lista já salva e devolve a análise (P5). Uma análise nova da mesma lista
-   * cancela a anterior: o editor pede uma a cada pausa na digitação.
+   * cancela a anterior: o editor pede uma a cada pausa na digitação. Com `independente` (as playlists do Rekordbox,
+   * em segundo plano), ela não cancela a do editor nem é cancelada por ela.
    */
-  async analisar(dir: string, nome: string, opcoes: OpcoesAnalise): Promise<ResultadoAnalise> {
+  async analisar(
+    dir: string,
+    nome: string,
+    opcoes: OpcoesAnalise,
+    { independente = false }: { independente?: boolean } = {},
+  ): Promise<ResultadoAnalise> {
     exigirNome(nome);
     if (!existsSync(join(dir, nome))) throw new Error(`A lista ${nome} não existe.`);
     const script = join(dir, 'baixar-lista.ps1');
     if (!existsSync(script)) throw new Error('O baixar-lista.ps1 não está na pasta do Soulcrate.');
 
-    this.analises.get(nome)?.abort();
     const cancelador = new AbortController();
-    this.analises.set(nome, cancelador);
+    if (!independente) {
+      this.analises.get(nome)?.abort();
+      this.analises.set(nome, cancelador);
+    }
 
     const saida = join(this.d.pastaTemporaria ?? tmpdir(), `soulcrate-analise-${randomBytes(6).toString('hex')}.json`);
     const args = [

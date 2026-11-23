@@ -42,6 +42,8 @@ import { LoteService, processoVivoReal, type NotificacaoLote } from './services/
 import { OperacoesService } from './services/operacoes-service';
 import { PastaService } from './services/pasta-service';
 import { PlaylistsService } from './services/playlists-service';
+import { OrganizacaoService } from './services/organizacao-service';
+import { fsRekordboxReal, RekordboxService } from './services/rekordbox-service';
 import { RelatoriosService } from './services/relatorios-service';
 import { lerVersaoDaStack, resolverProjeto } from './services/project-service';
 import { portaAceitaConexao, SetupService } from './services/setup-service';
@@ -57,10 +59,11 @@ import { urlDoServico, type ServicoId } from '@shared/servicos';
 const SMOKE = process.argv.includes('--smoke-test');
 const TIMEOUT_SMOKE_MS = 60_000;
 
+const APP_ID = 'br.com.soulcrate.app';
 // A pasta de dados é a mesma em desenvolvimento e instalado (%APPDATA%\Soulcrate).
 app.setName('Soulcrate');
 // as notificações do Windows precisam do mesmo id do instalador (electron-builder.yml: appId)
-app.setAppUserModelId('br.com.soulcrate.app');
+app.setAppUserModelId(APP_ID);
 if (SMOKE) app.setPath('userData', join(tmpdir(), `soulcrate-smoke-${process.pid}`));
 else if (!app.isPackaged && process.env.SOULCRATE_USER_DATA) app.setPath('userData', process.env.SOULCRATE_USER_DATA);
 else app.setPath('userData', join(app.getPath('appData'), 'Soulcrate'));
@@ -182,11 +185,19 @@ async function principal(): Promise<void> {
   let avisoPendente = false;
 
   let aoFimDeLote: (() => void) | null = null;
+  let aoMudarBiblioteca: (() => void) | null = null;
   const emitir = (evento: MainEvent): void => {
     if (janela && !janela.isDestroyed() && !janela.webContents.isDestroyed())
       janela.webContents.send(CANAL_EVENTOS, evento);
-    // o lote terminou: a atualização dos arquivos da stack que esperava por ele pode entrar agora
-    if (evento.type === 'batch.events' && evento.eventos.some((ev) => ev.type === 'run.end')) aoFimDeLote?.();
+    // o lote terminou: a atualização dos arquivos da stack que esperava por ele pode entrar agora, e o lote importou
+    // faixas (as playlists do Rekordbox mudam)
+    if (evento.type === 'batch.events' && evento.eventos.some((ev) => ev.type === 'run.end')) {
+      aoFimDeLote?.();
+      aoMudarBiblioteca?.();
+    }
+    // reorganizar, importar o que sobrou ou atualizar depois de mexer nos arquivos mudam caminhos e faixas
+    // (calcular tom e BPM não muda nada que o arquivo do Rekordbox leve)
+    if (evento.type === 'library.end' && evento.ok && evento.tarefa !== 'tomEBpm') aoMudarBiblioteca?.();
   };
   const aoErro = (e: unknown) => log.error('Erro inesperado:', e);
 
@@ -341,6 +352,25 @@ async function principal(): Promise<void> {
     agora: Date.now,
     aoErro,
   });
+  // playlists para o Rekordbox (rekordbox XML): uma por gênero e uma por lista baixada; refeito sozinho depois da
+  // primeira vez que a pessoa o gera
+  const organizacao = new OrganizacaoService({
+    projeto,
+    fs: { lerTexto: lerArquivo, escreverAtomico: fsRekordboxReal.escreverAtomico },
+    aoMudarRekordbox: () => aoMudarBiblioteca?.(),
+    aoErro,
+  });
+  const rekordbox = new RekordboxService({
+    biblioteca,
+    listas,
+    projeto,
+    organizacao: (dir) => organizacao.organizacoes(dir).rekordbox,
+    fs: fsRekordboxReal,
+    versao: app.getVersion(),
+    emitir,
+    aoErro,
+  });
+  aoMudarBiblioteca = () => rekordbox.atualizarSeJaExiste();
   const slskd = new SlskdService({
     projeto,
     lerArquivo,
@@ -505,6 +535,8 @@ async function principal(): Promise<void> {
     lote,
     relatorios,
     biblioteca,
+    organizacao,
+    rekordbox,
     slskd,
     sobre,
     suporte,
@@ -535,7 +567,9 @@ async function principal(): Promise<void> {
 
   janela = criarJanelaPrincipal({
     preload: join(import.meta.dirname, '../preload/index.cjs'),
-    icone: join(pastaRecursos, 'icon.png'),
+    // .ico (16–256 px): o Windows escolhe o tamanho da barra de tarefas; com o .png ela cai no ícone do Electron
+    icone: join(pastaRecursos, 'icon.ico'),
+    appId: APP_ID,
     urlDev,
     indexHtml: join(import.meta.dirname, '../renderer/index.html'),
     devTools: !app.isPackaged,

@@ -42,6 +42,8 @@ import {
   exigirOpcoesAnalise,
   exigirOpcoesDaCorrecao,
   exigirOpcoesSetup,
+  exigirAlvoDaOrganizacao,
+  exigirOrganizacao,
   exigirRunId,
   exigirTarefa,
   exigirTextoDaLista,
@@ -61,6 +63,8 @@ import type { LogsService } from './services/logs-service';
 import type { OperacoesService } from './services/operacoes-service';
 import type { PastaService } from './services/pasta-service';
 import type { PlaylistsService } from './services/playlists-service';
+import type { OrganizacaoService } from './services/organizacao-service';
+import type { RekordboxService } from './services/rekordbox-service';
 import type { RelatoriosService } from './services/relatorios-service';
 import { ehPastaDoSoulcrate } from './services/project-service';
 import type { SetupService } from './services/setup-service';
@@ -89,6 +93,8 @@ export interface ContextoIpc {
   lote: LoteService;
   relatorios: RelatoriosService;
   biblioteca: BibliotecaService;
+  organizacao: OrganizacaoService;
+  rekordbox: RekordboxService;
   slskd: SlskdService;
   sobre: SobreService;
   suporte: SuporteService;
@@ -432,7 +438,12 @@ export function registrarIpc(ctx: ContextoIpc): void {
   // ------------------------------------------------------------ biblioteca e manutenção (Fase 5)
   tratar('library:list', () => ctx.biblioteca.ler());
   tratar('library:previewRemove', (_e, filtro) => ctx.biblioteca.previaRemocao(exigirFiltro(filtro)));
-  tratar('library:remove', (_e, filtro, token) => ctx.biblioteca.remover(exigirFiltro(filtro), exigirToken(token)));
+  tratar('library:remove', async (_e, filtro, token) => {
+    const r = await ctx.biblioteca.remover(exigirFiltro(filtro), exigirToken(token));
+    // a faixa saiu do disco: as playlists do Rekordbox não podem continuar apontando para ela
+    if (r.ok) ctx.rekordbox.atualizarSeJaExiste();
+    return r;
+  });
   tratar('library:previewMaintenance', (_e, tarefa) => ctx.biblioteca.previaManutencao(exigirTarefa(tarefa)));
   tratar('library:maintenance', (_e, tarefa, token) =>
     ctx.biblioteca.manutencao(exigirTarefa(tarefa), exigirTokenOuNulo(token)),
@@ -453,6 +464,12 @@ export function registrarIpc(ctx: ContextoIpc): void {
   });
   tratar('library:sharing', () => ctx.slskd.compartilhamento());
   tratar('library:rescanSharing', () => ctx.slskd.reescanear());
+  tratar('library:organization', () => ctx.organizacao.estado());
+  tratar('library:setOrganization', (_e, alvo, organizacao) =>
+    ctx.organizacao.definir(exigirAlvoDaOrganizacao(alvo), exigirOrganizacao(organizacao)),
+  );
+  tratar('rekordbox:state', () => ctx.rekordbox.estado());
+  tratar('rekordbox:generate', () => ctx.rekordbox.gerar());
 
   // ------------------------------------------------------------ logs e Web UIs
   tratar('logs:subscribe', (e, alvo) => ctx.logs.assinar(e.sender.id, exigirAlvoLog(alvo)));

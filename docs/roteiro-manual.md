@@ -47,7 +47,9 @@
 - [ ] Importar um `.csv` do Spotify (botão e arrastar para a janela) funciona.
 - [ ] O lote roda até o fim. O painel mostra progresso, contadores e a tabela por faixa; a notificação do Windows aparece ao terminar.
 - [ ] As faixas aparecem em `music/<Gênero>/<Artista>/`, com **BPM, tom e capa**, e o "(Extended Mix)" **não se perdeu**.
-- [ ] O Rekordbox, com a pasta `music` monitorada, enxerga as faixas novas, e o tom e o BPM aparecem.
+- [ ] Importar a pasta `Soulcrate` de *rekordbox xml* no Rekordbox traz as faixas novas com o tom e o BPM (veja **E3**).
+- [ ] **Versão da faixa:** com o card no padrão, uma faixa que existe em Extended Mix e em Original Mix vem na Extended (mesmo em MP3 320, se ele estiver aceito); com a Radio Edit em *Não baixar*, uma faixa que só existe em Radio Edit cai no diagnóstico como "Só existe em versão não aceita", e **Tentar de novo** abre com a Radio Edit no fim do card. O card funciona só pelo teclado (Espaço, setas, Espaço).
+- [ ] **Duração:** uma linha com a duração errada no fim (`... 3:00` para uma faixa de 6 min) não baixa e o diagnóstico diz "Duração diferente"; a pré-visualização mostra a duração ao lado da versão.
 - [ ] A faixa com título errado cai no **Histórico → diagnóstico** com o motivo certo; o "talvez seja" corrige a linha com um clique, e **Tentar de novo** baixa a faixa.
 - [ ] **Parar** no meio gera o `resultado-*.txt` e o `nao-baixadas-*.txt`, e rodar de novo continua de onde parou.
 - [ ] **Fechar o app no meio de um lote:** o lote continua (confira em Serviços → slskd), e o painel volta de onde estava ao reabrir.
@@ -62,6 +64,22 @@
 - [ ] Com um lote rodando, as operações que escrevem na biblioteca ficam bloqueadas ("Há um lote rodando").
 - [ ] Sincronizar com o disco e Reorganizar pastas mostram a pré-visualização antes de rodar.
 - [ ] Recalcular tom e BPM e Importar o que sobrou em `downloads/` rodam com a saída ao vivo.
+
+### E3. Playlists no Rekordbox
+
+Com o Rekordbox instalado e um backup da biblioteca dele (**Arquivo → Biblioteca → Fazer backup da biblioteca**). As perguntas em aberto estão no [plano](plano-rekordbox-xml.md#fase-0-teste-no-rekordbox-7219).
+
+- [ ] **Biblioteca → Rekordbox → Criar as playlists** grava `rekordbox\soulcrate.xml` na pasta do Soulcrate e mostra quantas faixas, gêneros e listas entraram.
+- [ ] Em **Preferências → Avançado → Banco de dados → rekordbox xml → Imported Library**, o arquivo aparece na árvore *rekordbox xml* com `Soulcrate › Gêneros` e `Soulcrate › Listas`.
+- [ ] Botão direito em `Soulcrate` → **Importar playlist** traz a árvore inteira para Playlists, e as faixas entram na Coleção e tocam (inclusive com acento, `&`, `[ ]` e `( )` no caminho).
+- [ ] A playlist de uma lista segue a ordem da lista e inclui as faixas que já estavam na biblioteca.
+- [ ] Depois de um lote, o cartão diz que as playlists foram atualizadas sozinhas; atualizar *rekordbox xml* e importar `Soulcrate` de novo traz as faixas novas **sem duplicar** as playlists e **sem perder** a análise nem os cues das faixas antigas.
+- [ ] Exportar `Soulcrate` para o pendrive mantém as pastas e as playlists no CDJ/XDJ.
+- [ ] Nada disso exige fechar o Rekordbox.
+- [ ] Em **Suas músicas → Organizar → No disco**, trocar para **Só por gênero** e rodar **Reorganizar as pastas**: a prévia mostra os arquivos indo para `Gênero/Artista - Título` e as pastas de artista vazias somem. O *rekordbox xml* não muda de desenho.
+- [ ] Com o disco só por gênero, **No Rekordbox → Por gênero e artista**: o *rekordbox xml* tem uma pasta por gênero com `Todas` e uma playlist por artista (o artista do começo do nome do arquivo). **No Rekordbox → Só por gênero**: uma playlist por gênero. As pastas do disco não mudam.
+- [ ] Depois de reorganizar, uma faixa que já estava na Coleção do Rekordbox aparece como não encontrada, como o cartão avisa (confira como apontar o lugar novo no Rekordbox instalado).
+- [ ] Um download feito pelo próprio Soulbeet (sem o app) cai na pasta da organização escolhida.
 
 ### E2. Modo DJ e Modo Dev
 

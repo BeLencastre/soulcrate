@@ -1,11 +1,13 @@
 // Janela principal com a segurança de base: contextIsolation, sandbox, sem nodeIntegration,
 // navegação e window.open bloqueados, nenhuma permissão concedida.
-import { BrowserWindow, session, shell, type WebContents } from 'electron';
+import { app, BrowserWindow, session, shell, type WebContents } from 'electron';
 import { podeAbrirNoNavegador, ehUrlDoApp } from './infra/seguranca';
 
 export interface OpcoesJanela {
   preload: string;
   icone: string;
+  /** o mesmo AppUserModelId definido em index.ts */
+  appId: string;
   /** URL do servidor do Vite em desenvolvimento; null no app empacotado */
   urlDev: string | null;
   /** arquivo do build do renderer */
@@ -62,6 +64,21 @@ export function criarJanelaPrincipal(o: OpcoesJanela): BrowserWindow {
       devTools: o.devTools,
     },
   });
+
+  // Com AppUserModelId próprio o Windows agrupa a janela por id e, sem isto, usa o ícone do executável
+  // (o do Electron em desenvolvimento). Só vale no Windows.
+  if (process.platform === 'win32') {
+    // O Windows só respeita o ícone do grupo quando há também um comando de reabertura (par obrigatório).
+    const argumentos = app.isPackaged ? [] : [app.getAppPath()];
+    const comando = [process.execPath, ...argumentos].map((parte) => `"${parte}"`).join(' ');
+    win.setAppDetails({
+      appId: o.appId,
+      appIconPath: o.icone,
+      appIconIndex: 0,
+      relaunchCommand: comando,
+      relaunchDisplayName: 'Soulcrate',
+    });
+  }
 
   protegerNavegacao(win.webContents, o.urlDev);
   if (o.mostrarAoPronto) win.once('ready-to-show', () => win.show());

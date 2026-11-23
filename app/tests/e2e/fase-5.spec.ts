@@ -3,12 +3,13 @@
 // Docker, na rede ou na sua biblioteca. Critérios de aceite (Fase 5):
 //   - toda operação destrutiva tem pré-visualização e confirmação;
 //   - nenhuma roda sem a stack no ar.
-import { existsSync, mkdirSync, utimesSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync, utimesSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { expect, test, type Page } from '@playwright/test';
 import {
   abrirApp,
   criarAmbiente,
+  dockerDoDubleNosScripts,
   fecharApp,
   iniciarSlskdFalso,
   registrarAberturas,
@@ -112,6 +113,8 @@ const linhas = (janela: Page) =>
     .getByRole('row')
     .filter({ hasNot: janela.getByRole('columnheader') });
 const valor = (janela: Page, id: string) => janela.locator(`[data-valor="${id}"]`);
+/** uma aba da lateral (Cuidar, Organizar, Rekordbox, Compartilhar) */
+const aba = (janela: Page, nome: string) => janela.getByRole('tab', { name: nome, exact: true });
 /** Os argumentos de cada comando do beets que o app mandou (o que vem depois do `-l /music/.beets_library.db`). */
 const comandosDoBeets = (a: Ambiente, sub: string): string[] =>
   a
@@ -120,9 +123,9 @@ const comandosDoBeets = (a: Ambiente, sub: string): string[] =>
     .map((c) => c.split('/music/.beets_library.db ')[1] ?? '')
     .filter((c) => c === sub || c.startsWith(`${sub} `));
 
-async function abrirBiblioteca(): Promise<Page> {
+async function abrirBiblioteca(extras: Record<string, string> = {}): Promise<Page> {
   // sem slskd falso, o app aponta para uma porta onde ninguém escuta: o teste nunca fala com o slskd de quem testa
-  aberto = await abrirApp(amb, { SOULCRATE_SLSKD_URL: slskd?.url ?? 'http://127.0.0.1:1' });
+  aberto = await abrirApp(amb, { SOULCRATE_SLSKD_URL: slskd?.url ?? 'http://127.0.0.1:1', ...extras });
   const { janela } = aberto;
   await menu(janela, 'Biblioteca').click();
   await expect(tabela(janela)).toBeVisible();
@@ -144,8 +147,11 @@ test('lê a biblioteca do beets: faixas, pasta, indicadores e o caminho para o R
   await expect(valor(janela, 'tom')).toHaveText('1');
   await expect(valor(janela, 'gen')).toHaveText('1');
   await expect(valor(janela, 'dl')).toHaveText('1');
-  await expect(janela.getByTestId('pasta-rekordbox')).toHaveText(join(amb.projeto, 'music'));
+  // a lateral abre em Cuidar; as outras ferramentas ficam nas abas
+  await expect(janela.getByTestId('cartao-manutencao')).toBeVisible();
   await capturar(janela, '05-biblioteca');
+  await aba(janela, 'Rekordbox').click();
+  await expect(janela.getByTestId('rekordbox-situacao')).toHaveText('Ainda não criadas.');
 
   // o indicador filtra, a busca também
   await janela.locator('[data-indicador="bpm"]').click();
@@ -159,6 +165,53 @@ test('lê a biblioteca do beets: faixas, pasta, indicadores e o caminho para o R
   // a leitura foi um `ls` (nada além de leitura rodou)
   expect(comandosDoBeets(amb, 'ls').length).toBeGreaterThan(0);
   expect(comandosDoBeets(amb, 'remove')).toHaveLength(0);
+});
+
+test('Rekordbox: cria o arquivo por gênero e artista e uma playlist por lista que já rodou; só por gênero refaz o arquivo', async () => {
+  amb = criarAmbiente({ comScript: true, mundo: { containers: TODOS_NO_AR } });
+  montarBiblioteca(amb);
+  // a lista já rodou (tem estado); a segunda linha não está na biblioteca, a terceira está
+  writeFileSync(join(amb.projeto, 'techno.txt'), 'Vendex - Plague\r\nNinguem - Nada\r\nAzyr - No Escape\r\n');
+  mkdirSync(join(amb.projeto, 'lotes'), { recursive: true });
+  writeFileSync(join(amb.projeto, 'lotes', 'estado-techno.tsv'), 'importada\tvendex plague\tVendex - Plague\r\n');
+  // esta nunca rodou: não vira playlist
+  writeFileSync(join(amb.projeto, 'nunca.txt'), 'Azyr - Power\r\n');
+  // a análise da lista roda o script de verdade, que lê o beets pelo `docker`: o do dublê
+  const janela = await abrirBiblioteca(dockerDoDubleNosScripts(amb));
+
+  await aba(janela, 'Rekordbox').click();
+  await janela.getByTestId('gerar-rekordbox').click();
+  await expect(janela.getByTestId('rekordbox-situacao')).toContainText('5 faixas em 2 gêneros e 1 lista.', {
+    timeout: 60_000,
+  });
+  const caminho = join(amb.projeto, 'rekordbox', 'soulcrate.xml');
+  await expect(janela.getByTestId('arquivo-rekordbox')).toHaveText(caminho);
+
+  const xml = readFileSync(caminho, 'utf8');
+  expect(xml).toContain('<COLLECTION Entries="5">');
+  // o padrão no Rekordbox é por gênero e artista: cada gênero é uma pasta com Todas e uma playlist por artista
+  expect(xml).toMatch(
+    /<NODE Type="0" Name="Hard Techno" Count="\d+">\s*<NODE Type="1" Name="Todas" KeyType="0" Entries="4">/,
+  );
+  expect(xml).toMatch(/<NODE Type="1" Name="Azyr" KeyType="0" Entries="\d+">/);
+  expect(xml).toMatch(/<NODE Type="0" Name="_Sem Genero" Count="2">/);
+  expect(xml).toMatch(
+    /<NODE Type="1" Name="techno" KeyType="0" Entries="2">\s*<TRACK Key="4" \/>\s*<TRACK Key="1" \/>/,
+  );
+  expect(xml).not.toContain('Name="nunca"');
+
+  // só por gênero no Rekordbox (o disco não muda): o arquivo se refaz sozinho, com uma playlist por gênero
+  await aba(janela, 'Organizar').click();
+  await janela.locator('[data-alvo="rekordbox"] [data-organizacao="genero"] input').check();
+  await expect
+    .poll(() => readFileSync(caminho, 'utf8'), { timeout: 60_000 })
+    .toMatch(/<NODE Type="1" Name="Hard Techno" KeyType="0" Entries="4">/);
+  expect(readFileSync(caminho, 'utf8')).toMatch(/<NODE Type="1" Name="_Sem Genero" KeyType="0" Entries="1">/);
+  expect(JSON.parse(readFileSync(join(amb.projeto, 'soulbeet', 'data', 'pastas.json'), 'utf8'))).toEqual({
+    disco: 'genero-artista',
+    rekordbox: 'genero',
+  });
+  expect(xml).toContain('/music/Hard%20Techno/Azyr/No%20Escape.flac"');
 });
 
 test('aceite: sem a stack no ar a biblioteca explica e nenhum comando do beets roda', async () => {
@@ -367,6 +420,7 @@ test('compartilhamento: mostra o que o slskd anuncia e pede a varredura', async 
   montarBiblioteca(amb);
   const janela = await abrirBiblioteca();
 
+  await aba(janela, 'Compartilhar').click();
   await expect(janela.getByTestId('compartilhamento-n')).toContainText('10 músicas compartilhadas no Soulseek');
   await janela.getByTestId('reescanear').click();
   await expect(janela.getByText('Atualizando. O número sobe conforme a lista é refeita.')).toBeVisible();
@@ -381,6 +435,7 @@ test('compartilhamento: com o slskd fora do ar o cartão explica e a tabela segu
   const janela = aberto.janela;
   await menu(janela, 'Biblioteca').click();
   await expect(tabela(janela)).toBeVisible();
+  await aba(janela, 'Compartilhar').click();
   await expect(janela.getByTestId('compartilhamento-erro')).toContainText('Não consegui ver quantas músicas');
   await expect(linhas(janela)).toHaveCount(5);
 });

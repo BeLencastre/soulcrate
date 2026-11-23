@@ -17,6 +17,15 @@ Exemplos reais de tudo o que está aqui ficam em [`app/tests/fixtures/lote/`](..
 
 Todas as opções do lote (`-Paralelo`, `-AceitarAacAiff` etc.) continuam valendo e aparecem no evento `run.start`.
 
+### Versão da faixa ([ADR 0006](adr/0006-versao-da-faixa-e-formato-como-regras-obrigatorias.md))
+
+| Parâmetro | Efeito |
+| --- | --- |
+| `-Versoes <lista>` | Versões aceitas nas linhas sem mix, em ordem de preferência, separadas por vírgula; `+` junta versões na mesma posição. Nomes: `extended`, `club`, `original`, `semnome` (arquivo sem versão no nome), `radioedit`. Ex.: `extended,club,original+semnome`. Com ele, a versão passa na frente do formato na escolha do arquivo e a duração no fim da linha (`Título 6:58`) ou a coluna `Duration (ms)` do CSV é conferida (folga de 5 s ou 2%, o que for maior). Nome desconhecido ou repetido: código `4` |
+| `-DuracaoMinima <segundos>` | Recusa arquivos mais curtos nas linhas sem mix (ou com `(Original Mix)`) e sem duração. `0` (padrão) desliga. De 0 a 3600 |
+
+Sem os dois, a versão segue a regra de sempre. A linha que pede um mix (`(Azyr Remix)`) não usa a lista de `-Versoes`; `(Original Mix)` na linha aceita só `original` e `semnome`. Os motivos novos dos arquivos ficam em `item.diagnostic.reasons`: `versao nao aceita ('radio edit')`, `duracao diferente (3:10, a linha pede 6:58)`, `curta para a versao (3:10, minimo 5:00)` e, quando a versão e o formato falham no mesmo arquivo, `versao e formato: <motivo da versão> + <motivo do formato>`.
+
 ## Como rodar a partir de outro programa
 
 ```text
@@ -89,7 +98,7 @@ Regras:
 | `catalog.result` | Resultado de cada faixa conferida | `key`, `line`, `result` (`OK`, `CORRIGIDO`, `NAO EXISTE`, `NAO CONFIRMADO`, `SEM DADOS`, `INDISPONIVEL`), `searchLine` (linha usada na busca, se corrigida), `similar` (títulos parecidos), `detail` |
 | `item.status` | A faixa mudou de estado (sem ainda ter terminado) | `key`, `line`, `status`, e conforme o estado: `search` (`kind`: `q`/`artist`, `query`, `stage`, `stages`), `searchLine`, `candidates`, `user`, `format`, `attempt`, `remoteQueued` |
 | `item.attemptFailed` | Uma tentativa de download falhou e o script vai para o próximo usuário | `key`, `user`, `attempt`, `reason` |
-| `item.diagnostic` | Faixa não encontrada (o mesmo conteúdo do `diagnostico-<id>.txt`, estruturado) | `key`, `line`, `searches[]` (`kind`, `query`), `skipped`, `corrected`, `catalog`, `remixer`, `responses`, `reasons` (motivo → quantidade), `closest[]` (`reason`, `user`, `file`, `score`), `suggestions[]`, `artistSearched`, `artistCatalog[]` (`title`, `users`; até 100), `artistCatalogTotal` |
+| `item.diagnostic` | Faixa não encontrada (o mesmo conteúdo do `diagnostico-<id>.txt`, estruturado) | `key`, `line`, `searches[]` (`kind`, `query`), `skipped`, `corrected`, `catalog`, `remixer`, `responses`, `reasons` (motivo → quantidade), `closest[]` (`reason`, `user`, `file`, `score`), `suggestions[]`, `artistSearched`, `artistCatalog[]` (`title`, `users`; até 100), `artistCatalogTotal`; opcionais: `rejectedBy` (`versao`, `formato` ou `versao-e-formato`: a regra que impediu o download quando algum arquivo era a faixa certa; ausente quando o motivo é outro) e `duration` (a duração pedida na linha, em segundos, só com `-Versoes`) |
 | `item.final` | A faixa terminou (uma vez por faixa) | `key`, `line`, `status`, `note`, `via`, `local` (arquivo baixado em `downloads/`; o beets o move depois para `music/`), `user`, `format` |
 | `search.check` | Busca de teste para saber se o servidor do Soulseek bloqueou | `phase` (`start`/`end`), `query`, e no fim `responses` e `blocked` |
 | `search.paused` | Bloqueio confirmado: buscas pausadas | `until`, `minutes`, `reason` |
@@ -139,10 +148,13 @@ Usa a mesma leitura, limpeza e separação de artista/título/mix do lote. Escre
     "line": "Azyr - No Escape", "key": "azyr no escape",
     "artist": "Azyr", "title": "No Escape", "mix": "", "original": true, "remixer": false,
     "queries": ["Azyr No Escape"],
+    "duration": null,              // duração no fim da linha ou no CSV, em segundos; null sem duração
     "status": "ja feita",          // nova | repetida | ignorada | ja feita | ja na biblioteca
     "duplicateOf": null,           // em "repetida": sourceLine da primeira ocorrência
     "previous": "baixada",         // status da execução anterior, se houver
-    "warnings": []                 // ex.: linha sem " - ", título vazio, artista = remixer
+    "warnings": [],                // ex.: linha sem " - ", título vazio, artista = remixer
+    "libraryId": 42                // $id do beets da faixa que casa com a linha (mesma regra do "ja na biblioteca"),
+                                   // também em "ja feita"; null sem -AnalisarBiblioteca, sem par, ou em repetida/ignorada
   }]
 }
 ```
