@@ -633,6 +633,7 @@ export const msg = {
       naBiblioteca: (n: number) => `${n} já na biblioteca`,
       jaFeitas: (n: number) => `${n} ${plural(n, 'baixada antes', 'baixadas antes')}`,
       colunas: { numero: '#', artista: 'Artista', titulo: 'Título', mix: 'Versão', aviso: 'Aviso' },
+      duracaoPedida: (d: string) => `o arquivo precisa ter ${d} (folga de 5 s)`,
       previaVazia: 'Nenhuma faixa ainda. Escreva ou cole faixas ao lado.',
       analiseFalhou: 'Não consegui ler a lista',
       avisos: {
@@ -792,7 +793,10 @@ export const msg = {
       diminuir: (titulo: string) => `Diminuir: ${titulo}`,
       aumentar: (titulo: string) => `Aumentar: ${titulo}`,
       grupos: {
-        qualidade: { nome: 'Qualidade', desc: 'FLAC e WAV são sempre aceitos. Marque o que mais aceitar' },
+        qualidade: {
+          nome: 'Qualidade',
+          desc: 'FLAC e WAV são sempre aceitos. Marque o que mais aceitar; entre duas versões iguais, o melhor formato ganha',
+        },
         titulos: { nome: 'Títulos', desc: 'Como comparar o título da linha com o do arquivo' },
         comportamento: { nome: 'Comportamento', desc: 'O que fazer com o que já foi feito' },
         ritmo: { nome: 'Ritmo', desc: '' },
@@ -805,11 +809,11 @@ export const msg = {
         },
         AceitarMp3320: {
           titulo: 'Aceitar MP3 320',
-          desc: 'Quando a faixa não existe nos formatos acima.',
+          desc: 'Fica atrás de FLAC, WAV e AIFF da mesma versão.',
         },
         AceitarMp3Menor: {
           titulo: 'Aceitar MP3 256 e VBR (V0)',
-          desc: 'Também aceita MP3 320. Só quando não há nada melhor.',
+          desc: 'Também aceita MP3 320. Fica atrás dos outros formatos da mesma versão.',
         },
         TituloAproximado: {
           titulo: 'Aceitar títulos com palavras a mais',
@@ -858,6 +862,57 @@ export const msg = {
         titulosIncompletos: 'Títulos da lista incompletos',
         listaEnormeComPressa: 'Lista enorme e com pressa',
       } as Record<string, string>,
+    },
+    /** o card Versão da faixa (docs/adr/0006), igual nos dois modos; o Modo Dev mostra também o parâmetro */
+    versoes: {
+      nome: 'Versão da faixa',
+      desc: 'Vale para as linhas sem mix. Quando a linha diz o mix, ela manda.',
+      atalhos: { pista: 'Pista', tantoFaz: 'Tanto faz a versão', soExtended: 'Só Extended' },
+      atalhosDica: 'Atalhos',
+      baixar: 'Baixar, nesta ordem',
+      naoBaixar: 'Não baixar',
+      naoBaixarVazio: 'Nenhuma: todas as versões são aceitas.',
+      soltarAqui: 'Solte aqui para não baixar',
+      soltarNoFim: 'Solte aqui para baixar por último',
+      nomes: {
+        extended: 'Extended Mix',
+        club: 'Club Mix',
+        original: 'Original Mix',
+        semnome: 'Sem versão no nome',
+        radioedit: 'Radio Edit',
+      },
+      exemplos: {
+        extended: '“Título (Extended Mix)”',
+        club: '“Título (Club Mix)”',
+        original: '“Título (Original Mix)”',
+        semnome: '“Artista - Título.flac”, quase sempre o original',
+        radioedit: 'a versão curta, de rádio',
+      },
+      empate: 'Mesma posição da de cima',
+      posicao: (n: number) => `${n}º`,
+      subir: (nome: string) => `Subir ${nome}`,
+      descer: (nome: string) => `Descer ${nome}`,
+      empatar: (nome: string) => `${nome} na mesma posição da de cima`,
+      recusar: (nome: string) => `Não baixar ${nome}`,
+      aceitar: (nome: string) => `Baixar ${nome}`,
+      alca: (nome: string) => `Mover ${nome}. Espaço pega; setas movem; Espaço solta.`,
+      ultima: 'O lote precisa aceitar pelo menos uma versão.',
+      anuncio: {
+        pegou: (nome: string) => `${nome} pega. Use as setas para mover e Espaço para soltar.`,
+        moveu: (nome: string, pos: number, total: number, empatada: boolean) =>
+          `${nome}, posição ${pos} de ${total}${empatada ? ', mesma posição da de cima' : ''}.`,
+        soltou: (nome: string) => `${nome} solta.`,
+        recusou: (nome: string) => `${nome} foi para Não baixar.`,
+        aceitou: (nome: string) => `${nome} vai ser baixada por último.`,
+      },
+      duracao: {
+        nome: 'Duração mínima',
+        desc: 'Para as linhas sem mix e sem duração. Pega a Radio Edit com o nome errado. Em alguns gêneros (hard techno, por exemplo) o Original tem de 4 a 5 min.',
+        desligada: 'Desligada',
+        minutos: (m: number) => `${m} min`,
+        daLista:
+          'Linha com duração no fim (“Título 6:58”) é conferida por ela, com folga de 5 s: o arquivo de outra duração é outra versão.',
+      },
     },
     antesDeIniciar: {
       semStackTitulo: 'A stack não está no ar',
@@ -1269,6 +1324,8 @@ export const msg = {
     resumoDaFalta: {
       tituloErrado: 'Título provavelmente errado',
       soFormato: 'Só existe em formato não aceito',
+      soVersao: 'Só existe em versão não aceita',
+      versaoEFormato: 'Nenhum arquivo cumpre a versão e o formato juntos',
       usuarios: 'Usuários não entregaram a tempo',
       ninguemTem: 'Ninguém compartilha',
       semCompativel: 'Respostas sem arquivo compatível',
@@ -1328,6 +1385,23 @@ export const msg = {
         acao: 'Troque o artista principal na linha (ex.: pelo outro colaborador).',
       },
       mix: { rotulo: 'Mix diferente', acao: 'Confira o nome exato do remix.' },
+      versaoNaoAceita: {
+        rotulo: (v: string) => `Versão não aceita: ${v}`,
+        acao: (v: string) =>
+          `Só achei ${v}. Para aceitar, leve ${v} para “Baixar” no card Versão da faixa, em Ajustes.`,
+      },
+      duracaoDiferente: {
+        rotulo: (detalhe: string) => `Duração diferente (${detalhe})`,
+        acao: 'Achei a faixa com outra duração, então é outra versão. Confira a duração na lista, ou apague-a para aceitar qualquer duração.',
+      },
+      duracaoCurta: {
+        rotulo: (detalhe: string) => `Curta demais para a versão (${detalhe})`,
+        acao: 'Só achei versões mais curtas que a duração mínima. Diminua ou desligue a duração mínima no card Versão da faixa.',
+      },
+      versaoEFormato: {
+        rotulo: (detalhe: string) => `Versão e formato não aceitos (${detalhe})`,
+        acao: 'Os arquivos falham nas duas regras. Aceitar só o formato ou só a versão não basta: mude os dois, em Qualidade e em Versão da faixa.',
+      },
       versao: {
         rotulo: (v: string) => (v ? `Outra versão (${v})` : 'Outra versão'),
         acao: (v: string) =>
@@ -1464,6 +1538,54 @@ export const msg = {
       },
       move: { titulo: 'Reorganizar as pastas', descricao: 'Depois de mudar o jeito de nomear as pastas.' },
     },
+    painel: {
+      rotulo: 'Ferramentas da biblioteca',
+      abas: { cuidar: 'Cuidar', organizacao: 'Organizar', rekordbox: 'Rekordbox', compartilhar: 'Compartilhar' },
+      rodando: 'uma tarefa está rodando',
+    },
+    organizacao: {
+      titulo: 'Organização',
+      explicacao: 'Escolha à parte como organizar as pastas no disco e as playlists no Rekordbox.',
+      disco: {
+        legenda: 'No disco',
+        opcoes: {
+          'genero-artista': {
+            titulo: 'Por gênero e artista',
+            descricao: 'Uma pasta por gênero e, dentro dela, uma por artista.',
+            exemplo: 'Hard Techno/Azyr/No Escape',
+          },
+          genero: {
+            titulo: 'Só por gênero',
+            descricao: 'Uma pasta por gênero, com as músicas direto nela.',
+            exemplo: 'Hard Techno/Azyr - No Escape',
+          },
+        },
+        guardado: 'Guardado. Vale para as próximas músicas. Para mudar as que já estão no disco, reorganize as pastas.',
+        reorganizar: 'Reorganizar as pastas',
+        avisoRekordbox:
+          'Reorganizar muda o lugar dos arquivos: as faixas que já estão na Coleção do Rekordbox aparecem como não encontradas até você apontar o lugar novo delas no Rekordbox.',
+        configAntigo:
+          'O config.yaml da pasta do Soulcrate foi editado e ainda não usa esta escolha: o beets continua organizando do jeito antigo. Junte nele as mudanças do config.yaml.novo, que está ao lado.',
+      },
+      rekordbox: {
+        legenda: 'No Rekordbox',
+        opcoes: {
+          'genero-artista': {
+            titulo: 'Por gênero e artista',
+            descricao: 'Uma pasta por gênero, com a playlist Todas e uma playlist por artista.',
+            exemplo: 'Gêneros › Hard Techno › Azyr',
+          },
+          genero: {
+            titulo: 'Só por gênero',
+            descricao: 'Uma playlist por gênero.',
+            exemplo: 'Gêneros › Hard Techno',
+          },
+        },
+        guardado:
+          'Guardado. Se as playlists já foram criadas, o arquivo se refaz agora: importe a pasta Soulcrate de novo no Rekordbox.',
+      },
+      guardando: 'Guardando…',
+    },
     compartilhamento: {
       titulo: 'Compartilhamento',
       /** vem depois do número: `1.204` + `arquivos anunciados no Soulseek` */
@@ -1478,11 +1600,29 @@ export const msg = {
     },
     rekordbox: {
       titulo: 'Rekordbox',
-      instrucao:
-        'Em Preferências › Avançado › Gerenciamento de banco de dados, adicione esta pasta como monitorada. As faixas novas aparecem sozinhas.',
-      pastaMonitorada: 'Pasta para monitorar no Rekordbox',
+      explicacao:
+        'Suas músicas viram playlists no Rekordbox, dentro da pasta Soulcrate: por gênero (do jeito escolhido em Organizar) e uma por lista baixada.',
+      criar: 'Criar as playlists',
+      atualizar: 'Atualizar agora',
+      gerando: 'Montando as playlists…',
+      nunca: 'Ainda não criadas.',
+      atualizadoEm: (quando: string) => `Atualizadas ${quando}.`,
+      resumo: (faixas: number, generos: number, listas: number) =>
+        `${faixas.toLocaleString('pt-BR')} ${plural(faixas, 'faixa', 'faixas')} em ${generos} ${plural(generos, 'gênero', 'gêneros')}` +
+        (listas > 0 ? ` e ${listas} ${plural(listas, 'lista', 'listas')}.` : '.'),
+      listasComFalha: (nomes: string[]) =>
+        `${plural(nomes.length, 'Esta lista ficou', 'Estas listas ficaram')} de fora desta vez: ${nomes.join(', ')}.`,
+      sozinho:
+        'Depois da primeira vez, as playlists se atualizam sozinhas ao fim de cada download e de cada tarefa de Cuidar da biblioteca.',
+      arquivo: 'Arquivo para o Rekordbox',
       copiar: 'Copiar',
       copiado: 'Copiado',
+      comoLevar: 'Como levar para o Rekordbox',
+      passos: [
+        'Uma vez: em Preferências › Avançado › Banco de dados › rekordbox xml › Imported Library, escolha o arquivo acima. Se "rekordbox xml" não aparecer na árvore à esquerda, ligue em Preferências › Exibição › Layout.',
+        'A cada atualização: na árvore, em rekordbox xml, clique em atualizar. Depois, clique com o botão direito na pasta Soulcrate e escolha Importar playlist.',
+        'Para tocar fora: exporte a pasta Soulcrate para o pendrive, como sempre.',
+      ],
     },
     remover: {
       rotulo: 'Ação destrutiva',
@@ -1783,6 +1923,8 @@ export const msg = {
       'atualizacao.falhou': 'Erro · atualização',
       'atualizacao.lote-rodando': 'Atualização · espera',
       'stack.atualizacao-falhou': 'Erro · stack',
+      'rekordbox.nao-gravou': 'Erro · Rekordbox',
+      'organizacao.nao-gravou': 'Erro · pastas',
       inesperado: 'Erro inesperado',
     } satisfies Record<ErroCodigo, string>,
     inesperado: { titulo: 'Algo deu errado', mensagem: 'O app não conseguiu terminar o que você pediu.' },
@@ -1934,6 +2076,15 @@ export const msg = {
       titulo: 'Não consegui atualizar os arquivos da stack',
       mensagem:
         'Nenhum arquivo seu foi alterado. Veja se a pasta do Soulcrate permite gravação e se nenhum outro programa está com um deles aberto, e tente de novo.',
+    },
+    rekordboxNaoGravou: {
+      titulo: 'Não consegui gravar o arquivo para o Rekordbox',
+      mensagem:
+        'Nada mudou no Rekordbox. Veja se a pasta do Soulcrate permite gravação e se nenhum outro programa está com o arquivo aberto, e tente de novo.',
+    },
+    organizacaoNaoGravou: {
+      titulo: 'Não consegui guardar a organização das pastas',
+      mensagem: 'As pastas continuam como estavam. Veja se a pasta do Soulcrate permite gravação e tente de novo.',
     },
     operacaoFalhou: {
       titulo: (op: OperacaoStack | 'reiniciando') =>

@@ -4,6 +4,7 @@ REM   baixar-lista.bat                      -> usa lista.txt
 REM   baixar-lista.bat minhas.txt           -> outra lista (.txt ou .csv do Spotify/Exportify)
 REM   arraste um .txt/.csv em cima deste arquivo
 REM   baixar-lista.bat lista.txt -Paralelo 6 -Retentar -AceitarAacAiff
+REM   baixar-lista.bat lista.txt -Versoes "extended,club,original+semnome"   (valor com virgula entre aspas)
 cd /d "%~dp0"
 title Download em lote - Soulcrate
 set "LISTA=%~1"
@@ -25,6 +26,14 @@ docker info >nul 2>&1 || (
   pause
   exit /b 1
 )
-powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0baixar-lista.ps1" -Lista "%LISTA%" %2 %3 %4 %5 %6 %7 %8 %9
+REM repassa TODAS as opcoes depois da lista (antes parava na oitava; -Versoes "a,b" ocupa duas)
+set "EXTRA="
+:proxima_opcao
+shift
+if "%~1"=="" goto rodar
+set EXTRA=%EXTRA% %1
+goto proxima_opcao
+:rodar
+powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0baixar-lista.ps1" -Lista "%LISTA%"%EXTRA%
 echo.
 pause

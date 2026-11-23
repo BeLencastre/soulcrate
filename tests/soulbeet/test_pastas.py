@@ -145,5 +145,33 @@ class PrimeiroArtista(unittest.TestCase):
         self.assertArtista("KUKO", "KUKO", [])
 
 
+class Organizacao(unittest.TestCase):
+    """A escolha do disco que o app grava em /data/pastas.json (app/src/shared/organizacao.ts)."""
+
+    def test_le_o_que_o_app_grava(self):
+        texto = '{\n  "disco": "genero",\n  "rekordbox": "genero-artista"\n}\n'
+        self.assertEqual(pastas.organizacao_do_texto(texto), "genero")
+        self.assertEqual(pastas.organizacao_do_texto('{"disco": "genero-artista"}'), "genero-artista")
+
+    def test_a_escolha_do_rekordbox_nao_muda_o_disco(self):
+        self.assertEqual(pastas.organizacao_do_texto('{"rekordbox": "genero"}'), "genero-artista")
+        self.assertEqual(pastas.organizacao_do_texto('{"disco": "genero-artista", "rekordbox": "genero"}'), "genero-artista")
+
+    def test_sem_arquivo_ou_estragado_vale_genero_e_artista(self):
+        for texto in [None, "", "{", "[]", "null", '"genero"', '{"disco": "artista"}', '{"disco": 1}']:
+            self.assertEqual(pastas.organizacao_do_texto(texto), "genero-artista", repr(texto))
+
+    def test_arquivo_que_nao_existe(self):
+        self.assertEqual(pastas.ler_organizacao(str(RAIZ / "nao-existe" / "pastas.json")), "genero-artista")
+
+    def test_le_do_disco(self):
+        import tempfile
+
+        with tempfile.TemporaryDirectory() as pasta:
+            caminho = pathlib.Path(pasta) / "pastas.json"
+            caminho.write_text('{"disco": "genero"}', encoding="utf-8")
+            self.assertEqual(pastas.ler_organizacao(str(caminho)), "genero")
+
+
 if __name__ == "__main__":
     unittest.main()

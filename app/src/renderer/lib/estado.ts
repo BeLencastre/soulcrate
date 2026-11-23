@@ -10,7 +10,7 @@ import type { ServicoId } from '@shared/servicos';
 import { statusInicial, type StackStatus } from '@shared/stack';
 import { api } from './api';
 import { chaveArquivosDaStack, chaveAtualizacao } from './atualizacao';
-import { CHAVE_BIBLIOTECA, useManutencao } from './biblioteca';
+import { CHAVE_BIBLIOTECA, CHAVE_REKORDBOX, useManutencao } from './biblioteca';
 import { CHAVE_HISTORICO } from './historico';
 import { useExecucao, useRascunho } from './lote-store';
 
@@ -139,6 +139,7 @@ export function ligarEventos(qc: QueryClient, navegar: (rota: string) => void): 
     } else if (e.type === 'app.navigate') navegar(e.rota);
     else if (e.type === 'update.state') qc.setQueryData(chaveAtualizacao, e.estado);
     else if (e.type === 'stackFiles.changed') void qc.invalidateQueries({ queryKey: chaveArquivosDaStack });
+    else if (e.type === 'rekordbox.state') qc.setQueryData(CHAVE_REKORDBOX, e.estado);
     else if (e.type === 'batch.events' || e.type === 'batch.log') {
       useExecucao.getState().aoEvento(e);
       // uma execução começou ou terminou: o histórico tem uma linha nova (ou mudou a de sempre)

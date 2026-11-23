@@ -39,21 +39,36 @@ describe('ajustes no Modo DJ', () => {
   });
 
   it('o resumo diz a qualidade sempre e cada ajuste que mudou, em palavras (como no protótipo)', () => {
-    expect(linhasDoResumoDj(novasOpcoes())).toEqual([{ rotulo: 'Qualidade', valor: 'só FLAC e WAV', mudou: false }]);
+    const versao = { rotulo: 'Versão', valor: 'Extended → Club → Original e sem nome', mudou: false };
+    expect(linhasDoResumoDj(novasOpcoes())).toEqual([
+      { rotulo: 'Qualidade', valor: 'só FLAC e WAV', mudou: false },
+      versao,
+    ]);
     const o = { ...novasOpcoes(), SemBeets: true, SemCatalogo: true };
     expect(linhasDoResumoDj(o)).toEqual([
       { rotulo: 'Qualidade', valor: 'só FLAC e WAV', mudou: false },
+      versao,
       { rotulo: 'Títulos no catálogo', valor: 'sem conferir', mudou: true },
       { rotulo: 'Organizar', valor: 'depois, por você', mudou: true },
     ]);
     const tudo = { ...novasOpcoes(), AceitarAacAiff: true, AceitarMp3320: true, Paralelo: 8, Retentar: true };
     expect(linhasDoResumoDj(tudo)).toEqual([
       { rotulo: 'Qualidade', valor: 'FLAC e WAV, depois AIFF/AAC e MP3 320', mudou: true },
+      versao,
       { rotulo: 'Downloads ao mesmo tempo', valor: '8', mudou: true },
       { rotulo: 'Tentar de novo o que falhou antes', valor: 'sim', mudou: true },
     ]);
     expect(numericosAlterados(tudo)).toBe(1);
     expect(numericosAlterados(OPCOES_PADRAO)).toBe(0);
+  });
+
+  it('a linha da versão resume o card e a duração mínima, e não conta nas avançadas', () => {
+    const o = { ...novasOpcoes(), Versoes: 'radioedit,extended', DuracaoMinima: 300 };
+    expect(linhasDoResumoDj(o)).toEqual([
+      { rotulo: 'Qualidade', valor: 'só FLAC e WAV', mudou: false },
+      { rotulo: 'Versão', valor: 'Radio Edit → Extended · mínimo 5 min', mudou: true },
+    ]);
+    expect(numericosAlterados(o)).toBe(0);
   });
 });
 

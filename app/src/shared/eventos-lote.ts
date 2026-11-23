@@ -128,7 +128,17 @@ export interface ItemDiagnostic extends Base<'item.diagnostic'> {
   artistSearched: boolean;
   artistCatalog: { title: string; users: number }[];
   artistCatalogTotal: number;
+  /**
+   * A regra que impediu o download quando algum arquivo era a faixa certa (docs/adr/0006). Ausente quando o motivo é
+   * outro, e nos lotes anteriores à stack 1.4.0.
+   */
+  rejectedBy?: RegraRecusa;
+  /** a duração pedida na linha, em segundos (só com `-Versoes`) */
+  duration?: number;
 }
+
+/** As regras obrigatórias para um arquivo ser baixado: a da versão (nome e duração) e a do formato. */
+export type RegraRecusa = 'versao' | 'formato' | 'versao-e-formato';
 
 export interface ItemFinal extends Base<'item.final'> {
   key: string;

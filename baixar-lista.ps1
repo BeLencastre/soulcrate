@@ -17,6 +17,10 @@
       quando o titulo nao existe) e evita gastar buscas do Soulseek a toa
     - so pausa as buscas quando uma busca de teste confirma o bloqueio do servidor
 
+  Versao da faixa (docs/adr/0006): -Versoes "extended,club,original+semnome" aceita so essas versoes, nessa ordem
+  de preferencia, e confere a duracao escrita no fim da linha ("Titulo 6:58"); -DuracaoMinima 300 recusa as mais
+  curtas. Sem eles, a versao segue a regra de sempre.
+
   Uso:  baixar-lista.bat                       (usa lista.txt)
         baixar-lista.bat minhas.txt
         baixar-lista.bat playlist.csv -Paralelo 6 -Retentar
@@ -54,6 +58,9 @@ param(
   [switch]$NaoTolerarGrafia,          # desliga a tolerancia a erros de digitacao no titulo ("Abaddon" x "Abbadon")
   [switch]$SemCatalogo,               # nao confere os titulos no catalogo do MusicBrainz antes de buscar
   [switch]$PularForaDoCatalogo,       # nem busca no Soulseek as faixas cujo titulo nao existe no catalogo do artista
+  [string]$Versoes = "",              # versoes aceitas nas linhas sem mix, em ordem de preferencia ("+" = mesma posicao):
+                                      #   extended, club, original, semnome, radioedit. Ex.: "extended,club,original+semnome"
+  [int]$DuracaoMinima = 0,            # segundos: recusa versoes mais curtas nas linhas sem mix e sem duracao (0 = desligado)
   [string]$SlskdUrl = "http://localhost:5030",
   [string]$BeetsLib = "/music/.beets_library.db",
   [string]$BeetsDir = "/music",
@@ -174,6 +181,8 @@ $DownloadsDir = [IO.Path]::GetFullPath($DownloadsDir)
 if (-not [IO.Path]::IsPathRooted($Lista)) { $Lista = Join-Path $Root $Lista }
 if (-not $SoAnalisar -and -not (Test-Path -LiteralPath $Lista)) { Stop-Lote $CodSaida.Config "Arquivo de lista nao encontrado: $Lista" }
 if ($IdExecucao -and $IdExecucao -notmatch '^[A-Za-z0-9_\-]{1,64}$') { Stop-Lote $CodSaida.Config "-IdExecucao invalido: use so letras, numeros, - e _ (ate 64): $IdExecucao" }
+try { $VersionRank = ConvertTo-VersionRanks $Versoes } catch { Stop-Lote $CodSaida.Config $_.Exception.Message }
+if ($DuracaoMinima -lt 0 -or $DuracaoMinima -gt 3600) { Stop-Lote $CodSaida.Config "-DuracaoMinima invalido: use de 0 a 3600 segundos: $DuracaoMinima" }
 
 $stamp  = $(if ($IdExecucao) { $IdExecucao } else { Get-Date -Format "yyyyMMdd-HHmmss" })
 $logDir = Join-Path $Root "lotes"
@@ -222,13 +231,15 @@ $py = "import sys; from beets.ui import main; main(sys.argv[1:])"
 function Get-Library {
   $idx = @{}
   $ErrorActionPreference = "Continue"
-  $out = & docker compose exec -T -w /data soulbeet /usr/bin/python3 -c $py -c /config/config.yaml -l $BeetsLib ls -f '$artist|||$title' 2>$null
+  $out = & docker compose exec -T -w /data soulbeet /usr/bin/python3 -c $py -c /config/config.yaml -l $BeetsLib ls -f '$id|||$artist|||$title' 2>$null
   if ($LASTEXITCODE -ne 0) { return $null }
   $n = 0
   foreach ($l in @($out)) {
-    $p = ([string]$l) -split '\|\|\|', 2
-    if ($p.Count -lt 2) { continue }
-    $e = [pscustomobject]@{ A = (Normalize $p[0]); T = (Normalize $p[1]) }
+    $p = ([string]$l) -split '\|\|\|', 3
+    if ($p.Count -lt 3) { continue }
+    $id = 0
+    if (-not [int]::TryParse($p[0], [ref]$id)) { continue }
+    $e = [pscustomobject]@{ Id = $id; A = (Normalize $p[1]); T = (Normalize $p[2]) }
     $e | Add-Member NoteProperty AT ("$($e.A) $($e.T)")
     foreach ($tk in @($e.A -split ' ' | Select-Object -Unique)) {
       if (-not $tk) { continue }
@@ -385,6 +396,7 @@ function Set-SearchTitle($it, [string]$newBase) {
   $orig = $it.Req
   $it.SearchLine = $nl
   $it.Req = Parse-Line $nl
+  $it.Req.Duration = $orig.Duration
   $it.OrigReq = $orig
   $it.Stages = New-Stages $it.Req
   # a correcao pode estar errada (o MusicBrainz nem sempre tem a versao certa): as buscas com o
@@ -739,8 +751,13 @@ function Process-Responses($it, $resp) {
 
 function Finish-NotFound($it) {
   $fmtOnly = @($it.Diag | Where-Object { $_.Score -ge 4 }).Count
+  $regra = Get-RejectedBy $it.Reasons
+  $nRegra = 0
+  foreach ($k in @($it.Reasons.Keys)) { if (Get-ReasonRule ([string]$k)) { $nRegra += [int]$it.Reasons[$k] } }
   $why = $(if ($it.Responses -eq 0 -and $it.InvalidQuery) { "0 respostas (o slskd recusou algumas buscas: nome curto demais)" }
            elseif ($it.Responses -eq 0) { "ninguem tem (0 respostas)" }
+           elseif ($regra -eq 'versao') { "existe, mas so em versao recusada ($nRegra arquivo(s)) - veja o diagnostico" }
+           elseif ($regra -eq 'versao-e-formato') { "existe, mas nenhum arquivo cumpre a versao e o formato juntos ($nRegra arquivo(s)) - veja o diagnostico" }
            elseif ($fmtOnly -gt 0) { "existe, mas so em formato/qualidade recusados ($fmtOnly arquivo(s)) - veja o diagnostico" }
            else { "$($it.Responses) respostas, nenhuma compativel" })
   if ($it.CatNote) { $why += " | $($it.CatNote)" }
@@ -758,6 +775,9 @@ function Write-Diag($it) {
     if ($it.Corrected) { [void]$lines.Add("    $($it.Corrected)") }
     if ($it.CatNote) { [void]$lines.Add("    catalogo: $($it.CatNote)") }
     if ($it.Req.Remixer) { [void]$lines.Add("    (o artista da linha e o remixer: o artista original foi aceito livremente)") }
+    if ($VersionRank -and $it.Req.Duration -gt 0) { [void]$lines.Add("    duracao pedida: $(Format-Duracao $it.Req.Duration)") }
+    $regra = Get-RejectedBy $it.Reasons
+    if ($regra) { [void]$lines.Add("    recusada pela regra: " + $(switch ($regra) { 'versao' { 'versao' } 'formato' { 'formato' } default { 'versao e formato' } })) }
     if ($it.Reasons.Count) {
       [void]$lines.Add("    motivos: " + (($it.Reasons.GetEnumerator() | Sort-Object Value -Descending | ForEach-Object { "$($_.Key) x$($_.Value)" }) -join '; '))
     }
@@ -782,7 +802,7 @@ function Write-Diag($it) {
     if ($EventosPath) {
       $motivos = [ordered]@{}
       foreach ($m in @($it.Reasons.GetEnumerator() | Sort-Object Value -Descending)) { $motivos[[string]$m.Key] = [int]$m.Value }
-      Write-Evento 'item.diagnostic' ([ordered]@{
+      $diag = [ordered]@{
         key = [string]$it.Key; line = [string]$it.Line
         searches = [object[]]@($it.Stages | ForEach-Object { [ordered]@{ kind = [string]$_.Kind; query = [string]$_.Q } })
         skipped = [int]$it.Skipped; corrected = [string]$it.Corrected; catalog = [string]$it.CatNote; remixer = [bool]$it.Req.Remixer
@@ -792,7 +812,10 @@ function Write-Diag($it) {
         artistSearched = ($null -ne $catArtista)
         artistCatalog = [object[]]@(@($catArtista) | Where-Object { $_ } | Select-Object -First 100 | ForEach-Object { [ordered]@{ title = [string]$_.Title; users = [int]$_.Users } })
         artistCatalogTotal = @($catArtista | Where-Object { $_ }).Count
-      })
+      }
+      if ($regra) { $diag.rejectedBy = $regra }
+      if ($VersionRank -and $it.Req.Duration -gt 0) { $diag.duration = [int]$it.Req.Duration }
+      Write-Evento 'item.diagnostic' $diag
     }
   } catch {}
 }
@@ -1009,15 +1032,20 @@ function Invoke-Analise {
       elseif ($req.BaseTokens.Count -eq 0) { [void]$avisos.Add("titulo vazio") }
       if ($req.Remixer) { [void]$avisos.Add("o artista da linha e o remixer: o artista original sera aceito livremente") }
       $e = [ordered]@{ sourceLine = $d.SourceLine; line = [string]$d.Line; key = $k; artist = [string]$req.Artist; title = [string]$req.Base; mix = [string]$req.Mix
+                       duration = $(if ([int]$d.Duration -gt 0) { [int]$d.Duration } else { $null })
                        original = [bool]$req.IsOriginal; remixer = [bool]$req.Remixer; queries = [object[]]@($req.Queries | ForEach-Object { [string]$_ })
-                       status = 'nova'; duplicateOf = $null; previous = $null; warnings = [object[]]$avisos.ToArray() }
+                       status = 'nova'; duplicateOf = $null; previous = $null; warnings = [object[]]$avisos.ToArray(); libraryId = $null }
       if (-not $k) { $e.status = 'ignorada' }
       elseif ($seen.ContainsKey($k)) { $e.status = 'repetida'; $e.duplicateOf = $seen[$k]; $cnt.dup++ }
       else {
         $seen[$k] = $d.SourceLine; $cnt.unique++
+        # a faixa da biblioteca vale também para o que já foi feito: o app monta a playlist da lista com ela
+        $naBiblioteca = $null
+        if ($lib) { $naBiblioteca = Find-InLibrary $lib $req }
+        if ($naBiblioteca) { $e.libraryId = $naBiblioteca.Id }
         if ($state.ContainsKey($k)) { $e.previous = [string]$state[$k] }
         if ($state.ContainsKey($k) -and $skipStatus -contains $state[$k]) { $e.status = 'ja feita'; $cnt.done++ }
-        elseif ($lib -and (In-Library $lib $req)) { $e.status = 'ja na biblioteca'; $cnt.lib++ }
+        elseif ($naBiblioteca) { $e.status = 'ja na biblioteca'; $cnt.lib++ }
       }
       [void]$linhas.Add($e)
     }
@@ -1039,7 +1067,11 @@ function Invoke-Analise {
 # ============================================================================
 if ($SoAnalisar) { Invoke-Analise; exit $script:CodigoSaida }
 
-try { $raw = Read-Lista $Lista } catch { Stop-Lote $CodSaida.Config $_.Exception.Message }
+try { $det = Read-ListaDetalhada $Lista } catch { Stop-Lote $CodSaida.Config $_.Exception.Message }
+$raw = @($det | ForEach-Object { $_.Line })
+# duracao de referencia de cada faixa (a da primeira linha, se repetida); so vale com -Versoes
+$DurPorChave = @{}
+foreach ($d in $det) { $k0 = Normalize $d.Line; if ($k0 -and -not $DurPorChave.ContainsKey($k0)) { $DurPorChave[$k0] = [int]$d.Duration } }
 $ArtistLineCount = @{}
 foreach ($l in $raw) { $k0 = (Parse-Line $l).ArtistKey; if ($k0) { $ArtistLineCount[$k0] = 1 + [int]$ArtistLineCount[$k0] } }
 $seenKeys = @{}; $items = New-Object System.Collections.ArrayList
@@ -1054,6 +1086,7 @@ foreach ($l in $raw) {
     FirstSearchAt = $null; RespCache = $null; LostOnce = $false; InvalidQuery = $false; Skipped = 0; Corrected = ""; CatNote = ""; Fora = $false; SearchLine = ""
     OrigReq = $null; RunAt = $null; StopAt = $null; Refetched = $false; RemoteQueued = $false; ActiveAt = $null; EvSig = ""
   })
+  $items[$items.Count - 1].Req.Duration = [int]$DurPorChave[$k]
   $items[$items.Count - 1].Stages = New-Stages $items[$items.Count - 1].Req
 }
 if ($items.Count -eq 0) { Stop-Lote $CodSaida.Config "A lista esta vazia: $Lista" }
@@ -1069,7 +1102,7 @@ if ($EventosPath) {
   $opcoes = [ordered]@{}
   foreach ($n in @('Paralelo', 'Buscas', 'BuscasPorJanela', 'Tentativas', 'FilaMaxMin', 'FilaUltimoMin', 'DownloadMaxMin', 'LoteBeets', 'PausaBloqueioMin',
                    'AceitarAacAiff', 'AceitarMp3320', 'AceitarMp3Menor', 'Retentar', 'NaoPularExistentes', 'SemBeets', 'SemBuscaArtista', 'TituloAproximado',
-                   'NaoTolerarGrafia', 'SemCatalogo', 'PularForaDoCatalogo', 'SlskdUrl')) {
+                   'NaoTolerarGrafia', 'SemCatalogo', 'PularForaDoCatalogo', 'Versoes', 'DuracaoMinima', 'SlskdUrl')) {
     $v = Get-Variable -Name $n -ValueOnly
     $opcoes[$n] = $(if ($v -is [Management.Automation.SwitchParameter]) { $v.IsPresent } else { $v })
   }

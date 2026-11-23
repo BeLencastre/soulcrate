@@ -36,7 +36,7 @@ export interface ParadoEmDownloads {
 }
 
 export interface LeituraBiblioteca {
-  /** a pasta `music/` no disco (a que o Rekordbox monitora) */
+  /** a pasta `music/` no disco (a que se importa no Rekordbox) */
   pastaMusica: string;
   pastaDownloads: string;
   /** epoch ms */
