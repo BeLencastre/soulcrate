@@ -117,6 +117,9 @@ class ServidorFalso:
                         200, {"access_token": acesso, "expires_in": servidor.expira_em, "refresh_token": "refresh-%d" % servidor._n}
                     )
                 if caminho == "/v4/catalog/search":
+                    # o Beatport real manda a busca sem barra final para a com barra (301)
+                    return self._responder(301, b"", cabecalhos=[("location", "/v4/catalog/search/?" + self.path.partition("?")[2])])
+                if caminho == "/v4/catalog/search/":
                     autorizacao = cabecalhos.get("authorization", "")
                     if autorizacao.replace("Bearer ", "") not in servidor.tokens_validos:
                         return self._json(401, {"detail": "token invalido"})
@@ -260,7 +263,7 @@ class Autenticacao(BaseDoCliente):
                 ("POST", "/v4/auth/login/"),
                 ("GET", "/v4/auth/o/authorize/"),
                 ("POST", "/v4/auth/o/token/"),
-                ("GET", "/v4/catalog/search"),
+                ("GET", "/v4/catalog/search/"),
             ],
         )
         login = self.servidor.chamadas("/v4/auth/login/")[0]
@@ -273,7 +276,7 @@ class Autenticacao(BaseDoCliente):
         token = self.servidor.chamadas("/v4/auth/o/token/")[0]
         self.assertEqual(token[2]["code"], "codigo-de-teste")
         self.assertEqual(token[2]["grant_type"], "authorization_code")
-        busca = self.servidor.chamadas("/v4/catalog/search")[0]
+        busca = self.servidor.chamadas("/v4/catalog/search/")[0]
         self.assertEqual(busca[2], {"q": "Azyr No Escape", "type": "tracks", "per_page": "5"})  # o título vai sem o mix
         self.assertEqual(busca[3]["authorization"], "Bearer acesso-1")
 
@@ -299,7 +302,7 @@ class Autenticacao(BaseDoCliente):
         outro = self.cliente()  # um `beet` novo: instância nova, mesmo arquivo
         outro.buscar("Azyr", "Fire Walk")
         self.assertEqual(len(self.servidor.chamadas("/v4/auth/login/")), 1)
-        self.assertEqual(self.servidor.chamadas("/v4/catalog/search")[1][3]["authorization"], "Bearer acesso-1")
+        self.assertEqual(self.servidor.chamadas("/v4/catalog/search/")[1][3]["authorization"], "Bearer acesso-1")
 
     def test_token_de_outra_conta_nao_e_reaproveitado(self):
         self.cliente().buscar("Azyr", "No Escape")
@@ -315,7 +318,7 @@ class Autenticacao(BaseDoCliente):
         renovacao = [r for r in self.servidor.chamadas("/v4/auth/o/token/") if r[2].get("grant_type") == "refresh_token"]
         self.assertEqual(len(renovacao), 1)
         self.assertEqual(renovacao[0][2]["refresh_token"], "refresh-1")
-        self.assertEqual(self.servidor.chamadas("/v4/catalog/search")[1][3]["authorization"], "Bearer acesso-2")
+        self.assertEqual(self.servidor.chamadas("/v4/catalog/search/")[1][3]["authorization"], "Bearer acesso-2")
 
     def test_refresh_recusado_faz_o_login_completo(self):
         cliente = self.cliente()
@@ -331,7 +334,7 @@ class Autenticacao(BaseDoCliente):
         self.servidor.tokens_validos.clear()  # o servidor esqueceu o token
         cliente.buscar("Azyr", "Fire Walk")
         self.assertEqual(len(self.servidor.chamadas("/v4/auth/login/")), 2)
-        self.assertEqual(len(self.servidor.chamadas("/v4/catalog/search")), 3)
+        self.assertEqual(len(self.servidor.chamadas("/v4/catalog/search/")), 3)
 
     def test_login_recusado_liga_o_freio(self):
         for status in (401, 400):
@@ -421,7 +424,7 @@ class Autenticacao(BaseDoCliente):
 
     def test_testar_faz_login_e_uma_busca(self):
         self.cliente().testar()
-        self.assertEqual(len(self.servidor.chamadas("/v4/catalog/search")), 1)
+        self.assertEqual(len(self.servidor.chamadas("/v4/catalog/search/")), 1)
 
     def test_nada_secreto_na_mensagem_de_erro(self):
         self.servidor.login_status = 401

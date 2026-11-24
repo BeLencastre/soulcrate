@@ -109,7 +109,7 @@ Um módulo novo ao lado do `pastas.py`, em `soulbeet/beets-plugins/`. **Só `url
 
 - **Autenticação**: o fluxo `authorization_code` que o spike validou: client ID lido dos scripts de `api.beatport.com/v4/docs/`, `POST /auth/login/` com usuário e senha, `GET /auth/o/authorize/` (o código vem no cabeçalho `Location`, sem seguir o redirecionamento, lido sem diferenciar maiúsculas) e `POST /auth/o/token/`.
 - **Token guardado**: cada `beet` é um processo novo, então o token (e o `refresh_token`) vai para `soulbeet/data/beatport-token.json`, com permissão restrita, fora do git, reaproveitado até expirar. Sem isso, cada importação faria login de novo.
-- **Busca**: `GET /catalog/search?q=<artista> <título sem mix>&type=tracks&per_page=5`. O melhor resultado entre os cinco:
+- **Busca**: `GET /catalog/search/?q=<artista> <título sem mix>&type=tracks&per_page=5`. O melhor resultado entre os cinco:
   - `exata`: artista confere e o mix do título confere;
   - `aproximada`: artista e título conferem, mas o mix difere ou a biblioteca não tem mix (o gênero quase nunca muda entre mixes); fica marcada para auditoria;
   - senão, `nao-encontrada`.

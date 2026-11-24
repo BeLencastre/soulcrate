@@ -18,7 +18,7 @@ Fluxo (conferido contra o beets-beatport4 e o spike de 2026-11-24):
           (o servidor manda `location` em minúsculas: a leitura não diferencia a caixa)
   4. POST <base>/auth/o/token/?code=..&grant_type=authorization_code&redirect_uri=..&client_id=..
           -> JSON {"access_token","expires_in","refresh_token"}
-  5. GET  <base>/catalog/search?q=..&type=tracks&per_page=5  (Authorization: Bearer)
+  5. GET  <base>/catalog/search/?q=..&type=tracks&per_page=5  (Authorization: Bearer)
           -> {"tracks": [{"id","name","mix_name","artists":[{"name"}],"genre":{"name"},"sub_genre":{"name"}|null}]}
 
 Suposições (não deu para chamar o Beatport de verdade nesta etapa; o parse é tolerante):
@@ -405,7 +405,8 @@ class ClienteBeatport:
 
     def _pesquisar(self, consulta):
         """GET da busca já com o token; devolve (status, dados)."""
-        url = self._url("/catalog/search", {"q": consulta, "type": "tracks", "per_page": RESULTADOS_POR_BUSCA})
+        # a barra final é obrigatória: sem ela o Beatport responde 301, que o cliente não segue
+        url = self._url("/catalog/search/", {"q": consulta, "type": "tracks", "per_page": RESULTADOS_POR_BUSCA})
         cabecalhos = {"Authorization": "Bearer " + self._token["access_token"], "Accept": "application/json"}
         status, _, dados = self._abrir("GET", url, cabecalhos=cabecalhos)
         return status, dados

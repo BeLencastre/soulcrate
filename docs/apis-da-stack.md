@@ -82,7 +82,7 @@ O token fica em `soulbeet/data/beatport-token.json` (fora do git, excluído do p
 ### Busca
 
 ```http
-GET <base>/catalog/search?q=<artista> <título sem o mix>&type=tracks&per_page=5
+GET <base>/catalog/search/?q=<artista> <título sem o mix>&type=tracks&per_page=5
 Authorization: Bearer <access_token>
 ```
 
