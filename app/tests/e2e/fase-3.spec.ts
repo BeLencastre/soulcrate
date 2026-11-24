@@ -188,7 +188,7 @@ test('uma lista de 30 faixas roda do começo ao fim pelo app com o mesmo resulta
       '-SemCatalogo',
       '-SemBeets',
       '-Versoes',
-      'extended,club,original+semnome',
+      'extended,original,club,vip,semnome',
     ],
     ambienteDoLote(amb2, slskd2).PATH as string,
   );
@@ -210,7 +210,7 @@ test('uma lista de 30 faixas roda do começo ao fim pelo app com o mesmo resulta
   await janela.getByRole('button', { name: /Avançadas/ }).click();
   for (let i = 0; i < 6; i++) await janela.getByRole('button', { name: 'Aumentar: Buscas a cada 220 s' }).click();
   await expect(janela.getByTestId('comando-equivalente')).toHaveText(
-    'baixar-lista.bat set.txt -BuscasPorJanela 60 -SemCatalogo -SemBeets -Versoes "extended,club,original+semnome"',
+    'baixar-lista.bat set.txt -BuscasPorJanela 60 -SemCatalogo -SemBeets -Versoes "extended,original,club,vip,semnome"',
   );
   await expect(janela.getByTestId('resumo-opcoes')).toContainText('3 ajustes diferentes do padrão do script');
   await capturar(janela, 'f3-02-opcoes');
@@ -261,7 +261,7 @@ test('uma lista de 30 faixas roda do começo ao fim pelo app com o mesmo resulta
       '\n',
     )[0] ?? '{}',
   ) as { options?: { Versoes?: string } };
-  expect(inicio.options?.Versoes).toBe('extended,club,original+semnome');
+  expect(inicio.options?.Versoes).toBe('extended,original,club,vip,semnome');
   expect(
     readdirSync(join(amb.projeto, 'downloads'), { recursive: true }).filter((f) => String(f).endsWith('.flac')),
   ).toHaveLength(27);

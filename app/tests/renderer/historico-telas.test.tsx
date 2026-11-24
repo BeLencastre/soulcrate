@@ -801,7 +801,7 @@ describe('tela Diagnóstico das faixas que não vieram', () => {
       // a fixture rodou com SemBeets e SemCatalogo; o formato recusado pede -AceitarAacAiff, -AceitarMp3320 e
       // -AceitarMp3Menor; ela rodou sem o card de versão, e a retentativa usa o card como o app manda hoje
       expect(screen.getByTestId('opcoes-sugeridas').textContent).toBe(
-        '-AceitarAacAiff -AceitarMp3320 -AceitarMp3Menor -SemCatalogo -SemBeets -Versoes extended,club,original+semnome',
+        '-AceitarAacAiff -AceitarMp3320 -AceitarMp3Menor -SemCatalogo -SemBeets -Versoes extended,original,club,vip,semnome',
       );
     });
 

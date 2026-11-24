@@ -469,7 +469,7 @@ O separador é **espaço-hífen-espaço**.
 ```text
 # Comentários começam com #. Linhas em branco são ignoradas.
 
-# Sem mix: vale o card "Versão da faixa" (no app: Extended, depois Club, depois Original)
+# Sem mix: vale o card "Versão da faixa" (no app: Extended, depois Original, Club, VIP e sem versão no nome)
 Azyr - No Escape
 
 # "Original Mix" pede o original (com ou sem o nome no arquivo)
@@ -500,7 +500,7 @@ Cloudy - Yeah (Cloudy Remix)
 - **Título exato:** palavras a mais no título do arquivo fazem ele ser recusado. Por isso "Azyr - Power" não aceita "Northern Power". Se o título oficial tem uma palavra, escreva-a.
 - **Grafia:** acentos, maiúsculas e letras como `ø`/`æ`/`ß` não importam (`Byørn` também acha `BYORN`). Erros pequenos de digitação são tolerados (`Abaddon` acha `Abbadon`). Censura ("Mxther Fxcker") importa: escreva como a faixa costuma aparecer nos arquivos.
 - **Confira os títulos:** listas montadas de memória ou por IA costumam ter títulos que não existem. O script confere cada título no MusicBrainz antes de buscar, e quando uma faixa não vem o diagnóstico mostra **os títulos daquele artista que existem no Soulseek** ([Faixas que não vieram](#faixas-que-não-vieram)).
-- **Versões:** remix, edit, rework, bootleg, dub, VIP, live, acapella, instrumental, radio, mashup, cover, sped/slowed etc. só entram se a palavra estiver na sua linha. Nas linhas sem mix, quais versões da própria faixa entram (Extended, Club, Original, sem versão no nome, Radio Edit) e em que ordem você escolhe no card **Versão da faixa** ([Versão da faixa](#versão-da-faixa)).
+- **Versões:** remix, edit, rework, bootleg, dub, VIP, live, acapella, instrumental, radio, mashup, cover, sped/slowed etc. só entram se a palavra estiver na sua linha. Nas linhas sem mix, quais versões da própria faixa entram (Extended, Original, Club, VIP, sem versão no nome, Radio Edit) e em que ordem você escolhe no card **Versão da faixa** ([Versão da faixa](#versão-da-faixa)).
 - **Duração:** com uma duração no fim da linha (`Título 6:58`), só entra o arquivo com essa duração, com folga de 5 s (ou 2% em faixas longas). É o jeito mais preciso de garantir a versão certa: a Radio Edit de 3:10 não passa por uma Extended de 6:58.
 
 **Colando de outros lugares:** o script limpa sozinho a numeração (`01.`, `1)`, `-` , `*` ) e o traço longo (`–` e `—` viram `-`). A duração no fim (`3:45`) sai da linha e passa a ser conferida no arquivo (veja **Duração** acima). Dá para colar tracklist do 1001Tracklists, Beatport ou YouTube quase direto.
@@ -835,7 +835,7 @@ Cada arquivo encontrado passa por estes filtros. O motivo de cada recusa aparece
 | Mix                      | Se você pediu um mix, o nome dele precisa estar no parêntese do arquivo. Isso evita pegar o remix invertido                                                                                                                                                                                                                                                                                                                                 |
 | Palavras extras          | Proibidas no trecho do título; permitidas no trecho do artista (feat. etc.). Números e tons Camelot (`5A`, `12B`) são liberados (`Paranoia 5A 160`). Nomes estilo scene (`09-kobosil-while_the_stars`) e com colchetes (`[01][Vendex][Emotional_Khaos]`) são separados em trechos. Com `-TituloAproximado`, um título com palavras a mais é aceito **por último** (`Vendex - Vengeance` → `Vengeance Of The Masked`) e marcado no relatório |
 | Outro artista            | Se o artista pedido só aparece na **pasta** e o nome do arquivo traz outro artista, é recusado. Ex.: pasta "Novah Curates Hard Dance", arquivo "Acid - Marie Vaunt"                                                                                                                                                                                                                                                                         |
-| Versão                   | Remix/edit/radio... só se estiverem na sua linha. Nas linhas sem mix, com `-Versoes`, só as versões aceitas no card (Extended Mix, Club Mix, Original Mix, sem versão no nome, Radio Edit), reconhecidas pelo parêntese ou pelo trecho depois de " - " (`(Extended)`, `- Extended Mix`)                                                                                                                                                     |
+| Versão                   | Remix/edit/radio... só se estiverem na sua linha. Nas linhas sem mix, com `-Versoes`, só as versões aceitas no card (Extended Mix, Original Mix, Club Mix, VIP Mix, sem versão no nome, Radio Edit), reconhecidas pelo parêntese ou pelo trecho depois de " - " (`(Extended)`, `- Extended Mix`)                                                                                                                                                     |
 | Duração da versão        | Com `-Versoes`, a duração no fim da linha (ou a do CSV) precisa bater com a do arquivo, com folga de 5 s ou 2%. Com `-DuracaoMinima`, as linhas sem mix e sem duração recusam arquivos mais curtos. Arquivo sem duração informada passa (fica atrás dos que têm a duração conferida)                                                                                                                                                         |
 | Formato (por último)     | **FLAC e WAV são sempre aceitos.** AIFF e AAC (256 kbps ou mais) só com `-AceitarAacAiff`; MP3 **320 kbps** só com `-AceitarMp3320`; MP3 256 ou VBR (V0, ~220–300 kbps) só com `-AceitarMp3Menor` (que já inclui o 320). Quando o usuário não informa o bitrate do MP3 ou do AAC, ele é estimado por tamanho ÷ duração                                                                                                                                                                                                                              |
 
@@ -1011,10 +1011,10 @@ O `-Retentar` é necessário quando você roda **a mesma lista** de novo. Sem el
 
 #### Versão da faixa
 
-`-Versoes` lista as versões aceitas nas linhas sem mix, em ordem de preferência: `extended`, `club`, `original`, `semnome` (arquivo sem versão no nome, quase sempre o original) e `radioedit`. A vírgula separa as posições e o `+` põe versões na mesma posição. No `.bat`, ponha o valor entre aspas (o `cmd` separa na vírgula):
+`-Versoes` lista as versões aceitas nas linhas sem mix, em ordem de preferência: `extended`, `original`, `club`, `vip`, `semnome` (arquivo sem versão no nome, quase sempre o original) e `radioedit`. A vírgula separa as posições e o `+` põe versões na mesma posição. No `.bat`, ponha o valor entre aspas (o `cmd` separa na vírgula):
 
 ```bat
-baixar-lista.bat lista.txt -Versoes "extended,club,original+semnome"
+baixar-lista.bat lista.txt -Versoes "extended,original,club,vip,semnome"
 ```
 
 Com ela, a versão passa na frente do formato na escolha do arquivo, e a duração no fim da linha passa a ser conferida. Sem ela, vale a regra de sempre. O app sempre a manda, com o que está no card **Versão da faixa** da aba Ajustes (o padrão é o do exemplo). A linha que pede um mix (`(Azyr Remix)`, `(Extended Mix)`) não usa a lista; `(Original Mix)` na linha aceita o original, com ou sem o nome no arquivo.

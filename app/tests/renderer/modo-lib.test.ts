@@ -39,7 +39,7 @@ describe('ajustes no Modo DJ', () => {
   });
 
   it('o resumo diz a qualidade sempre e cada ajuste que mudou, em palavras (como no protótipo)', () => {
-    const versao = { rotulo: 'Versão', valor: 'Extended → Club → Original e sem nome', mudou: false };
+    const versao = { rotulo: 'Versão', valor: 'Extended → Original → Club → VIP → sem nome', mudou: false };
     expect(linhasDoResumoDj(novasOpcoes())).toEqual([
       { rotulo: 'Qualidade', valor: 'só FLAC e WAV', mudou: false },
       versao,

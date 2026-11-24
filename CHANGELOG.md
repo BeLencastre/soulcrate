@@ -6,6 +6,14 @@ O **app desktop** e a **stack** (Docker Compose, scripts e configuração do bee
 
 ## Não lançado
 
+### Adicionado
+
+- **VIP Mix no card Versão da faixa (stack 1.4.1).** Em **Baixar lista → Ajustes**, o card ganha a **VIP Mix** (`“Título (VIP Mix)”`), que pode ser arrastada e ordenada como as outras versões. Aceita no card, o arquivo com `(VIP Mix)`, `(VIP)` ou `- VIP Mix` no nome deixa de ser recusado como `outra versao ('vip')`. No script, `-Versoes` aceita o nome `vip` ([ADR 0006](docs/adr/0006-versao-da-faixa-e-formato-como-regras-obrigatorias.md#atualização-de-2026-11-23-vip-mix-no-card-e-nova-ordem-padrão)).
+
+### Mudado
+
+- **Nova ordem padrão do card Versão da faixa:** Extended Mix → Original Mix → Club Mix → VIP Mix → Sem versão no nome; Radio Edit em *Não baixar*. O atalho *Pista* segue essa ordem e *Tanto faz a versão* também, com a Radio Edit no fim. Original e Sem versão no nome deixam de dividir a posição; para juntar de novo, use "mesma posição da de cima". Rascunhos e lotes antigos continuam valendo com a ordem que tinham.
+
 ## App 1.3.0 (2026-11-22)
 
 Traz as playlists do Soulcrate no Rekordbox, a organização das pastas escolhida no app, a versão e a duração da faixa como regras do download e a stack 1.4.0.

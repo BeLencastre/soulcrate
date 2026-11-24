@@ -421,13 +421,14 @@ export const msgDj = {
         qualidadeValor: (aceitos: readonly string[]) =>
           aceitos.length === 0 ? 'só FLAC e WAV' : `FLAC e WAV, depois ${juntar(aceitos)}`,
         versao: 'Versão',
-        /** `Extended → Club → Original e sem nome · mínimo 5 min` */
+        /** `Extended → Original → Club → VIP → sem nome · mínimo 5 min` */
         versaoValor: (posicoes: readonly string[], minimo: string | null) =>
           `${posicoes.join(' → ')}${minimo ? ` · mínimo ${minimo}` : ''}`,
         versaoCurta: {
           extended: 'Extended',
-          club: 'Club',
           original: 'Original',
+          club: 'Club',
+          vip: 'VIP',
           semnome: 'sem nome',
           radioedit: 'Radio Edit',
         },

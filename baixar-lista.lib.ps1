@@ -244,7 +244,7 @@ function Split-Segments([string]$leafNoBr) {
 
 # ---------------------------------------------------------------- versao da faixa e duracao (docs/adr/0006)
 # As versoes do card "Versao da faixa" (-Versoes) e o nome de cada uma nos motivos
-$VersoesConhecidas = [ordered]@{ extended = 'extended mix'; club = 'club mix'; original = 'original mix'; semnome = 'sem versao no nome'; radioedit = 'radio edit' }
+$VersoesConhecidas = [ordered]@{ extended = 'extended mix'; original = 'original mix'; club = 'club mix'; vip = 'vip mix'; semnome = 'sem versao no nome'; radioedit = 'radio edit' }
 
 # "extended,club,original+semnome" -> @{ extended = 0; club = 1; original = 2; semnome = 2 } (posicao na ordem; "+"
 # junta versoes na mesma posicao). Vazio -> $null: a regra antiga, sem o card.
@@ -273,9 +273,10 @@ function Get-FileVersion([string[]]$labelsN) {
     if ($l -match '^radio (edit|mix|version|cut)$') { $achou.radioedit = $true }
     elseif ($l -match '^extended( mix| version)?$') { $achou.extended = $true }
     elseif ($l -match '^club (mix|version)$') { $achou.club = $true }
+    elseif ($l -match '^vip( mix| version)?$') { $achou.vip = $true }
     elseif ($l -match '^original( mix| version)?$') { $achou.original = $true }
   }
-  foreach ($v in @('radioedit', 'extended', 'club', 'original')) { if ($achou[$v]) { return $v } }
+  foreach ($v in @('radioedit', 'extended', 'club', 'vip', 'original')) { if ($achou[$v]) { return $v } }
   return 'semnome'
 }
 
@@ -390,7 +391,8 @@ function Test-File($req, $f) {
   }
   if (-not $verWhy) {
     $leafWords = @((Normalize $leafNoExt) -split ' ')
-    $livres = $(if ($fileVer -eq 'radioedit') { @('radio', 'edit') } else { @() })   # Radio Edit aceita no card
+    # Radio Edit e VIP Mix aceitas no card: as palavras delas deixam de recusar
+    $livres = $(switch ($fileVer) { 'radioedit' { @('radio', 'edit') } 'vip' { @('vip') } default { @() } })
     foreach ($b in $req.Banned) { if ($livres -notcontains $b -and $leafWords -contains $b) { $verWhy = "outra versao ('$b')"; break } }
   }
   # a duracao confere se o arquivo e mesmo a versao que diz ser; sem duracao informada, nao ha o que conferir
