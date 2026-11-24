@@ -28,7 +28,7 @@
 
 3. Dê dois cliques no instalador. A instalação é **por usuário** (não pede senha de administrador), cria um atalho no menu Iniciar e abre o app no fim.
 
-O instalador **ainda não é assinado** (não há certificado de assinatura; veja o [ADR 0003](adr/0003-app-desktop-decisoes-da-primeira-versao.md)). Por isso o Windows mostra o SmartScreen na primeira vez:
+O instalador **ainda não é assinado** (não há certificado de assinatura; veja a [seção 8](#8-assinatura-de-código)). Por isso o Windows mostra o SmartScreen na primeira vez:
 
 > **O Windows protegeu seu computador** · O Microsoft Defender SmartScreen impediu a inicialização de um aplicativo não reconhecido.
 
@@ -63,7 +63,7 @@ Em desenvolvimento (`npm run dev`) e num app aberto sem o instalador não há at
 
 ## 4. Atualização dos arquivos da stack
 
-Uma versão nova do app pode trazer versões novas do `docker-compose.yml`, dos scripts, do `Dockerfile` do Soulbeet e da configuração do beets. Na primeira vez que o app novo abre, ele os atualiza na pasta do Soulcrate, seguindo o [ADR 0003](adr/0003-app-desktop-decisoes-da-primeira-versao.md):
+Uma versão nova do app pode trazer versões novas do `docker-compose.yml`, dos scripts, do `Dockerfile` do Soulbeet e da configuração do beets. Na primeira vez que o app novo abre, ele os atualiza na pasta do Soulcrate, assim:
 
 | Situação do arquivo na sua pasta | O que o app faz |
 | --- | --- |
@@ -82,7 +82,7 @@ Uma versão nova do app pode trazer versões novas do `docker-compose.yml`, dos 
 
 Configurações do Windows → Aplicativos → Soulcrate → Desinstalar.
 
-- **A pasta do Soulcrate nunca é apagada** (decisão registrada no [ADR 0003](adr/0003-app-desktop-decisoes-da-primeira-versao.md)): ela tem o `.env`, as listas, os relatórios e a biblioteca, pode estar em outro disco, e o desinstalador não tem como saber o que mais mora ali.
+- **A pasta do Soulcrate nunca é apagada**: ela tem o `.env`, as listas, os relatórios e a biblioteca, pode estar em outro disco, e o desinstalador não tem como saber o que mais mora ali.
 - O desinstalador pergunta se **também** remove as preferências e os logs do app (`%APPDATA%\Soulcrate`). O padrão é **Não** (manter).
 - Desinstalação silenciosa (`/S`) não pergunta nem apaga nada; `--delete-app-data` pede para remover a pasta de dados do app.
 - A stack (contêineres e imagens do Docker) **não** é desligada nem removida: use **Desligar** no app (ou `parar.bat`) antes de desinstalar, e `docker compose down --rmi all` se quiser remover as imagens.
@@ -157,7 +157,17 @@ npx electron-builder --win nsis --publish never '-c.directories.output=dist-test
 
 O script **instala e desinstala o Soulcrate no seu usuário** (e recusa se achar uma instalação anterior): use numa máquina de teste. `-TestarApagarDados` também testa o `--delete-app-data` e apaga `%APPDATA%\Soulcrate`: só em máquina descartável (o CI).
 
-A política de atualização do Electron e das versões fixas da stack está em [Manutenção contínua](adr/0003-app-desktop-decisoes-da-primeira-versao.md#manutenção-contínua), no ADR 0003.
+### Manutenção contínua
+
+A política de atualização do Electron e das versões fixas da stack:
+
+| Tarefa | Frequência |
+| --- | --- |
+| Atualizar o Electron (só as últimas versões principais recebem correção de segurança) | A cada versão principal, no máximo com uma de atraso |
+| `npm audit --omit=dev --audit-level=high` no `app/` (o CI já exige) e revisão das dependências | Contínuo |
+| Revalidar a stack e repetir os testes de [`apis-da-stack.md`](apis-da-stack.md) | A cada versão nova do slskd, Navidrome ou Soulbeet; passa pelo roteiro manual antes de ir para uma release do app |
+| Revisar o catálogo de erros com base nas issues | A cada release |
+| Renovar o certificado de assinatura (se adotado) | Anual |
 
 ## 8. Assinatura de código
 

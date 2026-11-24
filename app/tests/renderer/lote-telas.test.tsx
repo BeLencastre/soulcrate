@@ -659,7 +659,7 @@ describe('card Versão da faixa (Ajustes)', () => {
     );
   const alcaDe = (nome: string) => screen.getByRole('button', { name: new RegExp(`^Mover ${nome}`) });
 
-  it('fica entre Qualidade e Títulos, com o padrão: Extended, Club, Original e sem nome; Radio Edit em Não baixar', () => {
+  it('fica entre Qualidade e Títulos, com o padrão: Extended, Original, Club, VIP e sem nome; Radio Edit em Não baixar', () => {
     montar('/lista/opcoes');
     const qualidade = screen.getByRole('group', { name: /^Qualidade/ });
     const card = screen.getByRole('region', { name: 'Versão da faixa' });
@@ -667,29 +667,29 @@ describe('card Versão da faixa (Ajustes)', () => {
     expect(qualidade.compareDocumentPosition(card) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     expect(card.compareDocumentPosition(titulos) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     expect(card).toHaveTextContent('Vale para as linhas sem mix');
-    expect(aceitas()).toEqual(['extended', 'club', 'original', 'semnome']);
-    expect(linha('original')).toHaveTextContent('3º');
-    expect(linha('semnome')).toHaveTextContent('=');
+    expect(aceitas()).toEqual(['extended', 'original', 'club', 'vip', 'semnome']);
+    expect(linha('vip')).toHaveTextContent('4º');
+    expect(linha('semnome')).toHaveTextContent('5º');
     expect(within(screen.getByTestId('versoes-recusadas')).getByText('Radio Edit')).toBeInTheDocument();
-    expect(screen.getByTestId('parametro-versoes')).toHaveTextContent('-Versoes extended,club,original+semnome');
+    expect(screen.getByTestId('parametro-versoes')).toHaveTextContent('-Versoes extended,original,club,vip,semnome');
     expect(screen.getByRole('button', { name: 'Pista' })).toHaveAttribute('aria-pressed', 'true');
     // o comando equivalente sempre leva a ordem, entre aspas por causa do cmd
     expect(screen.getByTestId('comando-equivalente')).toHaveTextContent(
-      'baixar-lista.bat set.txt -Versoes "extended,club,original+semnome"',
+      'baixar-lista.bat set.txt -Versoes "extended,original,club,vip,semnome"',
     );
   });
 
   it('↑, mesma posição, baixar e atalho mudam a ordem; a última aceita não sai', () => {
     montar('/lista/opcoes');
     fireEvent.click(screen.getByRole('button', { name: 'Subir Club Mix' }));
-    expect(useRascunho.getState().opcoes.Versoes).toBe('club,extended,original+semnome');
+    expect(useRascunho.getState().opcoes.Versoes).toBe('extended,club,original,vip,semnome');
     expect(screen.getByTestId('resumo-opcoes')).toHaveTextContent('1 ajuste diferente');
     const card = screen.getByRole('region', { name: 'Versão da faixa' });
     expect(within(card).getByText('≠ PADRÃO')).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: 'Sem versão no nome na mesma posição da de cima' }));
-    expect(useRascunho.getState().opcoes.Versoes).toBe('club,extended,original,semnome');
+    expect(useRascunho.getState().opcoes.Versoes).toBe('extended,club,original,vip+semnome');
     fireEvent.click(screen.getByRole('button', { name: 'Baixar Radio Edit' }));
-    expect(useRascunho.getState().opcoes.Versoes).toBe('club,extended,original,semnome,radioedit');
+    expect(useRascunho.getState().opcoes.Versoes).toBe('extended,club,original,vip+semnome,radioedit');
     fireEvent.click(screen.getByRole('button', { name: 'Só Extended' }));
     expect(useRascunho.getState().opcoes.Versoes).toBe('extended');
     expect(screen.getByRole('button', { name: 'Não baixar Extended Mix' })).toBeDisabled();
@@ -703,14 +703,14 @@ describe('card Versão da faixa (Ajustes)', () => {
     expect(alcaDe('Club Mix')).toHaveAttribute('aria-pressed', 'true');
     expect(screen.getByTestId('anuncio-versoes')).toHaveTextContent('Club Mix pega');
     fireEvent.keyDown(alcaDe('Club Mix'), { key: 'ArrowUp' });
-    expect(useRascunho.getState().opcoes.Versoes).toBe('club,extended,original+semnome');
-    expect(screen.getByTestId('anuncio-versoes')).toHaveTextContent('Club Mix, posição 1 de 3.');
+    expect(useRascunho.getState().opcoes.Versoes).toBe('extended,club,original,vip,semnome');
+    expect(screen.getByTestId('anuncio-versoes')).toHaveTextContent('Club Mix, posição 2 de 5.');
     expect(document.activeElement).toBe(alcaDe('Club Mix'));
     fireEvent.keyDown(alcaDe('Club Mix'), { key: ' ' });
     expect(alcaDe('Club Mix')).toHaveAttribute('aria-pressed', 'false');
     // sem pegar, as setas não mexem
     fireEvent.keyDown(alcaDe('Club Mix'), { key: 'ArrowDown' });
-    expect(useRascunho.getState().opcoes.Versoes).toBe('club,extended,original+semnome');
+    expect(useRascunho.getState().opcoes.Versoes).toBe('extended,club,original,vip,semnome');
   });
 
   it('arrastar: antes de outra versão, para Não baixar e de volta', () => {
@@ -719,15 +719,15 @@ describe('card Versão da faixa (Ajustes)', () => {
     fireEvent.dragStart(linha('radioedit'), { dataTransfer: dt });
     fireEvent.dragOver(linha('extended'), { dataTransfer: dt });
     fireEvent.drop(linha('extended'), { dataTransfer: dt });
-    expect(useRascunho.getState().opcoes.Versoes).toBe('radioedit,extended,club,original+semnome');
+    expect(useRascunho.getState().opcoes.Versoes).toBe('radioedit,extended,original,club,vip,semnome');
     const dt2 = transferencia();
     fireEvent.dragStart(linha('club'), { dataTransfer: dt2 });
     fireEvent.drop(screen.getByTestId('versoes-recusadas'), { dataTransfer: dt2 });
-    expect(useRascunho.getState().opcoes.Versoes).toBe('radioedit,extended,original+semnome');
+    expect(useRascunho.getState().opcoes.Versoes).toBe('radioedit,extended,original,vip,semnome');
     const dt3 = transferencia();
     fireEvent.dragStart(linha('club'), { dataTransfer: dt3 });
     fireEvent.drop(screen.getByTestId('versoes-aceitas'), { dataTransfer: dt3 });
-    expect(useRascunho.getState().opcoes.Versoes).toBe('radioedit,extended,original+semnome,club');
+    expect(useRascunho.getState().opcoes.Versoes).toBe('radioedit,extended,original,vip,semnome,club');
   });
 
   it('duração mínima: o seletor muda a opção e entra no comando', () => {
@@ -744,7 +744,7 @@ describe('card Versão da faixa (Ajustes)', () => {
     montar('/lista/opcoes', stack(), 'dj');
     expect(screen.getByRole('region', { name: 'Versão da faixa' })).toBeInTheDocument();
     expect(screen.queryByTestId('parametro-versoes')).toBeNull();
-    expect(screen.getByTestId('resumo-linhas')).toHaveTextContent('Extended → Club → Original e sem nome');
+    expect(screen.getByTestId('resumo-linhas')).toHaveTextContent('Extended → Original → Club → VIP → sem nome');
     fireEvent.change(screen.getByTestId('duracao-minima'), { target: { value: '300' } });
     expect(screen.getByTestId('resumo-linhas')).toHaveTextContent('mínimo 5 min');
   });

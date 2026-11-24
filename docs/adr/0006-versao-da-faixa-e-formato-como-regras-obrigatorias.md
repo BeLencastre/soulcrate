@@ -144,7 +144,7 @@ Com isso, as descrições do card Qualidade mudam ("Só quando a faixa não exis
 - **Recusar o arquivo sem duração informada** quando a linha tem referência. Recusaria boa parte dos arquivos do Soulseek; ele passa, mas fica atrás dos conferidos.
 - **Inferir a versão pela duração** (um arquivo sem nome de 7 min conta como Extended). A duração de cada versão muda muito de um gênero para outro. Fica para depois, se o relatório dos lotes mostrar que acertaria.
 - **A duração do MusicBrainz como referência**, pela conferência do catálogo. A gravação do MusicBrainz quase nunca diz de qual versão é a duração.
-- **Remix, dub e VIP no card.** São versões de outras pessoas e mudam a faixa; continuam pedidas pela linha.
+- **Remix, dub e VIP no card.** São versões de outras pessoas e mudam a faixa; continuam pedidas pela linha. (A VIP Mix entrou no card depois: veja "Atualização de 2026-11-23".)
 - **Tolerância da duração ajustável no card.** Mais uma opção para quase ninguém mexer. Começa fixa (5 s ou 2%); vira opção se aparecer caso real.
 
 ## Consequências
@@ -160,3 +160,10 @@ Com isso, as descrições do card Qualidade mudam ("Só quando a faixa não exis
   - **Documentação:** o formato da lista (a duração opcional), a tabela "Decida pelo motivo" e a seção de opções do README, e as capturas da aba Ajustes e da Lista.
   - **Testes:** Pester (unitários de versão, duração e veredito; integração com o slskd falso), Vitest (`motivos.test.ts`, `opcoes-lote.test.ts`, o card) e um e2e do card com axe.
 - O script ganha parâmetros, então a stack muda de versão (minor). A mudança entra na stack 1.4.0; o CHANGELOG registra na versão 1.3.0 do app, com o aviso sobre listas que já tinham duração.
+
+## Atualização de 2026-11-23: VIP Mix no card e nova ordem padrão
+
+- **VIP Mix entra no card** (`vip` no `-Versoes`). A VIP é a releitura do próprio artista, e o DJ quer poder escolhê-la nas linhas sem mix, como as outras versões da mesma faixa. O nome do arquivo conta como VIP Mix com `vip`, `vip mix` ou `vip version` entre parênteses ou depois de `" - "`; aceita no card, a palavra `vip` deixa de recusar o arquivo (como `radio` e `edit` com a Radio Edit). Fora do card, ou sem `-Versoes`, nada muda: `vip` continua em `$VersionWords` e só entra se estiver na linha.
+- **Padrão e atalho *Pista*:** Extended → Original → Club → VIP → Sem versão no nome, cada uma na sua posição; Radio Edit em *Não baixar*. *Tanto faz a versão* segue a mesma ordem, com a Radio Edit no fim.
+- **Trade-off:** Original e Sem versão no nome deixam de dividir a posição no padrão, então um `(Original Mix)` em MP3 320 passa na frente de um FLAC sem parênteses. Quem preferir o empate junta as duas com "mesma posição da de cima".
+- **Compatibilidade:** rascunhos e lotes antigos com `extended,club,original+semnome` continuam válidos; só o padrão mudou. A stack muda de versão (o script aceita um nome novo).

@@ -17,7 +17,7 @@
       quando o titulo nao existe) e evita gastar buscas do Soulseek a toa
     - so pausa as buscas quando uma busca de teste confirma o bloqueio do servidor
 
-  Versao da faixa (docs/adr/0006): -Versoes "extended,club,original+semnome" aceita so essas versoes, nessa ordem
+  Versao da faixa (docs/adr/0006): -Versoes "extended,original,club,vip,semnome" aceita so essas versoes, nessa ordem
   de preferencia, e confere a duracao escrita no fim da linha ("Titulo 6:58"); -DuracaoMinima 300 recusa as mais
   curtas. Sem eles, a versao segue a regra de sempre.
 
@@ -59,7 +59,7 @@ param(
   [switch]$SemCatalogo,               # nao confere os titulos no catalogo do MusicBrainz antes de buscar
   [switch]$PularForaDoCatalogo,       # nem busca no Soulseek as faixas cujo titulo nao existe no catalogo do artista
   [string]$Versoes = "",              # versoes aceitas nas linhas sem mix, em ordem de preferencia ("+" = mesma posicao):
-                                      #   extended, club, original, semnome, radioedit. Ex.: "extended,club,original+semnome"
+                                      #   extended, original, club, vip, semnome, radioedit. Ex.: "extended,original,club,vip,semnome"
   [int]$DuracaoMinima = 0,            # segundos: recusa versoes mais curtas nas linhas sem mix e sem duracao (0 = desligado)
   [string]$SlskdUrl = "http://localhost:5030",
   [string]$BeetsLib = "/music/.beets_library.db",

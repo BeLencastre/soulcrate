@@ -8,12 +8,14 @@ Um ADR guarda uma decisão de arquitetura: o contexto, o que foi decidido e as c
 
 | Nº | Decisão | Status |
 | --- | --- | --- |
-| [0001](0001-memoria-do-repositorio-e-mapa-de-dependencias.md) | Memória do repositório e mapa de dependências com hooks | Aceito |
-| [0002](0002-modo-dj-e-modo-dev.md) | Modo DJ e Modo Dev: uma preferência que muda só o que aparece | Aceito |
-| [0003](0003-app-desktop-decisoes-da-primeira-versao.md) | App desktop: decisões da primeira versão | Aceito |
+| 0001 | Memória do repositório e mapa de dependências com hooks | Aceito, implementado e arquivado |
+| 0002 | Modo DJ e Modo Dev: uma preferência que muda só o que aparece | Aceito, implementado e arquivado |
+| 0003 | App desktop: decisões da primeira versão | Aceito, implementado e arquivado |
 | [0004](0004-playlists-no-rekordbox-pelo-rekordbox-xml.md) | Playlists no Rekordbox pelo rekordbox XML, sem tocar no banco do Rekordbox | Proposto |
-| [0005](0005-organizacao-das-pastas-escolhida-no-app.md) | Organização do disco e do Rekordbox escolhidas no app, de forma independente | Aceito |
+| 0005 | Organização do disco e do Rekordbox escolhidas no app, de forma independente | Aceito, implementado e arquivado |
 | [0006](0006-versao-da-faixa-e-formato-como-regras-obrigatorias.md) | Versão da faixa (com a duração) e formato como regras obrigatórias, com o motivo da recusa separado por regra | Aceito |
+
+**Arquivados:** os ADRs 0001, 0002, 0003 e 0005 já estão implementados e saíram da pasta (foram para fora do repositório). O texto continua no histórico do git, por exemplo `git show 3602116:docs/adr/0002-modo-dj-e-modo-dev.md`. Os números não são reaproveitados: o próximo ADR é o 0007.
 
 ## Modelo
 
