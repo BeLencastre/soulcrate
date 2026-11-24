@@ -1,5 +1,5 @@
-// OrganizacaoService: guarda como a biblioteca se organiza (só gênero, ou gênero e artista), com uma escolha para o
-// disco e outra para o Rekordbox, independentes. As duas moram na pasta do Soulcrate, em `soulbeet/data/pastas.json`,
+// OrganizacaoService: guarda como a biblioteca se organiza (o gênero e, se ligados, o subgênero e o artista), com uma
+// escolha para o disco e outra para o Rekordbox, independentes (ADR 0007). As duas moram na pasta do Soulcrate, em `soulbeet/data/pastas.json`,
 // porque quem usa a do disco é o plugin `pastas.py` dentro do contêiner do Soulbeet, inclusive nas importações que o
 // próprio Soulbeet faz sem o app. As regras ficam em `@shared/organizacao`.
 //
@@ -11,11 +11,12 @@ import { criarErro } from '@shared/erros';
 import {
   ARQUIVO_ORGANIZACAO,
   configAtende,
+  configAtendeSubgenero,
   lerOrganizacoes,
   textoDasOrganizacoes,
   type AlvoDaOrganizacao,
   type EstadoOrganizacao,
-  type OrganizacaoDasPastas,
+  type NiveisDaOrganizacao,
   type Organizacoes,
   type ResultadoOrganizacao,
 } from '@shared/organizacao';
@@ -32,6 +33,8 @@ export interface DependenciasOrganizacao {
   fs: FsOrganizacao;
   /** a escolha do Rekordbox mudou: o rekordbox XML (se já existe) refaz a árvore */
   aoMudarRekordbox(): void;
+  /** há conta do Beatport no `.env` da pasta do Soulcrate `dir` (usuário e senha preenchidos) */
+  contaBeatport(dir: string): boolean;
   aoErro?(erro: unknown): void;
 }
 
@@ -49,26 +52,31 @@ export class OrganizacaoService {
     return lerOrganizacoes(this.dep.fs.lerTexto(join(dir, ...ARQUIVO_ORGANIZACAO)));
   }
 
-  /** Grava uma das escolhas; a outra fica como estava. */
-  definir(alvo: AlvoDaOrganizacao, organizacao: OrganizacaoDasPastas): ResultadoOrganizacao {
+  /** Grava os níveis de um destino; o outro fica como estava, e as chaves que o app não conhece também. */
+  definir(alvo: AlvoDaOrganizacao, niveis: NiveisDaOrganizacao): ResultadoOrganizacao {
     const dir = this.dep.projeto().dir;
     if (!dir) return { ok: false, erro: criarErro('projeto.ausente') };
     const caminho = join(dir, ...ARQUIVO_ORGANIZACAO);
-    const antes = this.organizacoes(dir);
+    const texto = this.dep.fs.lerTexto(caminho);
+    const antes = lerOrganizacoes(texto);
     try {
-      this.dep.fs.escreverAtomico(caminho, textoDasOrganizacoes({ ...antes, [alvo]: organizacao }));
+      this.dep.fs.escreverAtomico(caminho, textoDasOrganizacoes({ ...antes, [alvo]: { ...niveis } }, texto));
     } catch (e) {
       this.dep.aoErro?.(e);
       return { ok: false, erro: criarErro('organizacao.nao-gravou', { detalhes: `${caminho}\n${String(e)}` }) };
     }
-    if (alvo === 'rekordbox' && antes.rekordbox !== organizacao) this.dep.aoMudarRekordbox();
+    const mudouRekordbox = antes.rekordbox.subgenero !== niveis.subgenero || antes.rekordbox.artista !== niveis.artista;
+    if (alvo === 'rekordbox' && mudouRekordbox) this.dep.aoMudarRekordbox();
     return { ok: true, estado: this.estadoEm(dir) };
   }
 
   private estadoEm(dir: string): EstadoOrganizacao {
+    const config = this.dep.fs.lerTexto(join(dir, 'soulbeet', 'config', 'config.yaml'));
     return {
       ...this.organizacoes(dir),
-      configAtende: configAtende(this.dep.fs.lerTexto(join(dir, 'soulbeet', 'config', 'config.yaml'))),
+      configAtende: configAtende(config),
+      configAtendeSubgenero: configAtendeSubgenero(config),
+      contaBeatport: this.dep.contaBeatport(dir),
     };
   }
 }

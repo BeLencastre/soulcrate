@@ -90,6 +90,9 @@ services:
       BEETS_CONFIG: /config/config.yaml
       BEETS_ALBUM_MODE: "false"          # DJ baixa faixa a faixa -> modo singleton
       NUMBA_CACHE_DIR: /data/.numba-cache # cache do librosa (BPM mais rápido após a 1ª faixa)
+      # Conta Beatport (opcional, para o subgênero): vazio = sem Beatport. O compose avisa se faltarem, por isso o padrão vazio
+      BEATPORT_USERNAME: ${BEATPORT_USERNAME:-}
+      BEATPORT_PASSWORD: ${BEATPORT_PASSWORD:-}
     ports:
       - "${BIND_ADDR:-127.0.0.1}:9765:9765"
     healthcheck:                         # imagem distroless: sem shell nem wget, só o python

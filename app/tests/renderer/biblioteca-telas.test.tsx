@@ -18,7 +18,7 @@ import type {
 } from '../../src/shared/biblioteca';
 import { criarErro } from '../../src/shared/erros';
 import { lerLinhaEvento } from '../../src/shared/eventos-lote';
-import type { MainEvent } from '../../src/shared/ipc';
+import type { AppSettings, MainEvent } from '../../src/shared/ipc';
 import type { EstadoRekordbox } from '../../src/shared/rekordbox';
 import { statusInicial, type StackStatus } from '../../src/shared/stack';
 
@@ -26,7 +26,13 @@ const api = vi.hoisted(() => ({
   onEvent: vi.fn(),
   stack: { up: vi.fn(), status: vi.fn() },
   env: { startDockerDesktop: vi.fn(), check: vi.fn() },
-  app: { copyText: vi.fn(), openLogsFolder: vi.fn(), openExternal: vi.fn() },
+  app: {
+    copyText: vi.fn(),
+    openLogsFolder: vi.fn(),
+    openExternal: vi.fn(),
+    getSettings: vi.fn(),
+    setSettings: vi.fn(),
+  },
   project: { openFolder: vi.fn() },
   lists: { create: vi.fn(), read: vi.fn(), save: vi.fn(), listRecent: vi.fn() },
   library: {
@@ -47,6 +53,23 @@ const api = vi.hoisted(() => ({
 }));
 vi.mock('../../src/renderer/lib/api', () => ({ api }));
 
+const SO_GENERO = { subgenero: false, artista: false };
+const ARTISTA = { subgenero: false, artista: true };
+const SUBGENERO = { subgenero: true, artista: false };
+const COM_SUBGENERO = { subgenero: true, artista: true };
+const SETTINGS: AppSettings = {
+  minimizarParaBandeja: true,
+  avisoBandejaDispensado: true,
+  pastaDoProjeto: null,
+  iniciarComWindows: false,
+  tema: 'escuro',
+  abrirWebUi: 'app',
+  avisarFimDoLote: true,
+  avisarBuscasPausadas: true,
+  modo: 'dev',
+  avisoSubgeneroDispensado: true,
+};
+
 const { Biblioteca } = await import('../../src/renderer/paginas/Biblioteca');
 const { chaveStatus, ligarEventos } = await import('../../src/renderer/lib/estado');
 const { nomeCurtoDaPasta, useManutencao } = await import('../../src/renderer/lib/biblioteca');
@@ -65,6 +88,7 @@ function faixa(id: number, extra: Partial<FaixaDaBiblioteca> = {}): FaixaDaBibli
     formato: 'FLAC',
     arquivo: 'Hard Techno/Azyr/No Escape.flac',
     semGenero: false,
+    subgenero: null,
     ...extra,
   };
 }
@@ -138,6 +162,11 @@ function Local() {
   return <div data-testid="local">{l.pathname}</div>;
 }
 
+function LocalConfiguracoes() {
+  const l = useLocation();
+  return <div data-testid="local-configuracoes">{`${l.pathname}${l.search}`}</div>;
+}
+
 /** a aba da lateral aberta ao montar (o `?painel=` do endereço); null: a padrão, Cuidar */
 let painelInicial: string | null = null;
 
@@ -150,6 +179,7 @@ function montar(s: StackStatus = stack()) {
         <Routes>
           <Route path="/biblioteca" element={<Biblioteca />} />
           <Route path="/lista" element={<Local />} />
+          <Route path="/configuracoes" element={<LocalConfiguracoes />} />
         </Routes>
       </MemoryRouter>
     </QueryClientProvider>,
@@ -190,10 +220,14 @@ beforeEach(() => {
   api.app.copyText.mockResolvedValue(undefined);
   api.rekordbox.state.mockResolvedValue(rekordbox());
   api.library.organization.mockResolvedValue({
-    disco: 'genero-artista',
-    rekordbox: 'genero-artista',
+    disco: ARTISTA,
+    rekordbox: ARTISTA,
     configAtende: true,
+    configAtendeSubgenero: true,
+    contaBeatport: true,
   });
+  api.app.getSettings.mockResolvedValue(SETTINGS);
+  api.app.setSettings.mockImplementation((p: Partial<AppSettings>) => Promise.resolve({ ...SETTINGS, ...p }));
   useManutencao.setState({ operacao: null });
   painelInicial = null;
   useRascunho.setState({ lista: null, texto: '', textoSalvo: '', erro: null });
@@ -968,46 +1002,82 @@ describe('organização no disco e no Rekordbox', () => {
     painelInicial = 'organizacao';
   });
 
-  const opcao = (alvo: string, o: string) =>
-    document.querySelector(`[data-alvo="${alvo}"] [data-organizacao="${o}"] input`) as HTMLInputElement;
+  const caixa = (alvo: string, nivel: 'subgenero' | 'artista') =>
+    document.querySelector(`[data-alvo="${alvo}"] [data-nivel="${nivel}"] input`) as HTMLInputElement;
+  const exemploDe = (alvo: string) => screen.getByTestId(`organizacao-exemplo-${alvo}`);
   const estadoOrg = (extra: object = {}) => ({
-    disco: 'genero-artista',
-    rekordbox: 'genero-artista',
+    disco: ARTISTA,
+    rekordbox: ARTISTA,
     configAtende: true,
+    configAtendeSubgenero: true,
+    contaBeatport: true,
     ...extra,
   });
-
-  it('duas escolhas independentes, cada uma com a atual marcada e o exemplo', async () => {
-    api.library.organization.mockResolvedValue(estadoOrg({ rekordbox: 'genero' }));
-    montar();
+  const cartaoPronto = async () => {
     await carregada();
-    const card = await screen.findByTestId('cartao-organizacao');
+    return screen.findByTestId('cartao-organizacao');
+  };
+
+  it('duas escolhas independentes, cada uma com as caixas Subgênero e Artista marcadas como estão gravadas', async () => {
+    api.library.organization.mockResolvedValue(estadoOrg({ rekordbox: SO_GENERO, disco: COM_SUBGENERO }));
+    montar();
+    const card = await cartaoPronto();
     expect(within(card).getByRole('group', { name: 'No disco' })).toBeInTheDocument();
     expect(within(card).getByRole('group', { name: 'No Rekordbox' })).toBeInTheDocument();
-    await waitFor(() => expect(opcao('disco', 'genero-artista')).toBeChecked());
-    expect(opcao('disco', 'genero')).not.toBeChecked();
-    expect(opcao('rekordbox', 'genero')).toBeChecked();
-    expect(opcao('rekordbox', 'genero-artista')).not.toBeChecked();
-    expect(within(card).getByText('Hard Techno/Azyr/No Escape')).toBeInTheDocument();
-    expect(within(card).getByText('Hard Techno/Azyr - No Escape')).toBeInTheDocument();
-    expect(within(card).getByText('Gêneros › Hard Techno › Azyr')).toBeInTheDocument();
+    await waitFor(() => expect(caixa('disco', 'subgenero')).toBeChecked());
+    expect(caixa('disco', 'artista')).toBeChecked();
+    expect(caixa('rekordbox', 'subgenero')).not.toBeChecked();
+    expect(caixa('rekordbox', 'artista')).not.toBeChecked();
     expect(screen.queryByTestId('organizacao-reorganizar')).toBeNull();
     expect(screen.queryByTestId('organizacao-config-antigo')).toBeNull();
   });
 
-  it('trocar o disco grava só o disco, avisa do Rekordbox e oferece reorganizar com a prévia de sempre', async () => {
-    api.library.setOrganization.mockResolvedValue({ ok: true, estado: estadoOrg({ disco: 'genero' }) });
+  it.each([
+    [SO_GENERO, 'Techno / Azyr - No Escape', 'Gêneros › Techno'],
+    [ARTISTA, 'Techno / Azyr / No Escape', 'Gêneros › Techno › Azyr'],
+    [SUBGENERO, 'Techno / Peak Time / Azyr - No Escape', 'Gêneros › Techno › Peak Time'],
+    [COM_SUBGENERO, 'Techno / Peak Time / Azyr / No Escape', 'Gêneros › Techno › Peak Time › Azyr'],
+  ])('o exemplo ao vivo de cada combinação, nos dois destinos (%j)', async (niveis, noDisco, noRekordbox) => {
+    api.library.organization.mockResolvedValue(estadoOrg({ disco: niveis, rekordbox: niveis }));
+    montar();
+    await cartaoPronto();
+    await waitFor(() => expect(caixa('disco', 'artista').checked).toBe(niveis.artista));
+    expect(exemploDe('disco')).toHaveTextContent(noDisco);
+    expect(exemploDe('rekordbox')).toHaveTextContent(noRekordbox);
+  });
+
+  it('o exemplo acompanha a caixa na hora, antes de a gravação responder', async () => {
+    api.library.setOrganization.mockReturnValue(new Promise(() => undefined));
+    montar();
+    await cartaoPronto();
+    await waitFor(() => expect(caixa('rekordbox', 'artista')).toBeChecked());
+    fireEvent.click(caixa('rekordbox', 'artista'));
+    await waitFor(() => expect(exemploDe('rekordbox')).toHaveTextContent(/Gêneros › Techno$/));
+    expect(exemploDe('disco')).toHaveTextContent('Techno / Azyr / No Escape');
+  });
+
+  it('no Modo DJ, o exemplo diz o nome da combinação', async () => {
+    api.app.getSettings.mockResolvedValue({ ...SETTINGS, modo: 'dj' });
+    api.library.organization.mockResolvedValue(estadoOrg({ disco: COM_SUBGENERO }));
+    montar();
+    await cartaoPronto();
+    await waitFor(() => expect(exemploDe('disco')).toHaveTextContent('Gênero / Subgênero / Artista'));
+    expect(screen.queryByTestId('organizacao-chaves-disco')).toBeNull();
+  });
+
+  it('desmarcar o artista no disco grava só o disco, avisa do Rekordbox e oferece reorganizar com a prévia de sempre', async () => {
+    api.library.setOrganization.mockResolvedValue({ ok: true, estado: estadoOrg({ disco: SO_GENERO }) });
     api.library.previewMaintenance.mockResolvedValue(previaManutencao({ tarefa: 'move', afetadas: 5 }));
     montar();
-    await carregada();
-    await waitFor(() => expect(opcao('disco', 'genero-artista')).toBeChecked());
-    fireEvent.click(opcao('disco', 'genero'));
-    await waitFor(() => expect(api.library.setOrganization).toHaveBeenCalledWith('disco', 'genero'));
+    await cartaoPronto();
+    await waitFor(() => expect(caixa('disco', 'artista')).toBeChecked());
+    fireEvent.click(caixa('disco', 'artista'));
+    await waitFor(() => expect(api.library.setOrganization).toHaveBeenCalledWith('disco', SO_GENERO));
     const card = screen.getByTestId('cartao-organizacao');
     expect(await within(card).findByText(/Guardado\. Vale para as próximas músicas/)).toBeInTheDocument();
     expect(within(card).getByText(/não encontradas até você apontar o lugar novo/)).toBeInTheDocument();
-    expect(opcao('disco', 'genero')).toBeChecked();
-    expect(opcao('rekordbox', 'genero-artista')).toBeChecked();
+    expect(caixa('disco', 'artista')).not.toBeChecked();
+    expect(caixa('rekordbox', 'artista')).toBeChecked();
     // reorganizar abre o diálogo de Cuidar da biblioteca: nada se move sem a prévia e a confirmação
     fireEvent.click(screen.getByTestId('organizacao-reorganizar'));
     await screen.findByTestId('dialogo-manutencao');
@@ -1015,32 +1085,123 @@ describe('organização no disco e no Rekordbox', () => {
     expect(api.library.maintenance).not.toHaveBeenCalled();
   });
 
-  it('trocar o Rekordbox grava só o Rekordbox, sem oferecer reorganizar o disco', async () => {
-    api.library.setOrganization.mockResolvedValue({ ok: true, estado: estadoOrg({ rekordbox: 'genero' }) });
+  it('desmarcar o artista no Rekordbox grava só o Rekordbox, sem oferecer reorganizar o disco', async () => {
+    api.library.setOrganization.mockResolvedValue({ ok: true, estado: estadoOrg({ rekordbox: SO_GENERO }) });
     montar();
-    await carregada();
-    await waitFor(() => expect(opcao('rekordbox', 'genero-artista')).toBeChecked());
-    fireEvent.click(opcao('rekordbox', 'genero'));
-    await waitFor(() => expect(api.library.setOrganization).toHaveBeenCalledWith('rekordbox', 'genero'));
+    await cartaoPronto();
+    await waitFor(() => expect(caixa('rekordbox', 'artista')).toBeChecked());
+    fireEvent.click(caixa('rekordbox', 'artista'));
+    await waitFor(() => expect(api.library.setOrganization).toHaveBeenCalledWith('rekordbox', SO_GENERO));
     const card = screen.getByTestId('cartao-organizacao');
     expect(await within(card).findByText(/importe a pasta Soulcrate de novo no Rekordbox/)).toBeInTheDocument();
-    expect(opcao('rekordbox', 'genero')).toBeChecked();
-    expect(opcao('disco', 'genero-artista')).toBeChecked();
+    expect(caixa('rekordbox', 'artista')).not.toBeChecked();
+    expect(caixa('disco', 'artista')).toBeChecked();
     expect(screen.queryByTestId('organizacao-reorganizar')).toBeNull();
+  });
+
+  it('com conta do Beatport, marcar Subgênero grava direto, sem painel', async () => {
+    api.library.setOrganization.mockResolvedValue({ ok: true, estado: estadoOrg({ disco: COM_SUBGENERO }) });
+    montar();
+    await cartaoPronto();
+    await waitFor(() => expect(caixa('disco', 'subgenero')).not.toBeChecked());
+    fireEvent.click(caixa('disco', 'subgenero'));
+    await waitFor(() => expect(api.library.setOrganization).toHaveBeenCalledWith('disco', COM_SUBGENERO));
+    expect(screen.queryByTestId('organizacao-sem-conta')).toBeNull();
+  });
+
+  it('sem conta, marcar Subgênero mostra o painel e só grava em "Continuar sem conta"', async () => {
+    api.library.organization.mockResolvedValue(estadoOrg({ contaBeatport: false }));
+    api.library.setOrganization.mockResolvedValue({
+      ok: true,
+      estado: estadoOrg({ contaBeatport: false, rekordbox: COM_SUBGENERO }),
+    });
+    montar();
+    await cartaoPronto();
+    await waitFor(() => expect(caixa('rekordbox', 'subgenero')).not.toBeChecked());
+    fireEvent.click(caixa('rekordbox', 'subgenero'));
+    const painel = await screen.findByTestId('organizacao-sem-conta');
+    expect(painel).toHaveTextContent('O subgênero funciona melhor com a conta do Beatport');
+    expect(within(painel).getByRole('button', { name: 'Conectar conta' })).toBeInTheDocument();
+    expect(api.library.setOrganization).not.toHaveBeenCalled();
+    // com o painel aberto, as caixas ficam travadas
+    expect(caixa('disco', 'artista')).toBeDisabled();
+    fireEvent.click(within(painel).getByTestId('organizacao-continuar-sem-conta'));
+    await waitFor(() => expect(api.library.setOrganization).toHaveBeenCalledWith('rekordbox', COM_SUBGENERO));
+    await waitFor(() => expect(screen.queryByTestId('organizacao-sem-conta')).toBeNull());
+    expect(caixa('rekordbox', 'subgenero')).toBeChecked();
+  });
+
+  it('sem conta, "Conectar conta" leva às Configurações e não grava nada', async () => {
+    api.library.organization.mockResolvedValue(estadoOrg({ contaBeatport: false }));
+    montar();
+    await cartaoPronto();
+    await waitFor(() => expect(caixa('disco', 'subgenero')).not.toBeChecked());
+    fireEvent.click(caixa('disco', 'subgenero'));
+    const painel = await screen.findByTestId('organizacao-sem-conta');
+    fireEvent.click(within(painel).getByRole('button', { name: 'Conectar conta' }));
+    expect(await screen.findByTestId('local-configuracoes')).toHaveTextContent('/configuracoes?secao=beatport');
+    expect(api.library.setOrganization).not.toHaveBeenCalled();
+  });
+
+  it('desmarcar o subgênero não pede conta', async () => {
+    api.library.organization.mockResolvedValue(estadoOrg({ contaBeatport: false, disco: COM_SUBGENERO }));
+    api.library.setOrganization.mockResolvedValue({ ok: true, estado: estadoOrg({ contaBeatport: false }) });
+    montar();
+    await cartaoPronto();
+    await waitFor(() => expect(caixa('disco', 'subgenero')).toBeChecked());
+    fireEvent.click(caixa('disco', 'subgenero'));
+    await waitFor(() => expect(api.library.setOrganization).toHaveBeenCalledWith('disco', ARTISTA));
+    expect(screen.queryByTestId('organizacao-sem-conta')).toBeNull();
+  });
+
+  describe('o aviso de novidade', () => {
+    beforeEach(() => {
+      api.app.getSettings.mockResolvedValue({ ...SETTINGS, avisoSubgeneroDispensado: false });
+      api.library.setOrganization.mockResolvedValue({ ok: true, estado: estadoOrg({ disco: SO_GENERO }) });
+    });
+
+    it('aparece enquanto não foi dispensado e some em "Entendi", gravando a preferência', async () => {
+      montar();
+      await cartaoPronto();
+      const aviso = await screen.findByTestId('organizacao-novidade');
+      expect(aviso).toHaveTextContent('Novidade: subgênero');
+      fireEvent.click(within(aviso).getByRole('button', { name: 'Entendi' }));
+      await waitFor(() => expect(api.app.setSettings).toHaveBeenCalledWith({ avisoSubgeneroDispensado: true }));
+      await waitFor(() => expect(screen.queryByTestId('organizacao-novidade')).toBeNull());
+    });
+
+    it('mexer numa caixa também o dispensa', async () => {
+      montar();
+      await cartaoPronto();
+      await screen.findByTestId('organizacao-novidade');
+      await waitFor(() => expect(caixa('disco', 'artista')).toBeChecked());
+      fireEvent.click(caixa('disco', 'artista'));
+      await waitFor(() => expect(api.app.setSettings).toHaveBeenCalledWith({ avisoSubgeneroDispensado: true }));
+      await waitFor(() => expect(screen.queryByTestId('organizacao-novidade')).toBeNull());
+    });
+
+    it('já dispensado, nem aparece', async () => {
+      api.app.getSettings.mockResolvedValue({ ...SETTINGS, avisoSubgeneroDispensado: true });
+      montar();
+      await cartaoPronto();
+      await waitFor(() => expect(caixa('disco', 'artista')).toBeChecked());
+      expect(screen.queryByTestId('organizacao-novidade')).toBeNull();
+      expect(api.app.setSettings).not.toHaveBeenCalled();
+    });
   });
 
   it('não conseguiu gravar: o erro do catálogo, a escolha volta e tentar de novo repete o mesmo pedido', async () => {
     api.library.setOrganization.mockResolvedValue({ ok: false, erro: criarErro('organizacao.nao-gravou') });
     montar();
-    await carregada();
-    await waitFor(() => expect(opcao('rekordbox', 'genero-artista')).toBeChecked());
-    fireEvent.click(opcao('rekordbox', 'genero'));
+    await cartaoPronto();
+    await waitFor(() => expect(caixa('rekordbox', 'artista')).toBeChecked());
+    fireEvent.click(caixa('rekordbox', 'artista'));
     const card = screen.getByTestId('cartao-organizacao');
     expect(await within(card).findByText('Não consegui guardar a organização das pastas')).toBeInTheDocument();
-    expect(opcao('rekordbox', 'genero-artista')).toBeChecked();
+    expect(caixa('rekordbox', 'artista')).toBeChecked();
     fireEvent.click(within(card).getByRole('button', { name: 'Tentar de novo' }));
     await waitFor(() => expect(api.library.setOrganization).toHaveBeenCalledTimes(2));
-    expect(api.library.setOrganization).toHaveBeenLastCalledWith('rekordbox', 'genero');
+    expect(api.library.setOrganization).toHaveBeenLastCalledWith('rekordbox', SO_GENERO);
   });
 
   it('config.yaml editado que não usa a escolha do disco: avisa que o beets continua no jeito antigo', async () => {
@@ -1050,12 +1211,155 @@ describe('organização no disco e no Rekordbox', () => {
     expect(await screen.findByTestId('organizacao-config-antigo')).toHaveTextContent('config.yaml.novo');
   });
 
-  it('com uma tarefa de Cuidar da biblioteca rodando, só a escolha do disco fica travada', async () => {
+  it('config.yaml sem o nível de subgênero: avisa só quando o disco o usa', async () => {
+    api.library.organization.mockResolvedValue(estadoOrg({ configAtendeSubgenero: false }));
+    montar();
+    await carregada();
+    await waitFor(() => expect(caixa('disco', 'artista')).toBeChecked());
+    expect(screen.queryByTestId('organizacao-config-sem-subgenero')).toBeNull();
+    cleanup();
+    api.library.organization.mockResolvedValue(estadoOrg({ configAtendeSubgenero: false, disco: COM_SUBGENERO }));
+    montar();
+    await carregada();
+    expect(await screen.findByTestId('organizacao-config-sem-subgenero')).toHaveTextContent('config.yaml.novo');
+  });
+
+  it('com uma tarefa de Cuidar da biblioteca rodando, só as caixas do disco ficam travadas', async () => {
     useManutencao.setState({ operacao: { id: 'op', tarefa: 'move', linhas: [], terminou: false, erro: null } });
     montar();
     await carregada();
-    await waitFor(() => expect(opcao('disco', 'genero')).toBeDisabled());
-    expect(opcao('rekordbox', 'genero')).not.toBeDisabled();
+    await waitFor(() => expect(caixa('disco', 'artista')).toBeDisabled());
+    expect(caixa('disco', 'subgenero')).toBeDisabled();
+    expect(caixa('rekordbox', 'artista')).not.toBeDisabled();
+  });
+
+  describe('a conta do Beatport e a classificação', () => {
+    const lerCom = (faixas: FaixaDaBiblioteca[]) => api.library.list.mockResolvedValue(lerOk(leitura({ faixas })));
+
+    it('com conta: diz que está conectada, estima o tempo e o botão abre a tarefa Classificar', async () => {
+      // a resposta vazia da prévia derruba o botão (bug descrito em 'prévia vazia' abaixo): aqui ela fica pendente
+      api.library.previewMaintenance.mockReturnValue(new Promise(() => undefined));
+      lerCom([faixa(1), faixa(2), faixa(3, { subgenero: 'Peak Time' })]);
+      montar();
+      await cartaoPronto();
+      const conta = await screen.findByTestId('organizacao-conta');
+      expect(conta).toHaveTextContent('Conta Beatport conectada');
+      expect(within(conta).queryByRole('button', { name: 'Conta Beatport nas Configurações' })).toBeNull();
+      expect(await screen.findByTestId('organizacao-estimativa')).toHaveTextContent(
+        '2 músicas ainda não foram classificadas: cerca de 1 min com o Beatport',
+      );
+      fireEvent.click(screen.getByTestId('organizacao-classificar'));
+      const d = await screen.findByTestId('dialogo-manutencao');
+      expect(within(d).getByText('Classificar o subgênero')).toBeInTheDocument();
+      expect(within(d).getByText(/consulta o Beatport, com a sua conta, para as 2 músicas/)).toBeInTheDocument();
+      expect(within(d).getByTestId('comecar-manutencao')).toBeEnabled();
+      expect(api.library.maintenance).not.toHaveBeenCalled();
+    });
+
+    it('sem conta e sem subgênero ligado: diz que falta a conta e não oferece classificar', async () => {
+      api.library.organization.mockResolvedValue(estadoOrg({ contaBeatport: false }));
+      montar();
+      await cartaoPronto();
+      const conta = await screen.findByTestId('organizacao-conta');
+      expect(conta).toHaveTextContent('Sem conta do Beatport: o subgênero vem só das regras locais.');
+      expect(within(conta).getByRole('button', { name: 'Conta Beatport nas Configurações' })).toBeInTheDocument();
+      expect(screen.queryByTestId('organizacao-classificar')).toBeNull();
+    });
+
+    it('sem conta, mas com o subgênero ligado: classifica só com as regras locais', async () => {
+      api.library.organization.mockResolvedValue(estadoOrg({ contaBeatport: false, rekordbox: SUBGENERO }));
+      montar();
+      await cartaoPronto();
+      expect(await screen.findByTestId('organizacao-estimativa')).toHaveTextContent('só com as regras locais');
+      fireEvent.click(screen.getByTestId('organizacao-classificar'));
+      const d = await screen.findByTestId('dialogo-manutencao');
+      expect(within(d).getByText(/Sem conta do Beatport, o subgênero das 5 músicas/)).toBeInTheDocument();
+    });
+
+    it('tudo classificado: a estimativa diz que não falta nada', async () => {
+      lerCom([faixa(1, { subgenero: 'Peak Time' }), faixa(2, { subgenero: '_Sem Subgenero' })]);
+      montar();
+      await cartaoPronto();
+      expect(await screen.findByTestId('organizacao-estimativa')).toHaveTextContent(
+        'Todas as músicas já têm subgênero decidido.',
+      );
+    });
+
+    it('antes de ligar o subgênero, conta quantas músicas ficariam em _Sem Subgenero', async () => {
+      lerCom([faixa(1), faixa(2, { subgenero: 'Peak Time' }), faixa(3, { subgenero: '_Sem Subgenero' })]);
+      montar();
+      await cartaoPronto();
+      expect(await screen.findByTestId('organizacao-ficariam-sem')).toHaveTextContent(
+        'Hoje, 2 de 3 músicas ficariam em _Sem Subgenero.',
+      );
+    });
+
+    it('com uma tarefa rodando, o botão de classificar fica travado', async () => {
+      useManutencao.setState({ operacao: { id: 'op', tarefa: 'update', linhas: [], terminou: false, erro: null } });
+      montar();
+      await cartaoPronto();
+      await waitFor(() => expect(screen.getByTestId('organizacao-classificar')).toBeDisabled());
+    });
+  });
+});
+
+describe('o diálogo Classificar o subgênero', () => {
+  beforeEach(() => {
+    painelInicial = 'organizacao';
+    api.library.previewMaintenance.mockReturnValue(new Promise(() => undefined));
+  });
+
+  it('confirmar roda a tarefa sem token e mostra o andamento lido da saída e a conclusão', async () => {
+    api.library.maintenance.mockResolvedValue({ ok: true, id: 'op-c', tarefa: 'classificar' });
+    montar();
+    await carregada();
+    fireEvent.click(await screen.findByTestId('organizacao-classificar'));
+    const d = await screen.findByTestId('dialogo-manutencao');
+    fireEvent.click(within(d).getByTestId('comecar-manutencao'));
+    await waitFor(() => expect(api.library.maintenance).toHaveBeenCalledWith('classificar', null));
+    const andamento = await screen.findByTestId('manutencao-andamento');
+    expect(screen.queryByTestId('andamento-classificacao')).toBeNull();
+    act(() => {
+      useManutencao.getState().aoEvento({ type: 'library.start', id: 'op-c', tarefa: 'classificar' });
+      useManutencao.getState().aoEvento({ type: 'library.log', id: 'op-c', linha: 'soulcrate-beatport: 1/5 Techno' });
+      useManutencao
+        .getState()
+        .aoEvento({ type: 'library.log', id: 'op-c', linha: 'soulcrate-beatport: 3/5 Techno / Peak Time' });
+    });
+    expect(await within(andamento).findByTestId('andamento-classificacao')).toHaveTextContent('3 de 5 classificadas');
+    expect(within(andamento).getByText('Rodando')).toBeInTheDocument();
+    act(() => useManutencao.getState().aoEvento({ type: 'library.end', id: 'op-c', tarefa: 'classificar', ok: true }));
+    await waitFor(() => expect(screen.getByTestId('manutencao-andamento')).toHaveAttribute('data-fim', 'sim'));
+    expect(screen.getByText('Concluído')).toBeInTheDocument();
+  });
+
+  // BUG em produção: o main responde à prévia de 'classificar' com afetadas: 0 (só update e move contam faixas), e o
+  // DialogoManutencao trata afetadas === 0 como "nada a fazer": desabilita "Classificar" e mostra o texto do update.
+  it('com a resposta vazia que o main dá à prévia, o botão Classificar continua habilitado', async () => {
+    api.library.previewMaintenance.mockResolvedValue(previaManutencao({ tarefa: 'classificar', token: null }));
+    montar();
+    await carregada();
+    fireEvent.click(await screen.findByTestId('organizacao-classificar'));
+    const d = await screen.findByTestId('dialogo-manutencao');
+    await waitFor(() => expect(api.library.previewMaintenance).toHaveBeenCalled());
+    await new Promise((r) => setTimeout(r, 20));
+    expect(within(d).getByTestId('comecar-manutencao')).toBeEnabled();
+  });
+
+  it('outra tarefa não mostra andamento de classificação', async () => {
+    painelInicial = null;
+    api.library.previewMaintenance.mockResolvedValue(previaManutencao({ tarefa: 'tomEBpm', token: null }));
+    api.library.maintenance.mockResolvedValue({ ok: true, id: 'op-t', tarefa: 'tomEBpm' });
+    montar();
+    await carregada();
+    fireEvent.click(tarefa('tomEBpm'));
+    fireEvent.click(within(await screen.findByTestId('dialogo-manutencao')).getByTestId('comecar-manutencao'));
+    await screen.findByTestId('manutencao-andamento');
+    act(() => {
+      useManutencao.getState().aoEvento({ type: 'library.start', id: 'op-t', tarefa: 'tomEBpm' });
+      useManutencao.getState().aoEvento({ type: 'library.log', id: 'op-t', linha: 'soulcrate-beatport: 3/5 x' });
+    });
+    expect(screen.queryByTestId('andamento-classificacao')).toBeNull();
   });
 });
 
@@ -1131,14 +1435,20 @@ describe('abas da lateral', () => {
     painelInicial = 'organizacao';
     api.library.setOrganization.mockResolvedValue({
       ok: true,
-      estado: { disco: 'genero', rekordbox: 'genero-artista', configAtende: true },
+      estado: {
+        disco: SO_GENERO,
+        rekordbox: ARTISTA,
+        configAtende: true,
+        configAtendeSubgenero: true,
+        contaBeatport: true,
+      },
     });
     api.library.previewMaintenance.mockResolvedValue(previaManutencao({ tarefa: 'move', afetadas: 1 }));
     montar();
     await carregada();
     const opcaoDisco = () =>
-      document.querySelector('[data-alvo="disco"] [data-organizacao="genero"] input') as HTMLInputElement | null;
-    await waitFor(() => expect(opcaoDisco()?.checked).toBe(false));
+      document.querySelector('[data-alvo="disco"] [data-nivel="artista"] input') as HTMLInputElement | null;
+    await waitFor(() => expect(opcaoDisco()?.checked).toBe(true));
     const disco = opcaoDisco() as HTMLInputElement;
     fireEvent.click(disco);
     fireEvent.click(await screen.findByTestId('organizacao-reorganizar'));

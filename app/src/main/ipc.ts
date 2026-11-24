@@ -43,7 +43,7 @@ import {
   exigirOpcoesDaCorrecao,
   exigirOpcoesSetup,
   exigirAlvoDaOrganizacao,
-  exigirOrganizacao,
+  exigirNiveisDaOrganizacao,
   exigirRunId,
   exigirTarefa,
   exigirTextoDaLista,
@@ -53,6 +53,7 @@ import {
 } from './ipc-entradas';
 import { ehUrlDoApp, podeAbrirNoNavegador } from './infra/seguranca';
 import type { AppSettingsService } from './services/app-settings';
+import type { BeatportService } from './services/beatport-service';
 import type { BibliotecaService } from './services/biblioteca-service';
 import type { ChecksService } from './services/checks-service';
 import type { ConfigService } from './services/config-service';
@@ -86,6 +87,7 @@ export interface ContextoIpc {
   logs: LogsService;
   webui: WebUiService;
   config: ConfigService;
+  beatport: BeatportService;
   pasta: PastaService;
   setup: SetupService;
   listas: ListasService;
@@ -326,6 +328,12 @@ export function registrarIpc(ctx: ContextoIpc): void {
     await ctx.health.atualizar({ forcar: true });
     return r;
   });
+  tratar('config:testBeatport', () => ctx.beatport.testarLogin());
+  tratar('config:disconnectBeatport', async () => {
+    const r = ctx.config.desconectarBeatport(exigirDir());
+    await ctx.health.atualizar({ forcar: true });
+    return r;
+  });
   tratar('config:pickFolder', async (_e, finalidade, inicial) => {
     const win = ctx.janela();
     const opcoes = {
@@ -465,8 +473,8 @@ export function registrarIpc(ctx: ContextoIpc): void {
   tratar('library:sharing', () => ctx.slskd.compartilhamento());
   tratar('library:rescanSharing', () => ctx.slskd.reescanear());
   tratar('library:organization', () => ctx.organizacao.estado());
-  tratar('library:setOrganization', (_e, alvo, organizacao) =>
-    ctx.organizacao.definir(exigirAlvoDaOrganizacao(alvo), exigirOrganizacao(organizacao)),
+  tratar('library:setOrganization', (_e, alvo, niveis) =>
+    ctx.organizacao.definir(exigirAlvoDaOrganizacao(alvo), exigirNiveisDaOrganizacao(niveis)),
   );
   tratar('rekordbox:state', () => ctx.rekordbox.estado());
   tratar('rekordbox:generate', () => ctx.rekordbox.gerar());

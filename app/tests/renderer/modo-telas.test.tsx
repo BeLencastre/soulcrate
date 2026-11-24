@@ -53,6 +53,7 @@ const SETTINGS: AppSettings = {
   avisarFimDoLote: true,
   avisarBuscasPausadas: true,
   modo: null,
+  avisoSubgeneroDispensado: false,
 };
 
 function status(parcial: Partial<StackStatus> = {}): StackStatus {

@@ -2,6 +2,7 @@
 // (`ConfigPublica`, sem nenhum segredo) e os resultados da validação, da gravação e da pós-configuração.
 // Segredos (senhas e chaves) só atravessam o IPC em um sentido: o renderer envia as senhas digitadas uma vez e
 // nunca as recebe; as chaves nascem no main e ficam lá.
+import { lerEnv } from './env.js';
 import type { AppError } from './erros.js';
 import type { ConfigStatus } from './stack.js';
 import type { MigracaoInfo } from './stack-atualizacao.js';
@@ -22,6 +23,9 @@ export const VARIAVEIS_ENV = [
   'SLSKD_WEB_PASSWORD',
   'SOULBEET_SECRET_KEY',
   'SLSKD_API_KEY_SOULBEET',
+  // opcionais: a Conta Beatport (o subgênero da pasta); os dois preenchidos ou os dois vazios
+  'BEATPORT_USERNAME',
+  'BEATPORT_PASSWORD',
 ] as const;
 
 export type VariavelEnv = (typeof VARIAVEIS_ENV)[number];
@@ -55,6 +59,8 @@ export interface ConfigPublica {
   /** os valores gravados no .env; pasta ou usuário com valor de exemplo voltam em branco */
   pastas: PastasConfig;
   slskUsuario: string;
+  /** o usuário da Conta Beatport (opcional); a senha nunca volta */
+  beatportUsuario: string;
   webUsuario: string;
   tz: string;
   puid: string;
@@ -76,6 +82,10 @@ export interface ConfigEntrada {
   slskUsuario: string;
   /** em branco: manter a senha que já está no .env (só vale se ela já estiver configurada) */
   slskSenha: string;
+  /** Conta Beatport (opcional): usuário e senha juntos, ou os dois vazios */
+  beatportUsuario: string;
+  /** em branco: manter a senha que já está no .env */
+  beatportSenha: string;
   webUsuario: string;
   /** em branco: manter a que já está no .env */
   webSenha: string;
@@ -95,6 +105,8 @@ export type CampoForm =
   | 'pasta.incomplete'
   | 'slskUsuario'
   | 'slskSenha'
+  | 'beatportUsuario'
+  | 'beatportSenha'
   | 'webUsuario'
   | 'webSenha'
   | 'tz'
@@ -264,6 +276,8 @@ export function entradaVazia(sugestoes: ConfigPublica['sugestoes']): ConfigEntra
     pastas: { ...sugestoes.pastas },
     slskUsuario: '',
     slskSenha: '',
+    beatportUsuario: '',
+    beatportSenha: '',
     webUsuario: 'admin',
     webSenha: '',
     regenerarChaves: false,
@@ -286,6 +300,7 @@ export function entradaDaConfig(c: ConfigPublica): ConfigEntrada {
       incomplete: c.pastas.incomplete || base.pastas.incomplete,
     },
     slskUsuario: c.slskUsuario,
+    beatportUsuario: c.beatportUsuario,
     webUsuario: c.webUsuario || base.webUsuario,
     tz: c.tz || base.tz,
     puid: c.puid || base.puid,
@@ -293,4 +308,15 @@ export function entradaDaConfig(c: ConfigPublica): ConfigEntrada {
     musicbrainzContato: c.musicbrainzContato,
     abrirParaRede: c.abrirParaRede,
   };
+}
+
+/**
+ * A Conta Beatport está conectada? Só com usuário **e** senha preenchidos no `.env` (o texto do arquivo, ou `null`
+ * se ele não existe). É o interruptor do Beatport no resolvedor de subgênero (ADR 0007). Pura, sem Node: vive aqui
+ * para o main e o renderer usarem a mesma regra.
+ */
+export function contaBeatportConectada(textoDoEnv: string | null): boolean {
+  if (textoDoEnv === null) return false;
+  const env = lerEnv(textoDoEnv);
+  return (env.get('BEATPORT_USERNAME') ?? '') !== '' && (env.get('BEATPORT_PASSWORD') ?? '') !== '';
 }

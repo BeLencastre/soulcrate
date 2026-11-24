@@ -70,6 +70,16 @@ export const msgDj = {
       corpoNoAr: 'Valem depois de reiniciar o Soulcrate. Um download em andamento continua durante o reinício.',
     },
     reiniciando: 'Reiniciando o Soulcrate para valer as mudanças…',
+    /** a Conta Beatport, em "Suas coisas": sem citar arquivo nem variável */
+    beatport: {
+      explicacao: 'Com a sua conta do Beatport, o Soulcrate descobre o subgênero de cada música. É opcional.',
+      senhaDica: 'Fica só neste PC. O Soulcrate não mostra esta senha de novo.',
+      aplicarReinicio: 'Depois de salvar, o Soulcrate reinicia para enxergar a conta.',
+      desconectarDica: 'Tira a sua conta do Beatport do Soulcrate. Os subgêneros já descobertos continuam nas músicas.',
+      /** só os resultados que citam o jeito técnico; os demais valem como estão em `msg.configuracoes.beatport.teste` */
+      semConta:
+        'O Soulcrate ainda não está vendo a sua conta do Beatport. Salve, use "Aplicar e reiniciar" e teste de novo.',
+    },
     rede: {
       abrir: 'Ouvir no celular e em outros aparelhos da casa',
       abrirDica: 'Libera o player, a busca e as transferências na rede da sua casa. Desligado, só este PC acessa.',
@@ -503,5 +513,10 @@ export const msgDj = {
         corpo: 'O Soulcrate monta uma lista só com elas, já com as correções, e abre os ajustes para você conferir.',
       },
     },
+  },
+  /** o cartão Organização da Biblioteca (ADR 0007): o mesmo cartão, sem falar em regras, arquivos nem banco */
+  organizacao: {
+    semConta:
+      'Sem a conta, o Soulcrate só reconhece o subgênero de algumas músicas (como Techno que já diz Peak Time), e muitas ficam em _Sem Subgenero.',
   },
 };

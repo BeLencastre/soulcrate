@@ -8,6 +8,7 @@ import {
   nomeSugeridoDoPacote,
   redigirValores,
   SuporteService,
+  valoresDoTokenBeatport,
   valoresSecretos,
   type DependenciasSuporte,
 } from '../../src/main/services/suporte-service';
@@ -240,6 +241,30 @@ describe('o pacote', () => {
     expect(t.length).toBeLessThan(2.2 * 1024 * 1024);
     expect(t).toContain('início cortado');
     expect(t.trimEnd().endsWith('a última linha')).toBe(true);
+  });
+
+  it('nunca inclui o beatport-token.json, nem o conteúdo dele, nem a senha do Beatport', async () => {
+    const acesso = 'token-de-acesso-beatport-77aa';
+    const renovar = 'token-de-renovacao-beatport-55bb';
+    const senhaBeatport = 'senha-do-beatport-31cd';
+    escrever(join(dir, '.env'), `${ENV}BEATPORT_USERNAME=dj_beatport\r\nBEATPORT_PASSWORD=${senhaBeatport}\r\n`);
+    escrever(
+      join(dir, 'soulbeet', 'data', 'beatport-token.json'),
+      JSON.stringify({ access_token: acesso, refresh_token: renovar }),
+    );
+    escrever(join(logs, 'main.log'), `[info] consulta ${acesso} e ${renovar} com BEATPORT_PASSWORD=${senhaBeatport}\n`);
+    const e = await servico().montar();
+    expect(e.map((x) => x.nome).some((n) => n.includes('beatport-token'))).toBe(false);
+    const tudo = e.map((x) => `${x.nome}\n${texto(x)}`).join('\n');
+    for (const s of [acesso, renovar, senhaBeatport]) expect(tudo).not.toContain(s);
+    expect(tudo).toContain('BEATPORT_PASSWORD=***');
+  });
+
+  it('valoresDoTokenBeatport lê os dois tokens e ignora texto que não é o token', () => {
+    expect(valoresDoTokenBeatport('{"access_token":"a1","refresh_token":"r1","expires_at":1}')).toEqual(['a1', 'r1']);
+    expect(valoresDoTokenBeatport('não é json')).toEqual([]);
+    expect(valoresDoTokenBeatport('[1,2]')).toEqual([]);
+    expect(valoresDoTokenBeatport(null)).toEqual([]);
   });
 
   it('sem pasta do Soulcrate, ainda gera o que dá (versões e logs do app)', async () => {

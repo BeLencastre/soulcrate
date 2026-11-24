@@ -11,7 +11,7 @@ import { join } from 'node:path';
 import { criarErro, erroInesperado, type AppError } from '@shared/erros';
 import type { MainEvent } from '@shared/ipc';
 import { nomeDoEstado, type ListaRef, type OpcoesAnalise, type ResultadoAnalise } from '@shared/lote';
-import type { OrganizacaoDasPastas } from '@shared/organizacao';
+import type { NiveisDaOrganizacao } from '@shared/organizacao';
 import {
   ARQUIVO_REKORDBOX_XML,
   gerarXml,
@@ -60,8 +60,8 @@ export interface DependenciasRekordbox {
     ): Promise<ResultadoAnalise>;
   };
   projeto(): ProjetoStatus;
-  /** a organização escolhida para o Rekordbox na pasta do Soulcrate `dir` (independente da do disco) */
-  organizacao(dir: string): OrganizacaoDasPastas;
+  /** os níveis escolhidos para o Rekordbox na pasta do Soulcrate `dir` (independentes dos do disco) */
+  organizacao(dir: string): NiveisDaOrganizacao;
   fs: FsRekordbox;
   /** versão do app, no `PRODUCT` do XML */
   versao: string;

@@ -65,6 +65,26 @@
       "esperado": { "codigo": 1, "erros": ["ENV_ID_INVALIDO"], "avisos": [] }
     },
     {
+      "nome": "conta do Beatport completa",
+      "env": { "trocar": { "BEATPORT_USERNAME": "dj_beatport", "BEATPORT_PASSWORD": "senha-beatport-1" } },
+      "esperado": { "codigo": 0, "erros": [], "avisos": [] }
+    },
+    {
+      "nome": "conta do Beatport so com o usuario",
+      "env": { "trocar": { "BEATPORT_USERNAME": "dj_beatport" } },
+      "esperado": { "codigo": 1, "erros": ["BEATPORT_INCOMPLETA"], "avisos": [] }
+    },
+    {
+      "nome": "conta do Beatport so com a senha",
+      "env": { "trocar": { "BEATPORT_PASSWORD": "senha-beatport-1" } },
+      "esperado": { "codigo": 1, "erros": ["BEATPORT_INCOMPLETA"], "avisos": [] }
+    },
+    {
+      "nome": "conta do Beatport com os dois vazios",
+      "env": { "trocar": { "BEATPORT_USERNAME": "", "BEATPORT_PASSWORD": "" } },
+      "esperado": { "codigo": 0, "erros": [], "avisos": [] }
+    },
+    {
       "nome": "pasta da biblioteca que nao existe",
       "env": { "trocar": { "MUSIC_DIR": "./nao-existe" } },
       "esperado": { "codigo": 1, "erros": ["PASTA_INEXISTENTE"], "avisos": [] }

@@ -352,6 +352,7 @@ export const msg = {
       aria: 'Seções',
       pastas: 'Pastas',
       soulseek: 'Conta Soulseek',
+      beatport: 'Conta Beatport',
       webui: 'Web UI do slskd',
       rede: 'Rede',
       avancado: 'Avançado',
@@ -403,6 +404,53 @@ export const msg = {
         'Nada atende na porta 2234 deste PC, embora a stack esteja no ar. Reinicie a stack; se continuar assim, confira se o Docker consegue publicar a porta.',
       ocupada:
         'Outro programa deste PC está usando a porta 2234 e a stack está desligada. Feche-o antes de ligar a stack, ou o slskd não consegue escutar.',
+    },
+    /** a Conta Beatport (ADR 0007, item 7): opcional, só serve para descobrir o subgênero de cada faixa */
+    beatport: {
+      incompleta: 'Preencha o usuário e a senha do Beatport, ou deixe os dois vazios.',
+      usuarioNaoSuportado: 'Esse usuário tem símbolos que o .env não consegue guardar.',
+      senhaNaoSuportada:
+        "Essa senha mistura aspa simples (') com outros símbolos que o .env não consegue guardar. Tire a aspa simples ou escolha outra senha.",
+      senhaComQuebra: 'A senha não pode ter quebra de linha.',
+      usuario: 'Usuário do Beatport',
+      senha: 'Senha do Beatport',
+      senhaDica: 'Fica só no .env deste PC. O app não mostra esta senha de novo.',
+      conectada: 'Conectada',
+      semConta: 'Sem conta',
+      consentimento: {
+        titulo: 'O que acontece com a sua conta',
+        itens: [
+          'O Soulcrate usa a sua conta para consultar o Beatport e descobrir o subgênero de cada faixa.',
+          'Ele envia ao Beatport o artista e o título das faixas, ligados à sua conta.',
+          'Não é um acesso oficial do Beatport: pode parar de funcionar a qualquer momento.',
+          'Se parar, nada se perde: as faixas continuam onde estão e o subgênero passa a vir só das regras do Soulcrate.',
+        ],
+      },
+      aplicarReinicio:
+        'Depois de salvar, o Soulbeet reinicia para enxergar a conta. Antes disso, "Testar login" ainda não vê as mudanças.',
+      salveAntes: 'Salve as alterações antes de testar o login.',
+      testar: 'Testar login',
+      testarDeNovo: 'Testar de novo',
+      testando: 'Testando…',
+      desconectar: 'Desconectar',
+      desconectando: 'Desconectando…',
+      desconectarDica:
+        'Apaga o usuário e a senha do .env e o login guardado. Os subgêneros já descobertos continuam nas faixas.',
+      desconectada: 'Conta desconectada.',
+      /** o resultado do "Testar login", por código do `beet beatport-testar` (shared/beatport.ts) */
+      teste: {
+        ok: 'Funcionou: o login foi aceito e a busca respondeu.',
+        'sem-conta':
+          'O Soulbeet não está vendo usuário e senha do Beatport. Salve a conta e reinicie a stack ("Aplicar e reiniciar"); depois teste de novo.',
+        'login-recusado':
+          'O Beatport recusou o usuário ou a senha. Confira os dois (entre no site do Beatport para ter certeza), salve e teste de novo.',
+        verificacao:
+          'O Beatport pediu uma verificação de navegador e bloqueou o acesso automático. Espere um pouco e tente de novo; se continuar, o subgênero fica só com as regras do Soulcrate.',
+        limite: 'O Beatport recusou por excesso de consultas. Espere alguns minutos e teste de novo.',
+        'fluxo-mudou':
+          'O Beatport respondeu de um jeito que o Soulcrate não conhece (ele pode ter mudado o acesso). O subgênero segue só com as regras do Soulcrate. Copie os detalhes do log se quiser reportar.',
+        'fora-do-ar': 'Não consegui falar com o Beatport agora. Confira a internet e tente de novo em alguns minutos.',
+      },
     },
     pendente: {
       titulo: 'Há alterações não gravadas',
@@ -1547,42 +1595,68 @@ export const msg = {
     },
     organizacao: {
       titulo: 'Organização',
-      explicacao: 'Escolha à parte como organizar as pastas no disco e as playlists no Rekordbox.',
+      explicacao:
+        'Escolha à parte os níveis das pastas no disco e das playlists no Rekordbox. O gênero vem sempre primeiro.',
+      genero: 'Gênero',
+      generoSempre: 'sempre incluído',
+      niveis: {
+        subgenero: {
+          titulo: 'Subgênero',
+          descricao: 'Peak Time, Tech Trance, Neo Rave… Música sem subgênero conhecido fica em _Sem Subgenero.',
+        },
+        artista: { titulo: 'Artista', descricao: 'Uma pasta (ou playlist) por artista.' },
+      },
+      /** o nome da combinação: `Gênero / Subgênero / Artista` */
+      combinacao: (niveis: { subgenero: boolean; artista: boolean }) =>
+        ['Gênero', ...(niveis.subgenero ? ['Subgênero'] : []), ...(niveis.artista ? ['Artista'] : [])].join(' / '),
+      exemploRotulo: 'Fica assim:',
+      /** os nomes do exemplo ao vivo (nomes de verdade, os do ADR 0007) */
+      exemplo: { genero: 'Techno', subgenero: 'Peak Time', artista: 'Azyr', titulo: 'No Escape' },
+      chaves: (disco: string, subgenero: boolean) => `pastas.json: "${disco}", subgenero ${String(subgenero)}`,
+      novidade: {
+        titulo: 'Novidade: subgênero',
+        texto:
+          'Agora dá para ter um nível de subgênero dentro do gênero, como Techno › Peak Time. Ele vem desligado: ligue nas caixas abaixo, no disco ou no Rekordbox.',
+        dispensar: 'Entendi',
+      },
+      conta: {
+        conectada:
+          'Conta Beatport conectada: o subgênero vem do Beatport, e das regras locais quando ele não acha a música.',
+        semConta: 'Sem conta do Beatport: o subgênero vem só das regras locais.',
+        configurar: 'Conta Beatport nas Configurações',
+      },
+      semConta: {
+        titulo: 'O subgênero funciona melhor com a conta do Beatport',
+        texto:
+          'Sem ela, o subgênero vem só das regras locais (por exemplo, Techno que já diz Peak Time / Driving), e muitas músicas ficam em _Sem Subgenero.',
+        conectar: 'Conectar conta',
+        continuar: 'Continuar sem conta',
+      },
+      /** antes de ligar: quantas ficariam sem subgênero, quando já há classificação */
+      ficariamSem: (n: number, total: number) =>
+        `Hoje, ${n.toLocaleString('pt-BR')} de ${total.toLocaleString('pt-BR')} ${plural(total, 'música ficaria', 'músicas ficariam')} em _Sem Subgenero.`,
+      classificar: {
+        botao: 'Classificar a biblioteca',
+        estimativa: (n: number, comConta: boolean) =>
+          n === 0
+            ? 'Todas as músicas já têm subgênero decidido.'
+            : comConta
+              ? `${n.toLocaleString('pt-BR')} ${plural(n, 'música ainda não foi classificada', 'músicas ainda não foram classificadas')}: cerca de ${Math.max(1, Math.ceil((n * 2) / 60))} min com o Beatport. Pode interromper e continuar depois.`
+              : `${n.toLocaleString('pt-BR')} ${plural(n, 'música ainda não foi classificada', 'músicas ainda não foram classificadas')}: só com as regras locais, leva poucos segundos.`,
+      },
       disco: {
         legenda: 'No disco',
-        opcoes: {
-          'genero-artista': {
-            titulo: 'Por gênero e artista',
-            descricao: 'Uma pasta por gênero e, dentro dela, uma por artista.',
-            exemplo: 'Hard Techno/Azyr/No Escape',
-          },
-          genero: {
-            titulo: 'Só por gênero',
-            descricao: 'Uma pasta por gênero, com as músicas direto nela.',
-            exemplo: 'Hard Techno/Azyr - No Escape',
-          },
-        },
         guardado: 'Guardado. Vale para as próximas músicas. Para mudar as que já estão no disco, reorganize as pastas.',
         reorganizar: 'Reorganizar as pastas',
         avisoRekordbox:
           'Reorganizar muda o lugar dos arquivos: as faixas que já estão na Coleção do Rekordbox aparecem como não encontradas até você apontar o lugar novo delas no Rekordbox.',
         configAntigo:
           'O config.yaml da pasta do Soulcrate foi editado e ainda não usa esta escolha: o beets continua organizando do jeito antigo. Junte nele as mudanças do config.yaml.novo, que está ao lado.',
+        configAntigoSubgenero:
+          'O config.yaml da pasta do Soulcrate foi editado e ainda não tem o nível de subgênero: as pastas novas saem sem ele. Junte nele as mudanças do config.yaml.novo, que está ao lado.',
       },
       rekordbox: {
         legenda: 'No Rekordbox',
-        opcoes: {
-          'genero-artista': {
-            titulo: 'Por gênero e artista',
-            descricao: 'Uma pasta por gênero, com a playlist Todas e uma playlist por artista.',
-            exemplo: 'Gêneros › Hard Techno › Azyr',
-          },
-          genero: {
-            titulo: 'Só por gênero',
-            descricao: 'Uma playlist por gênero.',
-            exemplo: 'Gêneros › Hard Techno',
-          },
-        },
         guardado:
           'Guardado. Se as playlists já foram criadas, o arquivo se refaz agora: importe a pasta Soulcrate de novo no Rekordbox.',
       },
@@ -1706,6 +1780,15 @@ export const msg = {
         nada: 'Todos os arquivos já estão onde o padrão de pastas manda.',
         resumo: (n: number) => `${n} ${plural(n, 'arquivo será movido', 'arquivos serão movidos')}`,
         confirmar: 'Reorganizar',
+      },
+      classificar: {
+        titulo: 'Classificar o subgênero',
+        corpo: (n: number, comConta: boolean) =>
+          comConta
+            ? `O Soulcrate consulta o Beatport, com a sua conta, para as ${n} ${plural(n, 'música', 'músicas')} que ainda não têm subgênero decidido (cerca de ${Math.max(1, Math.ceil((n * 2) / 60))} min), e usa as regras locais quando ele não acha a música. Só o banco do beets muda: nenhum arquivo é movido e nenhuma tag é gravada. Para interromper, desligue o Soulcrate no Início; ao classificar de novo, continua de onde parou. Para levar as músicas às pastas novas, reorganize as pastas em seguida.`
+            : `Sem conta do Beatport, o subgênero das ${n} ${plural(n, 'música', 'músicas')} vem só das regras locais (leva poucos segundos). Só o banco do beets muda: nenhum arquivo é movido e nenhuma tag é gravada. Para levar as músicas às pastas novas, reorganize as pastas em seguida.`,
+        andamento: (feitas: number, total: number) => `${feitas} de ${total} classificadas`,
+        confirmar: 'Classificar',
       },
       maisLinhas: (n: number) => `e mais ${n} ${plural(n, 'linha', 'linhas')}`,
     },

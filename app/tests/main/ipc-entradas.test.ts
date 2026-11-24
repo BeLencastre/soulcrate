@@ -14,7 +14,7 @@ import {
   exigirOpcoesDaCorrecao,
   exigirOpcoesSetup,
   exigirAlvoDaOrganizacao,
-  exigirOrganizacao,
+  exigirNiveisDaOrganizacao,
   exigirTarefa,
   exigirTituloEscolhido,
   exigirToken,
@@ -151,11 +151,24 @@ describe('Fase 5: biblioteca', () => {
     }
   });
 
-  it('organização: só as duas que o plugin do beets conhece, e só para o disco ou o Rekordbox', () => {
-    for (const o of ['genero', 'genero-artista']) expect(exigirOrganizacao(o)).toBe(o);
-    for (const ruim of ['artista', 'Genero', '', null, 1, { organizacao: 'genero' }]) {
-      expect(() => exigirOrganizacao(ruim), String(ruim)).toThrow();
+  it('organização: os dois níveis booleanos, e só para o disco ou o Rekordbox', () => {
+    for (const subgenero of [true, false]) {
+      for (const artista of [true, false]) {
+        expect(exigirNiveisDaOrganizacao({ subgenero, artista })).toEqual({ subgenero, artista });
+      }
     }
+    const ruins: unknown[] = [
+      'genero',
+      'genero-artista',
+      null,
+      1,
+      [],
+      { subgenero: true },
+      { subgenero: 'sim', artista: true },
+      { subgenero: true, artista: 1 },
+      { subgenero: true, artista: true, extra: true },
+    ];
+    for (const ruim of ruins) expect(() => exigirNiveisDaOrganizacao(ruim), JSON.stringify(ruim)).toThrow();
     for (const a of ['disco', 'rekordbox']) expect(exigirAlvoDaOrganizacao(a)).toBe(a);
     for (const ruim of ['Disco', 'navidrome', '', null, 0]) {
       expect(() => exigirAlvoDaOrganizacao(ruim), String(ruim)).toThrow();

@@ -2,12 +2,15 @@
 // Rekordbox lê em Preferências › Avançado › Banco de dados › rekordbox xml › Imported Library, e a pessoa importa a
 // pasta "Soulcrate" para as playlists dela. O app nunca toca no banco do Rekordbox (ADR 0004).
 //
-// Aqui ficam as regras puras: a árvore (por gênero, ou por gênero e artista, conforme a escolha do Rekordbox, que é
-// independente da do disco, e uma playlist por lista baixada), o caminho de cada faixa (`Location`) e o texto do XML.
-// Nada de disco, processo ou DOM.
+// Aqui ficam as regras puras: a árvore (por gênero e, se ligados, subgênero e artista, conforme a escolha do Rekordbox,
+// que é independente da do disco, e uma playlist por lista baixada), o caminho de cada faixa (`Location`) e o texto do
+// XML. Nada de disco, processo ou DOM.
+//
+// O gênero e o artista vêm do caminho no disco, que sempre os tem; o subgênero vem do banco do beets
+// (`subgenero_resolvido`, ADR 0007), para o Rekordbox poder tê-lo mesmo com o disco sem esse nível.
 import { ordenarFaixas, type FaixaDaBiblioteca } from './biblioteca.js';
 import type { AppError } from './erros.js';
-import type { OrganizacaoDasPastas } from './organizacao.js';
+import { SEM_SUBGENERO, type NiveisDaOrganizacao } from './organizacao.js';
 
 /** Onde o arquivo fica, dentro da pasta do Soulcrate. É dado do usuário: a atualização da stack não toca nele. */
 export const PASTA_REKORDBOX = 'rekordbox';
@@ -36,15 +39,15 @@ export interface ListaParaRekordbox {
 }
 
 /**
- * Um gênero. Sem `artistas`, é uma playlist; com eles (organização por gênero e artista), é uma pasta com a playlist
- * "Todas" (os `ids` do gênero inteiro) e uma playlist por artista.
+ * Um nível da árvore (gênero, subgênero ou artista). Sem `filhos`, é uma playlist; com eles (há um nível ligado abaixo
+ * dele), é uma pasta com a playlist "Todas" (os `ids` do nó inteiro) e um nó por filho. O último nível são playlists.
  */
-export interface GeneroRekordbox extends PlaylistRekordbox {
-  artistas: PlaylistRekordbox[] | null;
+export interface NoRekordbox extends PlaylistRekordbox {
+  filhos: NoRekordbox[] | null;
 }
 
 export interface ArvoreRekordbox {
-  generos: GeneroRekordbox[];
+  generos: NoRekordbox[];
   listas: PlaylistRekordbox[];
 }
 
@@ -90,9 +93,20 @@ export function generoDaPasta(arquivo: string): string {
  * - só por gênero, o começo do nome do arquivo, até o primeiro " - ": `Hard Techno/Azyr - No Escape.flac` → `Azyr`
  *   (um artista com " - " no nome fica cortado ali).
  * Sem nenhum dos dois (arquivo solto na raiz, nome sem " - "), `_Outras`.
+ *
+ * Com o nível de subgênero no disco (ADR 0007), a segunda pasta é o subgênero e é pulada:
+ * `Techno/Peak Time/Azyr/No Escape.flac` e `Techno/Peak Time/Azyr - No Escape.flac` → `Azyr`. Ela é reconhecida por ser
+ * o subgênero da própria faixa (ou `_Sem Subgenero`), e não pela escolha do disco: a escolha vale só para o que for
+ * importado depois dela, e as faixas antigas ficam onde estão até "Reorganizar as pastas".
  */
-export function artistaDaPasta(arquivo: string): string {
-  const partes = arquivo.split('/').filter(Boolean);
+export function artistaDaPasta(arquivo: string, subgenero: string | null = null): string {
+  const todas = arquivo.split('/').filter(Boolean);
+  const segunda = todas[1] !== undefined ? chave(todas[1]) : null;
+  const ehSubgenero =
+    todas.length >= 3 &&
+    segunda !== null &&
+    (segunda === chave(SEM_SUBGENERO) || (subgenero !== null && segunda === chave(subgenero)));
+  const partes = ehSubgenero ? [todas[0] ?? '', ...todas.slice(2)] : todas;
   if (partes.length >= 3 && partes[1]) return partes[1];
   if (partes.length !== 2 || !partes[1]) return PLAYLIST_FORA_DAS_PASTAS;
   const nome = partes[1].replace(/\.[^.]*$/, '');
@@ -123,35 +137,66 @@ function agrupar(entradas: Iterable<{ nome: string; ids: Iterable<number> }>): P
   return [...grupos.values()].map(({ nome, ids }) => ({ nome, ids }));
 }
 
-/** As playlists de artista de um gênero, por nome; um artista chamado "Todas" ganha um sufixo para não colidir. */
-function artistasDoGenero(faixas: readonly FaixaDaBiblioteca[]): PlaylistRekordbox[] {
-  return agrupar(
-    faixas.map((f) => {
-      const nome = artistaDaPasta(f.arquivo);
-      return { nome: chave(nome) === chave(PLAYLIST_TODAS) ? `${nome} (artista)` : nome, ids: [f.id] };
-    }),
-  ).sort(porNome);
-}
+/** O nome de cada nível abaixo do gênero, tirado de uma faixa. */
+type Nivel = (f: FaixaDaBiblioteca) => string;
+
+/** O subgênero da faixa (as que nunca passaram pelo resolvedor ficam em `_Sem Subgenero`, como no disco). */
+const subgeneroDaFaixa: Nivel = (f) => f.subgenero ?? SEM_SUBGENERO;
+const artistaDaFaixa: Nivel = (f) => artistaDaPasta(f.arquivo, f.subgenero);
 
 /**
- * Uma playlist por pasta de gênero (faixas como num caixote: artista e título), ou, na organização por gênero e
- * artista, uma pasta por gênero com "Todas" e uma playlist por pasta de artista; e uma playlist por lista baixada (na
- * ordem da lista, só com faixas que estão na biblioteca; lista sem nenhuma fica de fora).
+ * Os nós de um nível, por nome, e os dos níveis abaixo dentro de cada um. Um nome igual a "Todas" ganha um sufixo
+ * (`Todas (artista)`) para não colidir com a playlist do nó de cima.
+ */
+function nosDoNivel(
+  faixas: readonly FaixaDaBiblioteca[],
+  [nivel, ...abaixo]: readonly { nome: Nivel; sufixo: string }[],
+): NoRekordbox[] | null {
+  if (!nivel) return null;
+  const porId = new Map(faixas.map((f) => [f.id, f]));
+  return agrupar(
+    faixas.map((f) => {
+      const nome = nivel.nome(f);
+      return { nome: chave(nome) === chave(PLAYLIST_TODAS) ? `${nome} (${nivel.sufixo})` : nome, ids: [f.id] };
+    }),
+  )
+    .sort(porNome)
+    .map((p) => ({
+      ...p,
+      filhos: nosDoNivel(
+        p.ids.map((id) => porId.get(id)).filter((f): f is FaixaDaBiblioteca => f !== undefined),
+        abaixo,
+      ),
+    }));
+}
+
+/** Sem escolha, o Rekordbox fica como era antes das escolhas: uma playlist por gênero. */
+const SO_GENERO: NiveisDaOrganizacao = { subgenero: false, artista: false };
+
+/**
+ * Uma playlist por pasta de gênero (faixas como num caixote: artista e título); com o subgênero e/ou o artista ligados,
+ * cada gênero vira uma pasta com "Todas" e um nó por subgênero (ou artista), e assim por diante, sendo o último nível
+ * de playlists. E uma playlist por lista baixada (na ordem da lista, só com faixas que estão na biblioteca; lista sem
+ * nenhuma fica de fora).
  */
 export function montarArvore(
   faixas: readonly FaixaDaBiblioteca[],
   listas: readonly ListaParaRekordbox[] = [],
-  organizacao: OrganizacaoDasPastas = 'genero',
+  niveis: NiveisDaOrganizacao = SO_GENERO,
 ): ArvoreRekordbox {
   const ordenadas = ordenarFaixas(faixas);
   const porId = new Map(ordenadas.map((f) => [f.id, f]));
+  const abaixo = [
+    ...(niveis.subgenero ? [{ nome: subgeneroDaFaixa, sufixo: 'subgênero' }] : []),
+    ...(niveis.artista ? [{ nome: artistaDaFaixa, sufixo: 'artista' }] : []),
+  ];
   const generos = agrupar(ordenadas.map((f) => ({ nome: generoDaPasta(f.arquivo), ids: [f.id] }))).map(
-    (g): GeneroRekordbox => ({
+    (g): NoRekordbox => ({
       ...g,
-      artistas:
-        organizacao === 'genero-artista'
-          ? artistasDoGenero(g.ids.map((id) => porId.get(id)).filter((f): f is FaixaDaBiblioteca => f !== undefined))
-          : null,
+      filhos: nosDoNivel(
+        g.ids.map((id) => porId.get(id)).filter((f): f is FaixaDaBiblioteca => f !== undefined),
+        abaixo,
+      ),
     }),
   );
   const naBiblioteca = new Set(faixas.map((f) => f.id));
@@ -230,10 +275,12 @@ function playlist(p: PlaylistRekordbox, recuo: string): string {
   return [cabeca, ...p.ids.map((id) => `${recuo}  <TRACK Key="${id}" />`), `${recuo}</NODE>`].join('\n');
 }
 
-function genero(g: GeneroRekordbox, recuo: string): string {
-  if (!g.artistas) return playlist(g, recuo);
-  const filhos = [{ nome: PLAYLIST_TODAS, ids: g.ids }, ...g.artistas].map((p) => playlist(p, `${recuo}  `));
-  return pasta(g.nome, filhos, recuo).join('\n');
+/** Um nó: playlist, ou pasta com "Todas" primeiro e os filhos em seguida (que podem ser pastas também). */
+function genero(no: NoRekordbox, recuo: string): string {
+  if (!no.filhos) return playlist(no, recuo);
+  const dentro = `${recuo}  `;
+  const filhos = [playlist({ nome: PLAYLIST_TODAS, ids: no.ids }, dentro), ...no.filhos.map((f) => genero(f, dentro))];
+  return pasta(no.nome, filhos, recuo).join('\n');
 }
 
 export interface EntradaXml {

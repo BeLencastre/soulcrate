@@ -577,3 +577,104 @@ describe('validar: discos, OneDrive e rede', () => {
     expect(v.ok).toBe(true);
   });
 });
+
+describe('Conta Beatport (opcional: os dois ou nenhum)', () => {
+  const U = 'dj_beatport';
+  const S = 'senha-beatport-9z';
+
+  it('sem conta: o .env sai sem as variáveis ativas (e a conta aparece como vazia)', () => {
+    const r = servico().gravar(dir, entrada());
+    expect(r.ok).toBe(true);
+    const env = lerEnv(lerArq('.env'));
+    expect(env.has('BEATPORT_USERNAME')).toBe(false);
+    expect(env.has('BEATPORT_PASSWORD')).toBe(false);
+    const c = servico().ler(dir);
+    expect(c.beatportUsuario).toBe('');
+    expect(c.campos.BEATPORT_PASSWORD).toBe('vazio');
+    expect(r.conferencia?.achados.some((a) => a.id === 'BEATPORT_INCOMPLETA')).toBe(false);
+  });
+
+  it('usuário e senha juntos: grava e a leitura devolve o usuário, nunca a senha', () => {
+    const r = servico().gravar(dir, entrada({ beatportUsuario: U, beatportSenha: S }));
+    expect(r.ok).toBe(true);
+    const env = lerEnv(lerArq('.env'));
+    expect(env.get('BEATPORT_USERNAME')).toBe(U);
+    expect(env.get('BEATPORT_PASSWORD')).toBe(S);
+    const c = servico().ler(dir);
+    expect(c.beatportUsuario).toBe(U);
+    expect(c.campos.BEATPORT_PASSWORD).toBe('ok');
+    expect(JSON.stringify(c)).not.toContain(S);
+  });
+
+  it('só o usuário (sem senha gravada) é erro, e nada é gravado', () => {
+    servico().gravar(dir, entrada());
+    const antes = lerArq('.env');
+    const v = servico().validar(dir, entrada({ beatportUsuario: U }));
+    expect(v.ok).toBe(false);
+    const a = v.achados.find((x) => x.id === 'BEATPORT_INCOMPLETA');
+    expect(a?.campo).toBe('beatportSenha');
+    expect(a?.mensagem).toBe('Preencha o usuário e a senha do Beatport, ou deixe os dois vazios.');
+    const r = servico().gravar(dir, entrada({ beatportUsuario: U }));
+    expect(r.ok).toBe(false);
+    expect(lerArq('.env')).toBe(antes);
+  });
+
+  it('só a senha digitada (sem usuário) é erro no campo do usuário', () => {
+    const v = servico().validar(dir, entrada({ beatportSenha: S }));
+    expect(v.achados.find((x) => x.id === 'BEATPORT_INCOMPLETA')?.campo).toBe('beatportUsuario');
+  });
+
+  it('senha em branco mantém a gravada, e usuário vazio com senha gravada é erro (use Desconectar)', () => {
+    servico().gravar(dir, entrada({ beatportUsuario: U, beatportSenha: S }));
+    const outra = servico().gravar(dir, entrada({ beatportUsuario: 'outro_nome', beatportSenha: '' }));
+    expect(outra.ok).toBe(true);
+    expect(lerEnv(lerArq('.env')).get('BEATPORT_PASSWORD')).toBe(S);
+    expect(lerEnv(lerArq('.env')).get('BEATPORT_USERNAME')).toBe('outro_nome');
+    const v = servico().validar(dir, entrada({ beatportUsuario: '', beatportSenha: '' }));
+    expect(v.achados.find((x) => x.id === 'BEATPORT_INCOMPLETA')?.campo).toBe('beatportUsuario');
+  });
+
+  it('senha com aspa simples e outros símbolos é recusada; com quebra de linha também', () => {
+    const v = servico().validar(dir, entrada({ beatportUsuario: U, beatportSenha: `it's #1` }));
+    expect(v.achados.map((a) => a.id)).toContain('SENHA_NAO_SUPORTADA');
+    const q = servico().validar(dir, entrada({ beatportUsuario: U, beatportSenha: 'a\nb' }));
+    expect(q.achados.map((a) => a.id)).toContain('SENHA_COM_QUEBRA');
+  });
+
+  it('desconectar apaga as duas variáveis do .env e o token, e deixa o resto como está', () => {
+    servico().gravar(dir, entrada({ beatportUsuario: U, beatportSenha: S }));
+    const dados = join(dir, 'soulbeet', 'data');
+    mkdirSync(dados, { recursive: true });
+    writeFileSync(join(dados, 'beatport-token.json'), '{"access_token":"x","refresh_token":"y"}');
+    writeFileSync(join(dados, 'beatport-faixas.db'), 'dados das faixas');
+
+    const r = servico().desconectarBeatport(dir);
+    expect(r).toEqual({ ok: true });
+    const env = lerEnv(lerArq('.env'));
+    expect(env.has('BEATPORT_USERNAME')).toBe(false);
+    expect(env.has('BEATPORT_PASSWORD')).toBe(false);
+    expect(env.get('SLSK_USERNAME')).toBe('dj_teste');
+    expect(lerArq('.env')).not.toContain(S);
+    expect(existsSync(join(dados, 'beatport-token.json'))).toBe(false);
+    expect(existsSync(join(dados, 'beatport-faixas.db'))).toBe(true);
+    expect(servico().ler(dir).campos.BEATPORT_PASSWORD).toBe('vazio');
+  });
+
+  it('desconectar sem conta, sem .env e sem token não falha', () => {
+    rmSync(join(dir, '.env'), { force: true });
+    expect(servico().desconectarBeatport(dir)).toEqual({ ok: true });
+  });
+
+  it('desconectar devolve um erro do catálogo se o disco falhar', () => {
+    servico().gravar(dir, entrada({ beatportUsuario: U, beatportSenha: S }));
+    const fsQueFalha: FsConfig = {
+      ...fsReal,
+      escrever() {
+        throw Object.assign(new Error('somente leitura'), { code: 'EPERM' });
+      },
+    };
+    const r = servico({ n: 0 }, fsQueFalha).desconectarBeatport(dir);
+    expect(r.ok).toBe(false);
+    if (!r.ok) expect(r.erro.codigo).toBe('config.nao-gravou');
+  });
+});

@@ -9,6 +9,7 @@ import {
   mkdirSync,
   readFileSync,
   renameSync,
+  rmSync,
   statfsSync,
   statSync,
   writeFileSync,
@@ -28,7 +29,9 @@ import type {
   VariavelEnv,
 } from '@shared/configuracao';
 import { PASTAS_ID, VARIAVEIS_ENV } from '@shared/configuracao';
+import type { ResultadoDesconectarBeatport } from '@shared/beatport';
 import { criarErro, erroInesperado } from '@shared/erros';
+import { msg } from '@shared/mensagens';
 import { semBom } from '@shared/texto';
 import {
   atualizarEnv,
@@ -53,6 +56,8 @@ export interface FsConfig {
   escrever(caminho: string, texto: string): void;
   copiar(de: string, para: string): void;
   criarPasta(caminho: string): void;
+  /** apaga um arquivo; sem erro se ele não existe */
+  remover(caminho: string): void;
   /** espaço livre e total (bytes) do disco onde a pasta existente está; null se não der para saber */
   espaco(caminho: string): { livre: number; total: number } | null;
 }
@@ -69,6 +74,7 @@ export const fsReal: FsConfig = {
   },
   copiar: (de, para) => copyFileSync(de, para),
   criarPasta: (p) => void mkdirSync(p, { recursive: true }),
+  remover: (p) => rmSync(p, { force: true }),
   espaco(caminho) {
     try {
       const s = statfsSync(caminho);
@@ -91,6 +97,8 @@ export interface DependenciasConfig {
 /** Abaixo disto, o aviso de pouco espaço na biblioteca. */
 export const ESPACO_MINIMO_BYTES = 10 * 1024 ** 3;
 
+/** O login guardado pelo plugin do Beatport (token e refresh_token); sai junto com a conta. */
+export const ARQUIVO_TOKEN_BEATPORT = 'beatport-token.json';
 const CHAVE_YML_EXEMPLO = 'TROQUE_POR_UMA_CHAVE_ALEATORIA';
 const NOMES_PADRAO: Record<PastaId, string> = { music: 'music', downloads: 'downloads', incomplete: 'incomplete' };
 // ---------------------------------------------------------------- Funções puras
@@ -207,6 +215,7 @@ export class ConfigService {
       ymlExiste: chaveYml !== null || this.fs.ehArquivo(join(dir, 'slskd', 'slskd.yml')),
       pastas: { music: texto('MUSIC_DIR'), downloads: texto('DOWNLOADS_DIR'), incomplete: texto('INCOMPLETE_DIR') },
       slskUsuario: texto('SLSK_USERNAME'),
+      beatportUsuario: texto('BEATPORT_USERNAME'),
       webUsuario: texto('SLSKD_WEB_USER'),
       tz: texto('TZ'),
       puid: texto('PUID'),
@@ -409,6 +418,8 @@ export class ConfigService {
       );
     }
 
+    this.validarContaBeatport(entrada, atual.campos.BEATPORT_PASSWORD, add);
+
     // ajustes finos
     if (!tzValido(entrada.tz.trim()))
       add('TZ_INVALIDO', 'erro', 'tz', 'Fuso horário inválido. Use o formato America/Sao_Paulo.');
@@ -430,6 +441,25 @@ export class ConfigService {
     }
 
     return { achados, pastas, mesmoDisco, ok: !achados.some((a) => a.nivel === 'erro') };
+  }
+
+  /** A Conta Beatport é opcional, mas vale com os dois (usuário e senha) ou nenhum; senha em branco mantém a gravada. */
+  private validarContaBeatport(
+    entrada: ConfigEntrada,
+    senhaGravada: EstadoCampo,
+    add: (id: string, nivel: AchadoEntrada['nivel'], campo: CampoForm, mensagem: string) => void,
+  ): void {
+    const m = msg.configuracoes.beatport;
+    const usuario = entrada.beatportUsuario.trim();
+    const senha = entrada.beatportSenha;
+    if (usuario && !valorGravavel(usuario))
+      add('USUARIO_NAO_SUPORTADO', 'erro', 'beatportUsuario', m.usuarioNaoSuportado);
+    if (/[\r\n\0]/.test(senha)) add('SENHA_COM_QUEBRA', 'erro', 'beatportSenha', m.senhaComQuebra);
+    else if (senha && !valorGravavel(senha)) add('SENHA_NAO_SUPORTADA', 'erro', 'beatportSenha', m.senhaNaoSuportada);
+
+    const temSenha = senha !== '' || senhaGravada === 'ok';
+    if (usuario === '' && temSenha) add('BEATPORT_INCOMPLETA', 'erro', 'beatportUsuario', m.incompleta);
+    else if (usuario !== '' && !temSenha) add('BEATPORT_INCOMPLETA', 'erro', 'beatportSenha', m.incompleta);
   }
 
   private validarSenha(
@@ -528,6 +558,11 @@ export class ConfigService {
       // vale para as chaves que continuam as mesmas
       if (entrada.slskSenha) valores.SLSK_PASSWORD = entrada.slskSenha;
       if (entrada.webSenha) valores.SLSKD_WEB_PASSWORD = entrada.webSenha;
+      // Conta Beatport: usuário vazio apaga a variável (a validação garante que a senha também sai); a senha em
+      // branco mantém a que está no .env
+      valores.BEATPORT_USERNAME = entrada.beatportUsuario.trim() || null;
+      if (entrada.beatportSenha) valores.BEATPORT_PASSWORD = entrada.beatportSenha;
+      else if (!entrada.beatportUsuario.trim()) valores.BEATPORT_PASSWORD = null;
       if (segredo !== segredoAtual) valores.SOULBEET_SECRET_KEY = segredo;
       if (chaveSlskd !== chaveEnv) valores.SLSKD_API_KEY_SOULBEET = chaveSlskd;
       // BIND_ADDR só muda quando o usuário mexeu no interruptor (um endereço próprio fica como está)
@@ -537,7 +572,12 @@ export class ConfigService {
 
       const modeloEnv = join(dir, '.env.example');
       const baseEnv = envAnterior ?? (this.fs.ehArquivo(modeloEnv) ? this.fs.ler(modeloEnv) : ENV_MODELO_RESERVA);
-      const envNovo = atualizarEnv(baseEnv, valores, { BIND_ADDR: '0.0.0.0', MUSICBRAINZ_CONTATO: 'seu@email' });
+      const envNovo = atualizarEnv(baseEnv, valores, {
+        BIND_ADDR: '0.0.0.0',
+        MUSICBRAINZ_CONTATO: 'seu@email',
+        BEATPORT_USERNAME: 'seu_usuario_beatport',
+        BEATPORT_PASSWORD: 'sua_senha_beatport',
+      });
 
       const modeloYml = join(dir, 'slskd', 'slskd.example.yml');
       const baseYml = ymlAnterior ?? (this.fs.ehArquivo(modeloYml) ? this.fs.ler(modeloYml) : YML_MODELO_RESERVA);
@@ -600,6 +640,37 @@ export class ConfigService {
           ? criarErro('config.nao-gravou', { detalhes: `${(e as NodeJS.ErrnoException).code}: ${e.message}` })
           : erroInesperado(e),
       );
+    }
+  }
+
+  // ------------------------------------------------------------ Conta Beatport
+
+  /**
+   * Desconecta a Conta Beatport: comenta `BEATPORT_USERNAME` e `BEATPORT_PASSWORD` no .env e apaga o token guardado
+   * (`soulbeet/data/beatport-token.json`). Os campos já gravados nas faixas ficam (são dados delas). Sem backup do
+   * .env: a ideia é justamente tirar a senha de lá, e uma cópia a deixaria em outro arquivo.
+   */
+  desconectarBeatport(dir: string): ResultadoDesconectarBeatport {
+    try {
+      const envPath = join(dir, '.env');
+      if (this.fs.ehArquivo(envPath)) {
+        const novo = atualizarEnv(
+          this.fs.ler(envPath),
+          { BEATPORT_USERNAME: null, BEATPORT_PASSWORD: null },
+          { BEATPORT_USERNAME: 'seu_usuario_beatport', BEATPORT_PASSWORD: 'sua_senha_beatport' },
+        );
+        this.fs.escrever(envPath, novo);
+      }
+      this.fs.remover(join(dir, 'soulbeet', 'data', ARQUIVO_TOKEN_BEATPORT));
+      return { ok: true };
+    } catch (e) {
+      return {
+        ok: false,
+        erro:
+          e instanceof Error && 'code' in e
+            ? criarErro('config.nao-gravou', { detalhes: `${(e as NodeJS.ErrnoException).code}: ${e.message}` })
+            : erroInesperado(e),
+      };
     }
   }
 }
