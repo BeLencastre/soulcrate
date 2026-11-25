@@ -4,8 +4,13 @@
 // Nunca devolve valores de senhas nem de chaves: as mensagens citam o nome da variável.
 import { existsSync, readFileSync, statSync } from 'node:fs';
 import { isAbsolute, join, parse, resolve } from 'node:path';
+import { msg } from '@shared/mensagens';
 import type { AchadoConfig, ConfigStatus } from '@shared/stack';
+import { lerEnv, semAspas } from '@shared/env';
 import { semBom } from '@shared/texto';
+
+// o parser do .env mora em shared/env.ts (a regra da Conta Beatport também o usa); reexportado para quem já importa daqui
+export { lerEnv };
 
 export interface SistemaDeArquivos {
   existeArquivo(caminho: string): boolean;
@@ -34,24 +39,6 @@ const OBRIGATORIAS: Record<string, string> = {
 };
 
 const CHAVE_YML = 'web.authentication.api_keys.soulbeet.key';
-
-/** `.Trim().Trim('"').Trim("'")` do PowerShell: tira espaços e todas as aspas das pontas. */
-function semAspas(valor: string): string {
-  return valor
-    .trim()
-    .replace(/^"+|"+$/g, '')
-    .replace(/^'+|'+$/g, '');
-}
-
-/** NOME=valor por linha; ignora o resto (comentários, linhas em branco). Igual ao baixar-lista.ps1. */
-export function lerEnv(texto: string): Map<string, string> {
-  const mapa = new Map<string, string>();
-  for (const linha of texto.split(/\r?\n/)) {
-    const m = /^\s*([A-Za-z_][A-Za-z0-9_]*)\s*=\s*(.*)$/.exec(linha);
-    if (m?.[1] !== undefined) mapa.set(m[1], semAspas(m[2] ?? ''));
-  }
-  return mapa;
-}
 
 /**
  * Chave da API do slskd usada pelo Soulbeet: `web.authentication.api_keys.soulbeet.key`. Sem a entrada
@@ -136,6 +123,18 @@ export function validarConfiguracao(raiz: string, fs: SistemaDeArquivos = sistem
     for (const k of ['PUID', 'PGID']) {
       if (valor(k) && !/^\d+$/.test(valor(k)))
         add('ENV_ID_INVALIDO', 'erro', '.env', k, `${k} precisa ser um número (ex.: 1000).`);
+    }
+
+    // Conta Beatport (opcional): os dois preenchidos ou os dois vazios
+    const temUsuarioBeatport = valor('BEATPORT_USERNAME') !== '';
+    if (temUsuarioBeatport !== (valor('BEATPORT_PASSWORD') !== '')) {
+      add(
+        'BEATPORT_INCOMPLETA',
+        'erro',
+        '.env',
+        temUsuarioBeatport ? 'BEATPORT_PASSWORD' : 'BEATPORT_USERNAME',
+        msg.configuracoes.beatport.incompleta,
+      );
     }
 
     // pastas: precisam existir (o Docker não cria a origem de um bind mount) e, de preferência, no mesmo disco

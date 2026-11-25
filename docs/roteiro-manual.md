@@ -81,6 +81,26 @@ Com o Rekordbox instalado e um backup da biblioteca dele (**Arquivo → Bibliote
 - [ ] Depois de reorganizar, uma faixa que já estava na Coleção do Rekordbox aparece como não encontrada, como o cartão avisa (confira como apontar o lugar novo no Rekordbox instalado).
 - [ ] Um download feito pelo próprio Soulbeet (sem o app) cai na pasta da organização escolhida.
 
+### E4. Subgênero e Conta Beatport
+
+Com a stack real, uma **conta do Beatport** (a sua) e uma biblioteca com pelo menos 30 faixas já importadas. Antes, anote o gênero, o artista e o BPM de 3 faixas (tags do arquivo) e o `pastas.json` atual. O ADR 0007 pede este teste antes de liberar o recurso.
+
+- [ ] Em **Configurações → Conta Beatport**, o texto de consentimento diz que artista e título são enviados e que o acesso não é oficial. Sem conta, o chip mostra "Sem conta".
+- [ ] Salvar usuário **sem** senha avisa "preencha os dois ou deixe os dois vazios".
+- [ ] Salvar usuário e senha reinicia o Soulbeet (o aviso da seção diz isso), e o chip passa a "Conectada". **Testar login** responde "Funcionou". Com uma senha errada de propósito: a mensagem de login recusado, sem a senha aparecer em lugar nenhum.
+- [ ] Antes de conectar (ou depois de **Desconectar**), em **Suas músicas → Organizar**, marcar **Subgênero** mostra o painel **Conectar conta / Continuar sem conta**. **Continuar sem conta** liga só com as regras locais, e o cartão avisa que muitas faixas ficam em `_Sem Subgenero`. **Conectar conta** leva à seção Conta Beatport.
+- [ ] Com a conta conectada, marcar **Subgênero** liga direto. O exemplo ao vivo troca conforme as caixas (`Techno / Peak Time / Azyr / No Escape`, `Techno / Peak Time`, `Techno / Azyr`, `Techno`), no disco e no Rekordbox.
+- [ ] **Classificar a biblioteca** mostra a estimativa (cerca de 2 s por faixa), roda com progresso e pode ser interrompido e retomado: interrompa no meio, rode de novo e confira que ele continua das faixas que faltam. Classifique **30 faixas**.
+- [ ] **Reorganizar as pastas** mostra a prévia com os arquivos indo para `Gênero/Subgênero/...` (e `_Sem Subgenero` onde não houver). Rode e confira no Explorer. O gênero de alguma faixa pode mudar de pasta se o Beatport discordar da tag: confira que a prévia mostrou isso.
+- [ ] Com **Subgênero** ligado **só No Rekordbox** e o disco sem o nível, as pastas do disco não mudam, mas o `rekordbox\soulcrate.xml` tem `Soulcrate › Gêneros › <Gênero> › <Subgênero>` (com `Todas` e uma playlist por subgênero). Com o artista também ligado, o último nível são as playlists de artista. Importe no Rekordbox e confira.
+- [ ] **A tag do arquivo não mudou:** compare gênero, artista e BPM das 3 faixas anotadas (Explorer, Rekordbox ou `beet ls -f`) com o que você anotou: iguais. Os campos `beatport_*` e `subgenero_resolvido` só aparecem no banco do beets (`beet ls -f '$title $subgenero_resolvido $beatport_situacao'`).
+- [ ] Um download novo feito pelo Soulbeet (sem o app) com o subgênero ligado cai já na pasta do subgênero.
+- [ ] **Desconectar** apaga as duas variáveis do `.env` e o `soulbeet/data/beatport-token.json`, o chip volta a "Sem conta", os subgêneros já descobertos continuam nas faixas e uma importação nova funciona sem erro (cai nas regras locais).
+- [ ] **Pacote de suporte:** procure no `.zip` a senha do Beatport e o conteúdo do `beatport-token.json`. **Não pode haver nenhum.**
+- [ ] Sem internet, ou com a conta desconectada: a importação de uma faixa nova **não falha** por causa do Beatport.
+
+Se o Beatport bloquear (verificação de navegador, limite), isso **não** reprova a release do app: o plugin cai nas regras locais. Mas registre o código que o **Testar login** mostrou.
+
 ### E2. Modo DJ e Modo Dev
 
 - [ ] Numa **instalação nova**, a tela final do assistente pergunta o modo com o **Modo DJ** marcado; "Ir para o Início" abre o Início do Modo DJ ("Tudo pronto").
@@ -111,7 +131,7 @@ Com o Rekordbox instalado e um backup da biblioteca dele (**Arquivo → Bibliote
 
 ### I. Demais verificações
 
-- [ ] **Pacote de suporte:** abra o `.zip` e procure (Ctrl+F no texto) a senha do Soulseek, a senha da Web UI do slskd e a API key. **Não pode haver nenhuma.** O `.env` e o `slskd.yml` não estão no pacote.
+- [ ] **Pacote de suporte:** abra o `.zip` e procure (Ctrl+F no texto) a senha do Soulseek, a senha da Web UI do slskd, a senha do Beatport e a API key. **Não pode haver nenhuma.** O `.env` e o `slskd.yml` não estão no pacote.
 - [ ] **Bandeja:** o ícone muda de cor conforme o estado; fechar a janela minimiza para a bandeja (se a preferência estiver ligada); **Sair** encerra o app sem derrubar a stack nem o lote.
 - [ ] **Iniciar com o Windows** abre minimizado na bandeja depois de reiniciar o PC.
 - [ ] **Tema** escuro, claro e "igual ao Windows" valem para o app e para as Web UIs integradas.

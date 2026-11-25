@@ -14,8 +14,9 @@ Um ADR guarda uma decisão de arquitetura: o contexto, o que foi decidido e as c
 | [0004](0004-playlists-no-rekordbox-pelo-rekordbox-xml.md) | Playlists no Rekordbox pelo rekordbox XML, sem tocar no banco do Rekordbox | Proposto |
 | 0005 | Organização do disco e do Rekordbox escolhidas no app, de forma independente | Aceito, implementado e arquivado |
 | [0006](0006-versao-da-faixa-e-formato-como-regras-obrigatorias.md) | Versão da faixa (com a duração) e formato como regras obrigatórias, com o motivo da recusa separado por regra | Aceito |
+| [0007](0007-subgenero-na-pasta-com-beatport.md) | Subgênero na pasta e no Rekordbox, com o Beatport (pela conta do usuário) como fonte e regras locais de reserva | Aceito |
 
-**Arquivados:** os ADRs 0001, 0002, 0003 e 0005 já estão implementados e saíram da pasta (foram para fora do repositório). O texto continua no histórico do git, por exemplo `git show 3602116:docs/adr/0002-modo-dj-e-modo-dev.md`. Os números não são reaproveitados: o próximo ADR é o 0007.
+**Arquivados:** os ADRs 0001, 0002, 0003 e 0005 já estão implementados e saíram da pasta (foram para fora do repositório). O texto continua no histórico do git, por exemplo `git show 3602116:docs/adr/0002-modo-dj-e-modo-dev.md`. Os números não são reaproveitados: o próximo ADR é o 0008.
 
 ## Modelo
 

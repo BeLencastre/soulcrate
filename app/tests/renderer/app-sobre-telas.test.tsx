@@ -56,6 +56,7 @@ const SETTINGS: AppSettings = {
   avisarFimDoLote: true,
   avisarBuscasPausadas: true,
   modo: null,
+  avisoSubgeneroDispensado: false,
 };
 
 const INFO: InfoSobre = {

@@ -21,6 +21,11 @@ export interface FaixaDaBiblioteca {
   arquivo: string;
   /** a pasta raiz é `_Sem Genero` */
   semGenero: boolean;
+  /**
+   * O subgênero que o plugin `pastas.py` decidiu (campo `subgenero_resolvido` do banco do beets, nunca da tag; ADR
+   * 0007), já com o nome seguro de pasta. null quando a faixa ainda não passou pelo resolvedor (importada antes).
+   */
+  subgenero: string | null;
 }
 
 /** O que sobrou em `downloads/` (a pasta ou o arquivo solto, no primeiro nível) e o beets não importou. */
@@ -51,7 +56,10 @@ export type ResultadoLeitura = { ok: true; leitura: LeituraBiblioteca } | { ok: 
 
 // ---------------------------------------------------------------- Leitura da saída do beets
 
-/** Formato do `ls -f`: campos separados por tabulação (nenhum deles costuma ter uma). */
+/**
+ * Formato do `ls -f`: campos separados por tabulação (nenhum deles costuma ter uma). O caminho fica por último, porque
+ * é o único que pode ter tabulação; o subgênero (ADR 0007) entrou antes dele.
+ */
 export const FORMATO_LS = [
   '$id',
   '$artist',
@@ -61,8 +69,18 @@ export const FORMATO_LS = [
   '$genres',
   '$format',
   '$bitrate',
+  '$subgenero_resolvido',
   '$path',
 ].join('\t');
+
+/**
+ * O valor de um campo flexível no `ls -f`: o beets deixa o `$campo` escrito quando a faixa não o tem, e o plugin só o
+ * grava na importação ou na classificação.
+ */
+function campoFlexivel(valor: string, nome: string): string | null {
+  const v = valor.trim();
+  return v === '' || v === `$${nome}` ? null : v;
+}
 
 /** A pasta `music/` como o contêiner a vê (`/music`, o mesmo caminho no slskd e no Soulbeet). */
 export const MUSICA_NO_CONTEINER = '/music';
@@ -92,8 +110,7 @@ export function rotuloDoFormato(formato: string, bitrate: string): string {
 export function lerLinhaDeFaixa(linha: string): FaixaDaBiblioteca | null {
   const campos = linha.replace(/\r$/, '').split('\t');
   if (campos.length < 9) return null;
-  const [id, artista, titulo, bpm, tom, generos, formato, bitrate, caminho] = campos as [
-    string,
+  const [id, artista, titulo, bpm, tom, generos, formato, bitrate] = campos as [
     string,
     string,
     string,
@@ -103,11 +120,15 @@ export function lerLinhaDeFaixa(linha: string): FaixaDaBiblioteca | null {
     string,
     string,
   ];
+  // linha de antes do subgênero (9 campos, o 9º já é o caminho): continua valendo, sem subgênero
+  const comSubgenero = campos.length >= 10 && !(campos[8] ?? '').startsWith(`${MUSICA_NO_CONTEINER}/`);
+  const subgenero = comSubgenero ? campoFlexivel(campos[8] ?? '', 'subgenero_resolvido') : null;
+  const inicioDoCaminho = comSubgenero ? 9 : 8;
   const numero = Number(id);
   if (!Number.isInteger(numero) || numero < 0) return null;
   const prefixo = `${MUSICA_NO_CONTEINER}/`;
-  // o caminho pode ter tabulação (muito raro): o que sobra depois do 9º campo faz parte dele
-  const completo = [caminho, ...campos.slice(9)].join('\t');
+  // o caminho pode ter tabulação (muito raro): o que sobra depois dele também faz parte
+  const completo = campos.slice(inicioDoCaminho).join('\t');
   if (!completo.startsWith(prefixo)) return null;
   const arquivo = completo.slice(prefixo.length);
   const bpmNumero = Math.round(Number(bpm));
@@ -127,6 +148,7 @@ export function lerLinhaDeFaixa(linha: string): FaixaDaBiblioteca | null {
     arquivo,
     // "sem gênero": sem a tag ou na pasta `_Sem Genero` (as duas coisas costumam andar juntas, mas nem sempre)
     semGenero: !primeiroGenero || arquivo.split('/')[0] === PASTA_SEM_GENERO,
+    subgenero,
   };
 }
 
@@ -300,11 +322,44 @@ export type ResultadoRemocao = { ok: true; remocao: RemocaoFeita } | { ok: false
 
 /**
  * As tarefas de manutenção que o app sabe pedir ao beets (sem comando livre na v1):
- * `update`, `move`, `keyfinder` + `autobpm` das faixas sem, e `import -q -s` do que sobrou em `downloads/`.
+ * `update`, `move`, `keyfinder` + `autobpm` das faixas sem, `import -q -s` do que sobrou em `downloads/` e
+ * `beatport-classificar` (o subgênero das faixas que ainda não têm, ADR 0007; só grava no banco do beets e pode ser
+ * interrompida e retomada, por isso não pede prévia).
  */
-export type TarefaManutencao = 'update' | 'move' | 'tomEBpm' | 'importLeftovers';
+export type TarefaManutencao = 'update' | 'move' | 'tomEBpm' | 'importLeftovers' | 'classificar';
 
-export const TAREFAS_DE_MANUTENCAO: readonly TarefaManutencao[] = ['tomEBpm', 'importLeftovers', 'update', 'move'];
+export const TAREFAS_DE_MANUTENCAO: readonly TarefaManutencao[] = [
+  'tomEBpm',
+  'importLeftovers',
+  'update',
+  'move',
+  'classificar',
+];
+
+/** Cerca de 2 s por faixa com o Beatport (1 s de pausa mais a busca); só as regras locais são quase instantâneas. */
+export const SEGUNDOS_POR_FAIXA_COM_BEATPORT = 2;
+
+/** As faixas que a classificação ainda vai olhar: as que nunca passaram pelo resolvedor do subgênero. */
+export function faixasSemClassificacao(faixas: readonly FaixaDaBiblioteca[]): number {
+  return faixas.filter((f) => f.subgenero === null).length;
+}
+
+/** Minutos estimados (arredondados para cima) para classificar `n` faixas pelo Beatport. */
+export function minutosParaClassificar(n: number): number {
+  return Math.ceil((n * SEGUNDOS_POR_FAIXA_COM_BEATPORT) / 60);
+}
+
+/**
+ * O andamento da classificação, tirado das linhas que o subcomando `beatport-classificar` imprime
+ * (`soulcrate-beatport: 12/300 Techno / Peak Time`): a última que der; null antes da primeira.
+ */
+export function andamentoDaClassificacao(linhas: readonly string[]): { feitas: number; total: number } | null {
+  for (let i = linhas.length - 1; i >= 0; i--) {
+    const m = /^soulcrate-beatport: (\d+)\/(\d+)\b/.exec((linhas[i] ?? '').trim());
+    if (m) return { feitas: Number(m[1]), total: Number(m[2]) };
+  }
+  return null;
+}
 
 export const ehTarefaDeManutencao = (v: unknown): v is TarefaManutencao =>
   typeof v === 'string' && (TAREFAS_DE_MANUTENCAO as readonly string[]).includes(v);

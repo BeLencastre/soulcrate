@@ -87,6 +87,22 @@ export function valoresSecretos(env: string | null, yml: string | null): string[
   return valores;
 }
 
+/** `access_token` e `refresh_token` do `beatport-token.json` (o login guardado do plugin); texto inválido não dá nada. */
+export function valoresDoTokenBeatport(texto: string | null): string[] {
+  if (texto === null) return [];
+  try {
+    const o: unknown = JSON.parse(semBom(texto));
+    if (typeof o !== 'object' || o === null) return [];
+    const campos = o as Record<string, unknown>;
+    return ['access_token', 'refresh_token'].flatMap((k) => {
+      const v = campos[k];
+      return typeof v === 'string' && v ? [v] : [];
+    });
+  } catch {
+    return [];
+  }
+}
+
 /**
  * Lê no máximo `max` bytes do FIM do arquivo (e avisa se cortou). A codificação é decidida pelo COMEÇO do arquivo (o BOM
  * só existe lá): um log em UTF-16 lido só pelo fim, sem isso, viraria lixo com NULs e o filtro de segredos não o reconheceria.
@@ -140,7 +156,9 @@ export class SuporteService {
     const dir = this.d.projeto().dir;
     const env = dir ? this.d.lerArquivo(join(dir, '.env')) : null;
     const yml = dir ? this.d.lerArquivo(join(dir, 'slskd', 'slskd.yml')) : null;
-    const segredos = valoresSecretos(env, yml);
+    // o pacote nunca inclui o login guardado do Beatport; por garantia, os valores dele também são filtrados
+    const tokenBeatport = dir ? this.d.lerArquivo(join(dir, 'soulbeet', 'data', 'beatport-token.json')) : null;
+    const segredos = [...valoresSecretos(env, yml), ...valoresDoTokenBeatport(tokenBeatport)];
     const limpar = (t: string) => redigirSegredos(redigirValores(t, segredos));
     const entradas: EntradaZip[] = [];
     const incluir = (nome: string, texto: string) =>

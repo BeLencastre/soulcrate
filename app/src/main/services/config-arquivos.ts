@@ -153,6 +153,8 @@ export const ENV_MODELO_RESERVA = [
   'SLSKD_WEB_PASSWORD=',
   'SOULBEET_SECRET_KEY=',
   'SLSKD_API_KEY_SOULBEET=',
+  '# BEATPORT_USERNAME=seu_usuario_beatport',
+  '# BEATPORT_PASSWORD=sua_senha_beatport',
   '# BIND_ADDR=0.0.0.0',
   '# MUSICBRAINZ_CONTATO=seu@email',
   '',
