@@ -6,6 +6,10 @@ O **app desktop** e a **stack** (Docker Compose, scripts e configuração do bee
 
 ## Não lançado
 
+## App 1.4.0 (2026-11-25)
+
+Traz o subgênero na pasta e no Rekordbox, com a Conta Beatport opcional, a VIP Mix no card Versão da faixa e a stack 1.5.0.
+
 ### Adicionado
 
 - **Subgênero na pasta e no Rekordbox (stack 1.5.0).** Em **Suas músicas → Organizar**, cada destino (**No disco** e **No Rekordbox**) passa a ter duas caixas, **Subgênero** e **Artista**, depois do gênero, que vem sempre: `Techno / Peak Time / Azyr / No Escape`, com um exemplo ao vivo do resultado. O subgênero vem **desligado** e quem atualiza não vê nada mudar; um aviso no cartão apresenta a novidade. A lista de gêneros e subgêneros é a do Beatport (`soulbeet/beets-plugins/beatport-generos.json`). Sem conta, o subgênero vem das regras locais (o `Techno (Peak Time / Driving)` da tag, que antes se perdia, e grafias como `Peak Time Techno`); música sem subgênero conhecido fica em `_Sem Subgenero`. O subgênero decidido fica no banco do beets (`subgenero_resolvido`), nunca na tag, e o Rekordbox o usa mesmo com o disco sem esse nível. **Classificar a biblioteca** decide o subgênero do que já estava lá; depois, **Reorganizar as pastas** leva os arquivos para o lugar novo ([ADR 0007](docs/adr/0007-subgenero-na-pasta-com-beatport.md)).
