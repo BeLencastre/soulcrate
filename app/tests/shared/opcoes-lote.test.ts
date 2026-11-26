@@ -62,7 +62,7 @@ describe('padrões', () => {
 });
 
 describe('argumentos', () => {
-  const VERSOES = ['-Versoes', 'extended,club,original+semnome'];
+  const VERSOES = ['-Versoes', 'extended,original,club,vip,semnome'];
 
   it('sem alterações manda só -Versoes: sem ela o script segue a regra antiga da versão (ADR 0006)', () => {
     expect(argumentosDasOpcoes(novasOpcoes())).toEqual(VERSOES);
@@ -91,7 +91,7 @@ describe('argumentos', () => {
 
   it('o comando equivalente usa o baixar-lista.bat e põe aspas em nome com espaço e em valor com vírgula', () => {
     expect(comandoEquivalente('set-sabado.txt', { ...novasOpcoes(), Paralelo: 8 })).toBe(
-      'baixar-lista.bat set-sabado.txt -Paralelo 8 -Versoes "extended,club,original+semnome"',
+      'baixar-lista.bat set-sabado.txt -Paralelo 8 -Versoes "extended,original,club,vip,semnome"',
     );
     expect(comandoEquivalente('set de sábado.txt', { ...novasOpcoes(), Versoes: 'extended' })).toBe(
       'baixar-lista.bat "set de sábado.txt" -Versoes extended',
@@ -109,12 +109,12 @@ describe('validarOpcoes (o renderer não é confiável)', () => {
     const o = validarOpcoes({ AceitarWav: true, Paralelo: 8 });
     expect(o).toEqual({ ...novasOpcoes(), Paralelo: 8 });
     expect(Object.keys(o)).not.toContain('AceitarWav');
-    expect(argumentosDasOpcoes(o)).toEqual(['-Paralelo', '8', '-Versoes', 'extended,club,original+semnome']);
+    expect(argumentosDasOpcoes(o)).toEqual(['-Paralelo', '8', '-Versoes', 'extended,original,club,vip,semnome']);
   });
 
   it('rascunho antigo, sem as opções de versão: usa o card padrão', () => {
     const o = validarOpcoes({ Paralelo: 8 });
-    expect(o.Versoes).toBe('extended,club,original+semnome');
+    expect(o.Versoes).toBe('extended,original,club,vip,semnome');
     expect(o.DuracaoMinima).toBe(0);
   });
 

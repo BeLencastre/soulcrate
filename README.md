@@ -17,7 +17,7 @@ flowchart LR
     D --> E[Rekordbox, pendrive, CDJ/XDJ]
 ```
 
-> **Status:** o **app desktop para Windows** está na versão `1.3.0` e a stack (Docker Compose, scripts e configuração do beets) na `1.4.0` (veja o [`CHANGELOG.md`](CHANGELOG.md)). O instalador está na página de [Releases](https://github.com/BeLencastre/soulcrate/releases) (veja [Instalação pelo app](#instalação-pelo-app-windows)). Os `.bat` continuam funcionando em qualquer caso.
+> **Status:** o **app desktop para Windows** está na versão `1.4.0` e a stack (Docker Compose, scripts e configuração do beets) na `1.5.0` (veja o [`CHANGELOG.md`](CHANGELOG.md)). O instalador está na página de [Releases](https://github.com/BeLencastre/soulcrate/releases) (veja [Instalação pelo app](#instalação-pelo-app-windows)). Os `.bat` continuam funcionando em qualquer caso.
 
 ![O app do Soulcrate: a tela Baixar lista, com o editor e a pré-visualização do que o lote vai ler](docs/img/03-lista.png)
 
@@ -92,7 +92,7 @@ O Soulcrate é um **garimpeiro de músicas para DJs**. Você diz quais faixas qu
 1. **Procura** cada faixa na rede [Soulseek](https://www.slsknet.org), uma rede de compartilhamento de músicas entre usuários;
 2. **Escolhe e baixa** a melhor versão disponível (FLAC ou WAV; AIFF, AAC e MP3 se você permitir);
 3. **Etiqueta** a faixa com BPM, tom harmônico e capa;
-4. **Organiza** tudo em pastas por gênero e artista (ou só por gênero, se preferir);
+4. **Organiza** tudo em pastas por gênero, com subgênero e artista se você quiser (ver [Como as pastas são organizadas](#como-as-pastas-são-organizadas));
 5. **Entrega** uma biblioteca que o Rekordbox lê direto, pronta para ir para o pendrive.
 
 Ele roda **no seu próprio computador**, e os arquivos ficam com você. Não há assinatura nem serviço online do Soulcrate (só uma conta no Soulseek, criada no primeiro login): é um conjunto de ferramentas open source já configuradas para trabalhar juntas, com scripts de um clique no Windows.
@@ -132,7 +132,7 @@ Cada dor acima tem uma resposta direta:
 | Versão trocada ou arquivo de outro artista | Confere artista, título e mix pedido antes de aceitar um arquivo                           |
 | Títulos errados na lista                   | Confere os títulos no catálogo do MusicBrainz e avisa quando o título não existe           |
 | Sem BPM, tom ou capa                       | Grava BPM, tom harmônico e capa embutida em cada faixa                                     |
-| Pastas e nomes bagunçados                  | `music/<Gênero>/<Artista>/<Título>`, com nomes seguros para pendrive                       |
+| Pastas e nomes bagunçados                  | `music/<Gênero>/[<Subgênero>/][<Artista>/]<Título>`, com nomes seguros para pendrive       |
 | Bloqueio do Soulseek por excesso de buscas | Ritmo de buscas controlado e retomada automática                                           |
 | "Por que essa faixa não veio?"             | Relatório com o motivo de cada recusa e sugestões de título                                |
 
@@ -245,6 +245,7 @@ Edite o `.env`:
 | `SLSKD_WEB_USER` / `SLSKD_WEB_PASSWORD`        | Login da Web UI do slskd                                                                                                                                                                                                          |
 | `SOULBEET_SECRET_KEY`                          | Uma string aleatória longa (veja abaixo)                                                                                                                                                                                          |
 | `SLSKD_API_KEY_SOULBEET`                       | A mesma chave do passo 3 (usada pelo download em lote)                                                                                                                                                                            |
+| `BEATPORT_USERNAME` / `BEATPORT_PASSWORD` (opcionais) | Sua conta do Beatport, só para descobrir o subgênero das faixas (veja [Conta Beatport](#conta-beatport-opcional)). Os dois ou nenhum |
 | `MUSICBRAINZ_CONTATO` (opcional)               | Seu e-mail ou URL. Vai no User-Agent das consultas ao MusicBrainz, como ele recomenda                                                                                                                                             |
 | `BIND_ADDR` (opcional)                         | Deixe de fora para as interfaces web abrirem só neste PC. Use `0.0.0.0` para abri-las de outro aparelho da rede (ex.: Navidrome no celular)                                                                                       |
 
@@ -387,7 +388,7 @@ As verificações do `status.bat` (contêineres, endpoints de saúde, plugins do
 
 #### Configurações
 
-As mesmas seções do assistente em abas (Pastas, Conta Soulseek, Web UI do slskd, Rede, Avançado), a conferência do `.env` e do `slskd.yml`, **Aplicar e reiniciar**, as preferências do app e a tela **Sobre**.
+As mesmas seções do assistente em abas (Pastas, Conta Soulseek, Conta Beatport, Web UI do slskd, Rede, Avançado), a conferência do `.env` e do `slskd.yml`, **Aplicar e reiniciar**, as preferências do app e a tela **Sobre**.
 
 ![Configurações, seção Aplicativo: iniciar com o Windows, bandeja, avisos, onde abrir as interfaces e o tema](docs/img/08-configuracoes-aplicativo.png)
 
@@ -469,7 +470,7 @@ O separador é **espaço-hífen-espaço**.
 ```text
 # Comentários começam com #. Linhas em branco são ignoradas.
 
-# Sem mix: vale o card "Versão da faixa" (no app: Extended, depois Club, depois Original)
+# Sem mix: vale o card "Versão da faixa" (no app: Extended, depois Original, Club, VIP e sem versão no nome)
 Azyr - No Escape
 
 # "Original Mix" pede o original (com ou sem o nome no arquivo)
@@ -500,7 +501,7 @@ Cloudy - Yeah (Cloudy Remix)
 - **Título exato:** palavras a mais no título do arquivo fazem ele ser recusado. Por isso "Azyr - Power" não aceita "Northern Power". Se o título oficial tem uma palavra, escreva-a.
 - **Grafia:** acentos, maiúsculas e letras como `ø`/`æ`/`ß` não importam (`Byørn` também acha `BYORN`). Erros pequenos de digitação são tolerados (`Abaddon` acha `Abbadon`). Censura ("Mxther Fxcker") importa: escreva como a faixa costuma aparecer nos arquivos.
 - **Confira os títulos:** listas montadas de memória ou por IA costumam ter títulos que não existem. O script confere cada título no MusicBrainz antes de buscar, e quando uma faixa não vem o diagnóstico mostra **os títulos daquele artista que existem no Soulseek** ([Faixas que não vieram](#faixas-que-não-vieram)).
-- **Versões:** remix, edit, rework, bootleg, dub, VIP, live, acapella, instrumental, radio, mashup, cover, sped/slowed etc. só entram se a palavra estiver na sua linha. Nas linhas sem mix, quais versões da própria faixa entram (Extended, Club, Original, sem versão no nome, Radio Edit) e em que ordem você escolhe no card **Versão da faixa** ([Versão da faixa](#versão-da-faixa)).
+- **Versões:** remix, edit, rework, bootleg, dub, VIP, live, acapella, instrumental, radio, mashup, cover, sped/slowed etc. só entram se a palavra estiver na sua linha. Nas linhas sem mix, quais versões da própria faixa entram (Extended, Original, Club, VIP, sem versão no nome, Radio Edit) e em que ordem você escolhe no card **Versão da faixa** ([Versão da faixa](#versão-da-faixa)).
 - **Duração:** com uma duração no fim da linha (`Título 6:58`), só entra o arquivo com essa duração, com folga de 5 s (ou 2% em faixas longas). É o jeito mais preciso de garantir a versão certa: a Radio Edit de 3:10 não passa por uma Extended de 6:58.
 
 **Colando de outros lugares:** o script limpa sozinho a numeração (`01.`, `1)`, `-` , `*` ) e o traço longo (`–` e `—` viram `-`). A duração no fim (`3:45`) sai da linha e passa a ser conferida no arquivo (veja **Duração** acima). Dá para colar tracklist do 1001Tracklists, Beatport ou YouTube quase direto.
@@ -676,14 +677,39 @@ Vale para as faixas do Soulbeet e do lote:
 5. **Gênero** (lastgenre): só se o arquivo não tiver gênero. O primeiro gênero define a **pasta raiz**.
 6. **Capa:** busca uma capa de pelo menos 500 px e embute uma versão de 600 px. Se o arquivo já tem capa, ela é mantida.
 7. **Limpeza:** remove tags-lixo e grava em **ID3v2.3**.
-8. **Move** para `music/<Gênero>/<Artista>/<Título>.<ext>` (o plugin `pastas` escolhe os nomes; as tags não mudam):
-  - **Gênero:** o primeiro da tag, sem o qualificador entre parênteses e numa grafia só. `Hard Dance / Hardcore / Neo Rave`, `Hard Dance;Hardcore;Neo Rave` e `Hard Dance` vão todos para `Hard Dance`; `Techno (Peak Time / Driving)` vai para `Techno`; `psytrance`, `Psy Trance` e `Psy-Trance` vão para `Psy-Trance`. Gêneros diferentes continuam separados (`Hard Techno` não vira `Techno`);
+8. **Move** para `music/<Gênero>/<Artista>/<Título>.<ext>` (ou com a pasta de subgênero, se você ligou; o plugin `pastas` escolhe os nomes; as tags não mudam):
+  - **Gênero:** o primeiro da tag, numa grafia só e com o nome curto da pasta (o qualificador entre parênteses vai para o subgênero, se ele estiver ligado). `Hard Dance / Hardcore / Neo Rave`, `Hard Dance;Hardcore;Neo Rave` e `Hard Dance` vão todos para `Hard Dance`; `Techno (Peak Time / Driving)` vai para `Techno`; `psytrance`, `Psy Trance` e `Psy-Trance` vão para `Psy-Trance`. Gêneros diferentes continuam separados (`Hard Techno` não vira `Techno`);
+  - **Subgênero** (opcional, desligado por padrão): a pasta depois do gênero, como `Techno/Peak Time`. Veja a próxima seção;
   - **Artista:** o primeiro da faixa. `KUKO, 9inebro, NEUF` e `KUKO feat. NEUF` vão para `KUKO`. O `&` não separa: `Above & Beyond` continua inteiro;
-  - sem gênero (ou com o nome de um site no lugar dele, como `djsoundtop.com`), a pasta é `_Sem Genero`;
+  - sem gênero (ou com o nome de um site no lugar dele, como `djsoundtop.com`), a pasta é `_Sem Genero`; com o subgênero ligado e nenhum conhecido, `_Sem Subgenero`;
   - caracteres proibidos em pendrive (`/ \ : * ? " < > |`) são trocados ou removidos;
   - se a faixa já está na biblioteca, ela é **pulada** (não duplica).
 
 O Navidrome reescaneia a `music` a cada 15 min.
+
+### Como as pastas são organizadas
+
+Em **Suas músicas → Organizar** você monta a organização por **níveis**, separadamente para **No disco** e **No Rekordbox**: o **Gênero** vem sempre primeiro, e você liga ou desliga o **Subgênero** e o **Artista** (a ordem é fixa: `Gênero / Subgênero / Artista`). Um exemplo ao vivo mostra o resultado, como `Techno / Peak Time / Azyr / No Escape` no disco e `Gêneros › Techno › Peak Time › Azyr` no Rekordbox. A escolha fica em `soulbeet/data/pastas.json` (chaves `disco`, `rekordbox` e `subgenero`, esta com um valor ligado/desligado para cada destino), porque o Soulbeet importa sem o app. Um `pastas.json` antigo continua valendo.
+
+**O subgênero vem desligado**: quem atualiza não vê nada mudar. Ao ligá-lo, **todas** as faixas ganham o nível, e a que não tem subgênero conhecido vai para `_Sem Subgenero`. O subgênero de cada faixa sai, nesta ordem:
+
+1. o **sub-gênero do Beatport**, se você conectou a conta e a faixa foi achada (`Tech Trance`, `Neo Rave`, `Speed House`...);
+2. o **qualificador do gênero**, como `Peak Time - Driving` ou `Raw - Deep - Hypnotic` (Techno) e `Main Floor` (Trance);
+3. os apelidos de texto do Soulcrate (`Peak Time Techno` vira `Peak Time`), só com o nível ligado;
+4. senão, `_Sem Subgenero`.
+
+O resultado fica no banco do beets (`subgenero_resolvido` e os campos `beatport_*`), **nunca na tag do arquivo**: o Rekordbox continua lendo as tags originais. Por isso o Rekordbox pode ter o nível de subgênero mesmo com o disco sem ele. Sem a conta do Beatport as regras locais cobrem pouco (no teste que motivou o recurso, o Beatport só trazia sub-gênero para cerca de 1 em cada 4 faixas encontradas), e é normal muita coisa cair em `_Sem Subgenero`. Se ligar o subgênero sem conta, o cartão mostra **Conectar conta** ou **Continuar sem conta**.
+
+**A biblioteca que já existe** não é classificada sozinha. Com a conta conectada (ou só com as regras locais), clique em **Classificar a biblioteca**: ele percorre as faixas sem resultado, leva cerca de 2 s por faixa com o Beatport (uns 10 min para 300 faixas) e pode ser interrompido e retomado. Depois use **Reorganizar as pastas**, que mostra a prévia antes de mover, e o arquivo de playlists do Rekordbox se refaz.
+
+### Conta Beatport (opcional)
+
+Em **Configurações → Conta Beatport** você pode informar usuário e senha do Beatport, só para o Soulcrate descobrir o subgênero das faixas. É opcional: sem ela tudo funciona, só com as regras locais.
+
+- **O que sai do seu computador:** o artista e o título de cada faixa, ligados à sua conta do Beatport. Nada mais, e nada é enviado sem a conta.
+- **O acesso não é oficial.** O Beatport não oferece API pública para isso; o Soulcrate usa o mesmo caminho que o site usa para você entrar. Pode parar de funcionar a qualquer momento (o Soulcrate cai nas regras locais, e nada se perde). Use por sua conta e risco. Os detalhes técnicos estão em [`docs/apis-da-stack.md`](docs/apis-da-stack.md#beatport-subgênero-pela-conta-do-usuário).
+- **Onde a senha fica:** só no `.env` (`BEATPORT_USERNAME` e `BEATPORT_PASSWORD`), como a da conta do Soulseek, e o login guardado em `soulbeet/data/beatport-token.json`. Nada disso vai para os logs nem para o pacote de suporte.
+- **Salvar reinicia o Soulbeet** para ele enxergar a conta. **Testar login** confere o login e faz uma busca; **Desconectar** apaga o usuário, a senha e o login guardado (os subgêneros já descobertos ficam nas faixas).
 
 ## Personalização
 
@@ -692,7 +718,7 @@ Tudo o que o beets faz está em `[soulbeet/config/config.yaml](soulbeet/config/c
 
 | Quero...                                     | Altere                                                     |
 | -------------------------------------------- | ---------------------------------------------------------- |
-| Outra estrutura de pastas                    | `paths:` (ex.: `'$genero_pasta/$artist - $title'`)         |
+| Outra estrutura de pastas                    | `paths:` (ex.: `'$genero_pasta/$artist - $title'`); gênero, subgênero e artista se escolhem no app |
 | Juntar outra grafia de gênero na mesma pasta | `pastas.apelidos` (ex.: `'Psychedelic': 'Psy-Trance'`)     |
 | Sobrescrever o BPM/tom que já vem no arquivo | `autobpm.force` / `keyfinder.overwrite`                    |
 | Outro gênero de referência para o BPM        | `autobpm.beat_track_kwargs.start_bpm` (125 = house/techno) |
@@ -731,7 +757,7 @@ soulcrate/                      # repositório (código)
 │   │                           #   rotas do Navidrome e do Soulbeet, ADRs e img/ (as capturas de tela do README)
 ├── tests/                      # testes (Pester) e o slskd falso usado por eles
 ├── .github/                    # workflows (CI e release do instalador) e modelos de issue
-└── app/                        # app desktop (Electron, React, TypeScript), versão 1.3.0
+└── app/                        # app desktop (Electron, React, TypeScript), versão 1.4.0
     ├── src/main/               # processo principal: entrada, IPC, janela, bandeja e menu
     │   ├── services/           #   um serviço por assunto (Docker, lote, biblioteca, configuração, atualização…)
     │   ├── infra/              #   peças sem regra de negócio: processos, parsers do Docker, segredos, log, .zip
@@ -835,7 +861,7 @@ Cada arquivo encontrado passa por estes filtros. O motivo de cada recusa aparece
 | Mix                      | Se você pediu um mix, o nome dele precisa estar no parêntese do arquivo. Isso evita pegar o remix invertido                                                                                                                                                                                                                                                                                                                                 |
 | Palavras extras          | Proibidas no trecho do título; permitidas no trecho do artista (feat. etc.). Números e tons Camelot (`5A`, `12B`) são liberados (`Paranoia 5A 160`). Nomes estilo scene (`09-kobosil-while_the_stars`) e com colchetes (`[01][Vendex][Emotional_Khaos]`) são separados em trechos. Com `-TituloAproximado`, um título com palavras a mais é aceito **por último** (`Vendex - Vengeance` → `Vengeance Of The Masked`) e marcado no relatório |
 | Outro artista            | Se o artista pedido só aparece na **pasta** e o nome do arquivo traz outro artista, é recusado. Ex.: pasta "Novah Curates Hard Dance", arquivo "Acid - Marie Vaunt"                                                                                                                                                                                                                                                                         |
-| Versão                   | Remix/edit/radio... só se estiverem na sua linha. Nas linhas sem mix, com `-Versoes`, só as versões aceitas no card (Extended Mix, Club Mix, Original Mix, sem versão no nome, Radio Edit), reconhecidas pelo parêntese ou pelo trecho depois de " - " (`(Extended)`, `- Extended Mix`)                                                                                                                                                     |
+| Versão                   | Remix/edit/radio... só se estiverem na sua linha. Nas linhas sem mix, com `-Versoes`, só as versões aceitas no card (Extended Mix, Original Mix, Club Mix, VIP Mix, sem versão no nome, Radio Edit), reconhecidas pelo parêntese ou pelo trecho depois de " - " (`(Extended)`, `- Extended Mix`)                                                                                                                                                     |
 | Duração da versão        | Com `-Versoes`, a duração no fim da linha (ou a do CSV) precisa bater com a do arquivo, com folga de 5 s ou 2%. Com `-DuracaoMinima`, as linhas sem mix e sem duração recusam arquivos mais curtos. Arquivo sem duração informada passa (fica atrás dos que têm a duração conferida)                                                                                                                                                         |
 | Formato (por último)     | **FLAC e WAV são sempre aceitos.** AIFF e AAC (256 kbps ou mais) só com `-AceitarAacAiff`; MP3 **320 kbps** só com `-AceitarMp3320`; MP3 256 ou VBR (V0, ~220–300 kbps) só com `-AceitarMp3Menor` (que já inclui o 320). Quando o usuário não informa o bitrate do MP3 ou do AAC, ele é estimado por tamanho ÷ duração                                                                                                                                                                                                                              |
 
@@ -1011,10 +1037,10 @@ O `-Retentar` é necessário quando você roda **a mesma lista** de novo. Sem el
 
 #### Versão da faixa
 
-`-Versoes` lista as versões aceitas nas linhas sem mix, em ordem de preferência: `extended`, `club`, `original`, `semnome` (arquivo sem versão no nome, quase sempre o original) e `radioedit`. A vírgula separa as posições e o `+` põe versões na mesma posição. No `.bat`, ponha o valor entre aspas (o `cmd` separa na vírgula):
+`-Versoes` lista as versões aceitas nas linhas sem mix, em ordem de preferência: `extended`, `original`, `club`, `vip`, `semnome` (arquivo sem versão no nome, quase sempre o original) e `radioedit`. A vírgula separa as posições e o `+` põe versões na mesma posição. No `.bat`, ponha o valor entre aspas (o `cmd` separa na vírgula):
 
 ```bat
-baixar-lista.bat lista.txt -Versoes "extended,club,original+semnome"
+baixar-lista.bat lista.txt -Versoes "extended,original,club,vip,semnome"
 ```
 
 Com ela, a versão passa na frente do formato na escolha do arquivo, e a duração no fim da linha passa a ser conferida. Sem ela, vale a regra de sempre. O app sempre a manda, com o que está no card **Versão da faixa** da aba Ajustes (o padrão é o do exemplo). A linha que pede um mix (`(Azyr Remix)`, `(Extended Mix)`) não usa a lista; `(Original Mix)` na linha aceita o original, com ou sem o nome no arquivo.
@@ -1123,7 +1149,7 @@ Plugins do beets ativos (`soulbeet/config/config.yaml`): `musicbrainz`, `mbtwopa
 | PowerShell     | `5.1` (Windows) | 5.1 no Windows, ou `pwsh` 7+ no Linux/macOS para o `baixar-lista.ps1` |
 | Node.js        | `24.15`         | Só para desenvolver: testes de integração e o app (`app/.nvmrc`)      |
 | Electron       | `44.x`          | O app (`app/package.json`), com React 19 e TypeScript; já vem no instalador |
-| App Soulcrate  | `1.3.0`         | Versão própria, independente da `VERSION` da stack (`app/package.json`) |
+| App Soulcrate  | `1.4.0`         | Versão própria, independente da `VERSION` da stack (`app/package.json`) |
 
 
 > [!TIP]

@@ -14,6 +14,7 @@ export const SETTINGS_PADRAO: AppSettings = {
   avisarBuscasPausadas: true,
   // sem escolha registrada o app age como Modo Dev: quem já usava continua igual; o assistente pergunta aos novos
   modo: null,
+  avisoSubgeneroDispensado: false,
 };
 
 const TEMAS: readonly TemaPreferido[] = ['escuro', 'claro', 'sistema'];
@@ -42,6 +43,7 @@ export function normalizarSettings(bruto: unknown): AppSettings {
     avisarFimDoLote: booleano(o.avisarFimDoLote, p.avisarFimDoLote),
     avisarBuscasPausadas: booleano(o.avisarBuscasPausadas, p.avisarBuscasPausadas),
     modo: MODOS.find((m) => m === o.modo) ?? p.modo,
+    avisoSubgeneroDispensado: booleano(o.avisoSubgeneroDispensado, p.avisoSubgeneroDispensado),
   };
 }
 

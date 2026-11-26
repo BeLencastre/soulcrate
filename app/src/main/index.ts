@@ -7,6 +7,7 @@ import { arch, homedir, release, tmpdir, type as tipoDoSistema } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
 import { app, dialog, Menu, nativeTheme, Notification, powerMonitor, shell, type BrowserWindow } from 'electron';
 import type { EstadoAtualizacao, MotivoIndisponivel } from '@shared/atualizacao';
+import { contaBeatportConectada } from '@shared/configuracao';
 import { CANAL_EVENTOS, type MainEvent, type OndeAbrirServico } from '@shared/ipc';
 import { msg } from '@shared/mensagens';
 import { listaDoArgv } from './argv';
@@ -28,6 +29,7 @@ import { ExecutorReal, LancadorReal } from './infra/processos';
 import { AppSettingsService } from './services/app-settings';
 import { criarUpdaterDuble } from './dubles/duble-atualizador';
 import { AtualizadorService, type AutoUpdaterLike, type DependenciasAtualizador } from './services/atualizador-service';
+import { BeatportService } from './services/beatport-service';
 import { BibliotecaService } from './services/biblioteca-service';
 import { ChecksService } from './services/checks-service';
 import { ConfigService } from './services/config-service';
@@ -352,12 +354,15 @@ async function principal(): Promise<void> {
     agora: Date.now,
     aoErro,
   });
+  // o "Testar login" da Conta Beatport roda no contêiner do Soulbeet, como a biblioteca
+  const beatport = new BeatportService({ docker, health, projeto });
   // playlists para o Rekordbox (rekordbox XML): uma por gênero e uma por lista baixada; refeito sozinho depois da
   // primeira vez que a pessoa o gera
   const organizacao = new OrganizacaoService({
     projeto,
     fs: { lerTexto: lerArquivo, escreverAtomico: fsRekordboxReal.escreverAtomico },
     aoMudarRekordbox: () => aoMudarBiblioteca?.(),
+    contaBeatport: (dir) => contaBeatportConectada(lerArquivo(join(dir, '.env'))),
     aoErro,
   });
   const rekordbox = new RekordboxService({
@@ -528,6 +533,7 @@ async function principal(): Promise<void> {
     logs,
     webui,
     config,
+    beatport,
     pasta,
     setup,
     listas,

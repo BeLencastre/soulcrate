@@ -1,7 +1,7 @@
 // Tela Configurações (protótipo "Configurações", Fase 2): reaproveita as seções do assistente para editar depois.
 // As mudanças ficam num rascunho até gravar; "Aplicar e reiniciar" grava, recria os contêineres e refaz a
 // pós-configuração (o Soulbeet recebe a API key nova sozinho). Senhas nunca voltam do main.
-// No Modo DJ só ficam as seções "Suas coisas" (Pastas, Conta Soulseek, Compartilhamento) e as do app; uma seção que
+// No Modo DJ só ficam as seções "Suas coisas" (Pastas, Conta Soulseek, Conta Beatport, Compartilhamento) e as do app; uma seção que
 // o modo não tem, pedida pelo endereço, cai na equivalente ou na inicial.
 import { useEffect, useMemo, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
@@ -26,6 +26,7 @@ import {
   SecaoAjustes,
   SecaoCompartilhamento,
   SecaoPastas,
+  SecaoBeatport,
   SecaoRede,
   SecaoSoulseek,
   SecaoWebUi,
@@ -114,6 +115,7 @@ export function Configuracoes() {
   const [gravado, setGravado] = useState<ResultadoGravacao | null>(null);
   const [aplicando, setAplicando] = useState(false);
   const [erroPasta, setErroPasta] = useState<string | null>(null);
+  const [desconectando, setDesconectando] = useState(false);
 
   const noAr = status.servicos.some((s) => s.container === 'running');
   const slskdNoAr = servicoSaudavel(servicoDe(status, 'slskd'));
@@ -147,6 +149,37 @@ export function Configuracoes() {
       setErro(erroInesperado(e));
     } finally {
       setGravando(false);
+    }
+  }
+
+  /**
+   * Apaga a Conta Beatport (o .env e o login guardado). O contêiner do Soulbeet só deixa de ver as variáveis quando é
+   * recriado, então, com a stack no ar, a pós-configuração roda como em "Aplicar e reiniciar".
+   */
+  async function desconectarBeatport() {
+    setDesconectando(true);
+    setErro(null);
+    try {
+      const r = await api.config.disconnectBeatport();
+      if (!r.ok) {
+        setErro(r.erro);
+        return;
+      }
+      setEdicao((e) => {
+        const resto = { ...e };
+        delete resto.beatportUsuario;
+        delete resto.beatportSenha;
+        return resto;
+      });
+      await qc.invalidateQueries({ queryKey: CHAVE_CONFIG });
+      if (noAr) {
+        definirSetup(await api.setup.start({ modo: 'recriar', detalheGravacao: null }));
+        setAplicando(true);
+      }
+    } catch (e) {
+      setErro(erroInesperado(e));
+    } finally {
+      setDesconectando(false);
     }
   }
 
@@ -285,6 +318,15 @@ export function Configuracoes() {
             <p className="hint m-0">{msg.configuracoes.senhaNuncaMostrada}</p>
           </div>
         );
+      case 'beatport':
+        return propsSecao ? (
+          <SecaoBeatport
+            {...propsSecao}
+            dj={dj}
+            desconectando={desconectando}
+            aoDesconectar={() => void desconectarBeatport()}
+          />
+        ) : null;
       case 'webui':
         return (
           <div className="flex flex-col gap-[22px]">

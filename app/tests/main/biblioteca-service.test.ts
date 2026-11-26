@@ -176,9 +176,11 @@ describe('comandoDoBeet: a lista fechada', () => {
     ]);
   });
 
-  it('só ls, remove, update, move, keyfinder, autobpm, import e version (que só lê)', () => {
+  it('só ls, remove, update, move, keyfinder, autobpm, import, os dois subcomandos do Beatport e version (que só lê)', () => {
     expect([...COMANDOS_PERMITIDOS].sort()).toEqual([
       'autobpm',
+      'beatport-classificar',
+      'beatport-testar',
       'import',
       'keyfinder',
       'ls',
@@ -542,6 +544,32 @@ describe('manutenção', () => {
     expect(fim?.type === 'library.end' && fim.error?.codigo).toBe('biblioteca.falhou');
     expect(fim?.type === 'library.end' && fim.error?.detalhes).toContain('no key returned');
     expect(s.emAndamento).toBeNull();
+  });
+
+  it('classificar roda `beatport-classificar` (sem prévia) e repassa as linhas de andamento', async () => {
+    const s = montar();
+    const r = await s.manutencao('classificar', null);
+    expect(r).toEqual({ ok: true, id: 'op-1', tarefa: 'classificar' });
+    await espera();
+    expect(m.streams.map((x) => x.args)).toEqual([['beatport-classificar']]);
+    m.streams[0]?.linhas('soulcrate-beatport: 12/300 Techno / Peak Time');
+    m.streams[0]?.terminar({ codigo: 0 });
+    await espera();
+    expect(m.eventos).toContainEqual({ type: 'library.start', id: 'op-1', tarefa: 'classificar' });
+    expect(m.eventos).toContainEqual({
+      type: 'library.log',
+      id: 'op-1',
+      linha: 'soulcrate-beatport: 12/300 Techno / Peak Time',
+    });
+    expect(m.eventos.at(-1)).toEqual({ type: 'library.end', id: 'op-1', tarefa: 'classificar', ok: true });
+    expect(s.emAndamento).toBeNull();
+  });
+
+  it('classificar não precisa de token: a prévia dela não consulta o beets', async () => {
+    const s = montar();
+    const p = await s.previaManutencao('classificar');
+    expect(p.ok && p.previa.token).toBeNull();
+    expect(m.chamadas).toEqual([]);
   });
 
   it('importLeftovers: um `import -q -s` com /downloads/<nome> de cada item parado, lidos na hora', async () => {

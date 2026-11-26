@@ -362,12 +362,15 @@ Describe 'baixar-lista.lib' {
         @{ Rotulos = @('extended'); Versao = 'extended' }
         @{ Rotulos = @('extended version'); Versao = 'extended' }
         @{ Rotulos = @('club mix'); Versao = 'club' }
+        @{ Rotulos = @('vip mix'); Versao = 'vip' }
+        @{ Rotulos = @('vip'); Versao = 'vip' }
         @{ Rotulos = @('original mix'); Versao = 'original' }
         @{ Rotulos = @('original'); Versao = 'original' }
         @{ Rotulos = @('radio edit'); Versao = 'radioedit' }
         @{ Rotulos = @('radio mix'); Versao = 'radioedit' }
         @{ Rotulos = @('azyr', 'no escape'); Versao = 'semnome' }
         @{ Rotulos = @('extended family'); Versao = 'semnome' }
+        @{ Rotulos = @('vip room'); Versao = 'semnome' }
         @{ Rotulos = @('extended mix', 'radio edit'); Versao = 'radioedit' }
       ) { Get-FileVersion $Rotulos | Should -Be $Versao }
     }
@@ -402,7 +405,20 @@ Describe 'baixar-lista.lib' {
         $VersionRank = ConvertTo-VersionRanks 'extended,radioedit'
         (Test-Versao 'Azyr - No Escape' 'Azyr - No Escape (Radio Edit).flac').VerRank | Should -Be 1
       }
-      It 'outras versoes (remix, VIP...) continuam recusadas fora da linha' {
+      It 'VIP Mix aceita no card passa, na posicao dela; fora do card, e versao nao aceita' {
+        $VersionRank = ConvertTo-VersionRanks 'extended,original,club,vip,semnome'
+        (Test-Versao 'Azyr - No Escape' 'Azyr - No Escape (VIP Mix).flac').VerRank | Should -Be 3
+        (Test-Versao 'Azyr - No Escape' 'Azyr - No Escape - VIP.flac').VerRank | Should -Be 3
+        (Test-Versao 'Azyr - No Escape' 'Azyr - No Escape (Original Mix).flac').VerRank | Should -Be 1
+        (Test-Versao 'Azyr - No Escape' 'Azyr - No Escape.flac').VerRank | Should -Be 4
+        $VersionRank = ConvertTo-VersionRanks 'extended,club,original+semnome'
+        (Test-Versao 'Azyr - No Escape' 'Azyr - No Escape (VIP Mix).flac').Reason | Should -Be "versao nao aceita ('vip mix')"
+      }
+      It 'sem -Versoes, VIP continua outra versao' {
+        $VersionRank = $null
+        (Test-Versao 'Azyr - No Escape' 'Azyr - No Escape (VIP Mix).flac').Reason | Should -Be "outra versao ('vip')"
+      }
+      It 'outras versoes (remix, dub...) continuam recusadas fora da linha' {
         (Test-Versao 'Azyr - No Escape' 'Azyr - No Escape (Fulano Remix).flac').Reason | Should -Be "outra versao ('remix')"
       }
       It 'a linha com mix manda: o card nao vale para ela' {

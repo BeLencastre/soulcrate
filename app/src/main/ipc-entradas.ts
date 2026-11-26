@@ -13,12 +13,7 @@ import {
   type OpcoesAnalise,
 } from '@shared/lote';
 import { validarOpcoes, type OpcoesLote } from '@shared/opcoes-lote';
-import {
-  ehAlvoDaOrganizacao,
-  ehOrganizacao,
-  type AlvoDaOrganizacao,
-  type OrganizacaoDasPastas,
-} from '@shared/organizacao';
+import { ehAlvoDaOrganizacao, ehNiveis, type AlvoDaOrganizacao, type NiveisDaOrganizacao } from '@shared/organizacao';
 import { LIMITE_LINK } from '@shared/playlists';
 
 /** Nenhum campo do formulário tem motivo para passar disto (uma senha de 255 caracteres já é enorme). */
@@ -51,6 +46,8 @@ export function exigirEntrada(bruto: unknown): ConfigEntrada {
     pastas,
     slskUsuario: texto(o.slskUsuario, 'slskUsuario'),
     slskSenha: texto(o.slskSenha, 'slskSenha'),
+    beatportUsuario: texto(o.beatportUsuario, 'beatportUsuario'),
+    beatportSenha: texto(o.beatportSenha, 'beatportSenha'),
     webUsuario: texto(o.webUsuario, 'webUsuario'),
     webSenha: texto(o.webSenha, 'webSenha'),
     regenerarChaves: booleano(o.regenerarChaves, 'regenerarChaves'),
@@ -224,8 +221,9 @@ export function exigirAlvoDaOrganizacao(valor: unknown): AlvoDaOrganizacao {
   return valor;
 }
 
-export function exigirOrganizacao(valor: unknown): OrganizacaoDasPastas {
-  if (!ehOrganizacao(valor)) throw new Error('Organização das pastas desconhecida.');
+/** Os níveis de um destino: exatamente `{ subgenero, artista }`, os dois booleanos. */
+export function exigirNiveisDaOrganizacao(valor: unknown): NiveisDaOrganizacao {
+  if (!ehNiveis(valor)) throw new Error('Organização das pastas desconhecida.');
   return valor;
 }
 

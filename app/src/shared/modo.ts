@@ -24,12 +24,21 @@ export function modoProposto(settings: Pick<AppSettings, 'modo'> | null | undefi
 // ---------------------------------------------------------------- Seções de Configurações
 
 export type SecaoConfig =
-  'conferencia' | 'pastas' | 'soulseek' | 'compartilhamento' | 'webui' | 'rede' | 'avancado' | 'app' | 'sobre';
+  | 'conferencia'
+  | 'pastas'
+  | 'soulseek'
+  | 'beatport'
+  | 'compartilhamento'
+  | 'webui'
+  | 'rede'
+  | 'avancado'
+  | 'app'
+  | 'sobre';
 
 /** As seções de cada modo, nos dois grupos da navegação. O Modo DJ deixa de fora o que é da configuração da stack. */
 export const SECOES_DO_MODO: Record<ModoInterface, { stack: readonly SecaoConfig[]; app: readonly SecaoConfig[] }> = {
-  dev: { stack: ['conferencia', 'pastas', 'soulseek', 'webui', 'rede', 'avancado'], app: ['app', 'sobre'] },
-  dj: { stack: ['pastas', 'soulseek', 'compartilhamento'], app: ['app', 'sobre'] },
+  dev: { stack: ['conferencia', 'pastas', 'soulseek', 'beatport', 'webui', 'rede', 'avancado'], app: ['app', 'sobre'] },
+  dj: { stack: ['pastas', 'soulseek', 'beatport', 'compartilhamento'], app: ['app', 'sobre'] },
 };
 
 /** A seção que faz o mesmo papel no outro modo (Compartilhamento e Rede tratam de quem baixa de você). */

@@ -28,7 +28,15 @@ const api = vi.hoisted(() => ({
     provideNavidromeLogin: vi.fn(),
     checkPort: vi.fn(),
   },
-  config: { validate: vi.fn(), write: vi.fn(), read: vi.fn(), pickFolder: vi.fn(), check: vi.fn() },
+  config: {
+    validate: vi.fn(),
+    write: vi.fn(),
+    read: vi.fn(),
+    pickFolder: vi.fn(),
+    check: vi.fn(),
+    testBeatport: vi.fn(),
+    disconnectBeatport: vi.fn(),
+  },
   project: { pickFolder: vi.fn(), openFolder: vi.fn(), openFile: vi.fn() },
   app: {
     copyText: vi.fn(),
@@ -70,13 +78,19 @@ function configPublica(parcial: Partial<ConfigPublica> = {}, estadoDosCampos: Es
     ymlExiste: false,
     pastas: { music: '', downloads: '', incomplete: '' },
     slskUsuario: '',
+    beatportUsuario: '',
     webUsuario: '',
     tz: '',
     puid: '',
     pgid: '',
     musicbrainzContato: '',
     abrirParaRede: false,
-    campos: Object.fromEntries(CAMPOS.map((c) => [c, estadoDosCampos])) as Record<VariavelEnv, EstadoCampo>,
+    // a Conta Beatport é opcional: começa sem conta, mesmo numa instalação boa
+    campos: {
+      ...(Object.fromEntries(CAMPOS.map((c) => [c, estadoDosCampos])) as Record<VariavelEnv, EstadoCampo>),
+      BEATPORT_USERNAME: 'vazio',
+      BEATPORT_PASSWORD: 'vazio',
+    },
     chaveSlskd: 'ausente',
     sugestoes: {
       tz: 'America/Sao_Paulo',
@@ -753,6 +767,172 @@ describe('Configurações', () => {
     await waitFor(() => expect(screen.queryByTestId('alteracoes-pendentes')).toBeNull());
   });
 
+  // ------------------------------------------------------------ Conta Beatport (ADR 0007, item 7)
+
+  const contaConectada = (): ConfigPublica => ({
+    ...configBoa(),
+    beatportUsuario: 'dj_beatport',
+    campos: { ...configBoa().campos, BEATPORT_USERNAME: 'ok', BEATPORT_PASSWORD: 'ok' },
+  });
+
+  it('Modo Dev: Conta Beatport vem depois de Conta Soulseek e abre pelo endereço ?secao=beatport', async () => {
+    renderizar(<Configuracoes />, comProjeto(), '/configuracoes?secao=beatport');
+    expect(await screen.findByRole('heading', { level: 2, name: 'Conta Beatport' })).toBeTruthy();
+    const nav = screen.getByRole('navigation', { name: 'Seções' });
+    const nomes = within(nav)
+      .getAllByRole('button')
+      .map((b) => b.textContent);
+    expect(nomes.indexOf('Conta Beatport')).toBe(nomes.indexOf('Conta Soulseek') + 1);
+    // sem conta: o estado, o consentimento, a explicação do reinício e o teste desligado
+    const secao = await screen.findByText('Sem conta');
+    expect(secao).toBeTruthy();
+    expect(document.getElementById('conta-beatport')).toBeTruthy();
+    expect(screen.getByText(/envia ao Beatport o artista e o título/)).toBeTruthy();
+    expect(screen.getByText(/Não é um acesso oficial do Beatport/)).toBeTruthy();
+    expect(screen.getByText(/nada se perde/)).toBeTruthy();
+    expect((screen.getByRole('button', { name: 'Testar login' }) as HTMLButtonElement).disabled).toBe(true);
+    expect(screen.queryByRole('button', { name: 'Desconectar' })).toBeNull();
+  });
+
+  it('só o usuário: o formulário recusa, com a mensagem do catálogo, e não deixa gravar', async () => {
+    api.config.validate.mockImplementation((e: ConfigEntrada) =>
+      Promise.resolve({
+        ...validarFalso(config)(e),
+        achados: [
+          {
+            id: 'BEATPORT_INCOMPLETA',
+            nivel: 'erro' as const,
+            campo: 'beatportSenha' as const,
+            mensagem: 'Preencha o usuário e a senha do Beatport, ou deixe os dois vazios.',
+          },
+        ],
+        ok: false,
+      }),
+    );
+    renderizar(<Configuracoes />, comProjeto(), '/configuracoes?secao=beatport');
+    fireEvent.change(await screen.findByRole('textbox', { name: 'Usuário do Beatport' }), {
+      target: { value: 'dj_beatport' },
+    });
+    const banner = await screen.findByTestId('alteracoes-pendentes');
+    await waitFor(() => expect(banner.textContent).toContain('Corrija os campos marcados antes de gravar.'));
+    expect(await screen.findByText('Preencha o usuário e a senha do Beatport, ou deixe os dois vazios.')).toBeTruthy();
+    expect((within(banner).getByRole('button', { name: 'Salvar' }) as HTMLButtonElement).disabled).toBe(true);
+  });
+
+  it('salvar usuário e senha manda os dois no mesmo gravar; a senha digitada nunca volta para a tela', async () => {
+    renderizar(<Configuracoes />, comProjeto(), '/configuracoes?secao=beatport');
+    fireEvent.change(await screen.findByRole('textbox', { name: 'Usuário do Beatport' }), {
+      target: { value: 'dj_beatport' },
+    });
+    fireEvent.change(screen.getByLabelText('Senha do Beatport'), { target: { value: 'senha-bp-123' } });
+    const banner = await screen.findByTestId('alteracoes-pendentes');
+    await waitFor(() =>
+      expect((within(banner).getByRole('button', { name: 'Salvar' }) as HTMLButtonElement).disabled).toBe(false),
+    );
+    fireEvent.click(within(banner).getByRole('button', { name: 'Salvar' }));
+    await waitFor(() => expect(api.config.write).toHaveBeenCalledTimes(1));
+    const enviado = api.config.write.mock.calls[0]?.[0] as ConfigEntrada;
+    expect(enviado.beatportUsuario).toBe('dj_beatport');
+    expect(enviado.beatportSenha).toBe('senha-bp-123');
+  });
+
+  it('conectada: mostra "Conectada", a senha só como "Configurada", e Testar login mostra o resultado', async () => {
+    config = contaConectada();
+    api.config.testBeatport.mockResolvedValue({ tipo: 'resultado', codigo: 'ok' });
+    renderizar(<Configuracoes />, comProjeto(), '/configuracoes?secao=beatport');
+    expect(await screen.findByText('Conectada')).toBeTruthy();
+    expect((screen.getByRole('textbox', { name: 'Usuário do Beatport' }) as HTMLInputElement).value).toBe(
+      'dj_beatport',
+    );
+    expect(document.querySelectorAll('input[type="password"]')).toHaveLength(0);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Testar login' }));
+    expect(await screen.findByText('Funcionou: o login foi aceito e a busca respondeu.')).toBeTruthy();
+    expect(api.config.testBeatport).toHaveBeenCalledTimes(1);
+    expect(screen.getByRole('button', { name: 'Testar de novo' })).toBeTruthy();
+  });
+
+  it.each([
+    ['sem-conta', /não está vendo usuário e senha do Beatport/],
+    ['login-recusado', /recusou o usuário ou a senha/],
+    ['verificacao', /verificação de navegador/],
+    ['limite', /excesso de consultas/],
+    ['fluxo-mudou', /Soulcrate não conhece/],
+    ['fora-do-ar', /Não consegui falar com o Beatport/],
+  ] as const)('Testar login: o código %s vira uma mensagem que diz o que fazer', async (codigo, texto) => {
+    config = contaConectada();
+    api.config.testBeatport.mockResolvedValue({ tipo: 'resultado', codigo });
+    renderizar(<Configuracoes />, comProjeto(), '/configuracoes?secao=beatport');
+    fireEvent.click(await screen.findByRole('button', { name: 'Testar login' }));
+    const aviso = await screen.findByRole('status');
+    await waitFor(() => expect(aviso.textContent).toMatch(texto));
+    expect(aviso.getAttribute('data-teste-beatport')).toBe(codigo);
+  });
+
+  it('Testar login com a stack desligada mostra o erro do catálogo, com a ação de ligar', async () => {
+    config = contaConectada();
+    api.config.testBeatport.mockResolvedValue({
+      tipo: 'erro',
+      erro: {
+        codigo: 'biblioteca.stack-fora',
+        titulo: 'A stack está desligada',
+        mensagem: 'Ligue a stack para usar o beets.',
+        acoes: [{ id: 'ligarStack', rotulo: 'Ligar a stack', primaria: true }],
+        detalhes: null,
+      },
+    });
+    renderizar(<Configuracoes />, comProjeto(), '/configuracoes?secao=beatport');
+    fireEvent.click(await screen.findByRole('button', { name: 'Testar login' }));
+    expect(await screen.findByText('A stack está desligada')).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Ligar a stack' })).toBeTruthy();
+  });
+
+  it('com mudança ainda não salva, Testar login fica desligado e pede para salvar antes', async () => {
+    config = contaConectada();
+    renderizar(<Configuracoes />, comProjeto(), '/configuracoes?secao=beatport');
+    const botao = (await screen.findByRole('button', { name: 'Testar login' })) as HTMLButtonElement;
+    expect(botao.disabled).toBe(false);
+    fireEvent.change(screen.getByRole('textbox', { name: 'Usuário do Beatport' }), { target: { value: 'outro' } });
+    await waitFor(() => expect(botao.disabled).toBe(true));
+    expect(screen.getByText('Salve as alterações antes de testar o login.')).toBeTruthy();
+  });
+
+  it('Desconectar com a stack desligada apaga a conta e não reinicia nada', async () => {
+    config = contaConectada();
+    api.config.disconnectBeatport.mockResolvedValue({ ok: true });
+    renderizar(<Configuracoes />, comProjeto(), '/configuracoes?secao=beatport');
+    fireEvent.click(await screen.findByRole('button', { name: 'Desconectar' }));
+    await waitFor(() => expect(api.config.disconnectBeatport).toHaveBeenCalledTimes(1));
+    expect(api.setup.start).not.toHaveBeenCalled();
+  });
+
+  it('Desconectar com a stack no ar recria os contêineres (o Soulbeet só esquece a conta ao reiniciar)', async () => {
+    config = contaConectada();
+    api.config.disconnectBeatport.mockResolvedValue({ ok: true });
+    renderizar(<Configuracoes />, noArStatus(), '/configuracoes?secao=beatport');
+    fireEvent.click(await screen.findByRole('button', { name: 'Desconectar' }));
+    await waitFor(() => expect(api.setup.start).toHaveBeenCalledWith({ modo: 'recriar', detalheGravacao: null }));
+    expect(await screen.findByTestId('painel-aplicar')).toBeTruthy();
+  });
+
+  it('Desconectar que falha mostra o erro e não reinicia', async () => {
+    config = contaConectada();
+    api.config.disconnectBeatport.mockResolvedValue({
+      ok: false,
+      erro: {
+        codigo: 'config.nao-gravou',
+        titulo: 'Não consegui gravar a configuração',
+        mensagem: 'O disco recusou.',
+        acoes: [],
+        detalhes: 'EPERM',
+      },
+    });
+    renderizar(<Configuracoes />, noArStatus(), '/configuracoes?secao=beatport');
+    fireEvent.click(await screen.findByRole('button', { name: 'Desconectar' }));
+    expect(await screen.findByText('Não consegui gravar a configuração')).toBeTruthy();
+    expect(api.setup.start).not.toHaveBeenCalled();
+  });
+
   it('a porta 2234: testar mostra o estado', async () => {
     renderizar(<Configuracoes />, comProjeto(), '/configuracoes');
     fireEvent.click(await screen.findByRole('button', { name: 'Rede' }));
@@ -829,7 +1009,7 @@ describe('Modo DJ e Modo Dev: a escolha no assistente e as seções de Configura
       within(nav)
         .getAllByRole('button')
         .map((b) => b.textContent),
-    ).toEqual(['Pastas', 'Conta Soulseek', 'Compartilhamento', 'Aplicativo', 'Sobre']);
+    ).toEqual(['Pastas', 'Conta Soulseek', 'Conta Beatport', 'Compartilhamento', 'Aplicativo', 'Sobre']);
     expect(nav.textContent).toContain('Suas coisas');
     expect(await screen.findByText('Ouvir no celular e em outros aparelhos da casa')).toBeTruthy();
     expect(screen.getByText('Suas pastas, sua conta do Soulseek e o jeito do app.')).toBeTruthy();
@@ -844,12 +1024,49 @@ describe('Modo DJ e Modo Dev: a escolha no assistente e as seções de Configura
     expect(screen.queryByRole('button', { name: 'Conferência' })).toBeNull();
   });
 
-  it('no Modo Dev, nada muda: as seis seções da stack, sem Compartilhamento', async () => {
+  it('no Modo DJ, Conta Beatport entra em "Suas coisas", com o texto do DJ e sem citar arquivo, variável nem stack', async () => {
+    api.app.getSettings.mockResolvedValue(preferencias('dj'));
+    comConfiguracao();
+    renderizar(<Configuracoes />, comProjeto(), '/configuracoes?secao=beatport');
+    // o modo chega depois da primeira renderização: o texto do DJ marca que ele já valeu
+    expect(
+      await screen.findByText(
+        'Com a sua conta do Beatport, o Soulcrate descobre o subgênero de cada música. É opcional.',
+      ),
+    ).toBeTruthy();
+    expect(screen.getByRole('heading', { level: 2, name: 'Conta Beatport' })).toBeTruthy();
+    const nav = screen.getByRole('navigation', { name: 'Seções' });
+    expect(
+      within(nav)
+        .getAllByRole('button')
+        .map((b) => b.textContent),
+    ).toEqual(['Pastas', 'Conta Soulseek', 'Conta Beatport', 'Compartilhamento', 'Aplicativo', 'Sobre']);
+    const texto = document.getElementById('conta-beatport')?.textContent ?? '';
+    expect(texto).not.toMatch(/\.env|BEATPORT_|stack|Soulbeet|beatport-token/i);
+  });
+
+  it('no Modo DJ, o resultado "sem-conta" do teste fala em "Soulcrate", não em stack', async () => {
+    api.app.getSettings.mockResolvedValue(preferencias('dj'));
+    config = {
+      ...configBoa(),
+      beatportUsuario: 'dj_beatport',
+      campos: { ...configBoa().campos, BEATPORT_USERNAME: 'ok', BEATPORT_PASSWORD: 'ok' },
+    };
+    api.config.read.mockImplementation(() => Promise.resolve(config));
+    api.config.testBeatport.mockResolvedValue({ tipo: 'resultado', codigo: 'sem-conta' });
+    renderizar(<Configuracoes />, comProjeto(), '/configuracoes?secao=beatport');
+    fireEvent.click(await screen.findByRole('button', { name: 'Testar login' }));
+    const aviso = await screen.findByRole('status');
+    expect(aviso.textContent).toContain('O Soulcrate ainda não está vendo a sua conta do Beatport.');
+    expect(aviso.textContent).not.toMatch(/stack/i);
+  });
+
+  it('no Modo Dev, nada muda: as sete seções da stack, sem Compartilhamento', async () => {
     api.app.getSettings.mockResolvedValue(preferencias(null));
     comConfiguracao();
     renderizar(<Configuracoes />, comProjeto(), '/configuracoes');
     const nav = await screen.findByRole('navigation', { name: 'Seções' });
-    await waitFor(() => expect(within(nav).getAllByRole('button')).toHaveLength(8));
+    await waitFor(() => expect(within(nav).getAllByRole('button')).toHaveLength(9));
     expect(within(nav).queryByRole('button', { name: 'Compartilhamento' })).toBeNull();
   });
 });

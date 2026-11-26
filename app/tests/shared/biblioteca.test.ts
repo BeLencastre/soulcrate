@@ -7,7 +7,11 @@ import { describe, expect, it } from 'vitest';
 import {
   tomCamelot,
   contarIndicadores,
+  andamentoDaClassificacao,
   ehTarefaDeManutencao,
+  faixasSemClassificacao,
+  minutosParaClassificar,
+  TAREFAS_COM_PREVIA,
   filtrarFaixas,
   filtroDaFaixa,
   FORMATO_LS,
@@ -35,11 +39,12 @@ const faixa = (extra: Partial<FaixaDaBiblioteca> = {}): FaixaDaBiblioteca => ({
   formato: 'FLAC',
   arquivo: 'Hard Techno/Azyr/No Escape.flac',
   semGenero: false,
+  subgenero: null,
   ...extra,
 });
 
 describe('o formato do ls', () => {
-  it('pede os nove campos, separados por tabulação', () => {
+  it('pede os dez campos, separados por tabulação, com o subgênero antes do caminho', () => {
     expect(FORMATO_LS.split('\t')).toEqual([
       '$id',
       '$artist',
@@ -49,6 +54,7 @@ describe('o formato do ls', () => {
       '$genres',
       '$format',
       '$bitrate',
+      '$subgenero_resolvido',
       '$path',
     ]);
   });
@@ -67,6 +73,7 @@ describe('o formato do ls', () => {
       formato: 'WAV',
       arquivo: 'Hard Techno/Azyr/No Escape.wav',
       semGenero: false,
+      subgenero: null,
     });
   });
 
@@ -100,6 +107,35 @@ describe('o formato do ls', () => {
     expect(
       lerLinhaDeFaixa('8	A	B	0		Psychedelic; Psychedelic; Psychedelic	FLAC	1kbps	/music/Psychedelic/A/B.flac')?.genero,
     ).toBe('Psychedelic');
+  });
+
+  describe('o subgênero (ADR 0007)', () => {
+    const nova = (sub: string, caminho = '/music/Techno/Peak Time/A/B.flac') =>
+      `1\tA\tB\t120\tAm\tTechno\tFLAC\t900kbps\t${sub}\t${caminho}`;
+
+    it('a linha nova traz o subgênero antes do caminho', () => {
+      expect(lerLinhaDeFaixa(nova('Peak Time'))).toMatchObject({
+        subgenero: 'Peak Time',
+        arquivo: 'Techno/Peak Time/A/B.flac',
+      });
+    });
+
+    it('a linha antiga, de 9 campos, continua valendo, sem subgênero', () => {
+      const f = lerLinhaDeFaixa('1\tA\tB\t120\tAm\tTechno\tFLAC\t900kbps\t/music/Techno/A/B.flac');
+      expect(f).toMatchObject({ subgenero: null, arquivo: 'Techno/A/B.flac' });
+    });
+
+    it('o campo que o beets deixa literal, ou vazio, é "ainda sem classificação"', () => {
+      expect(lerLinhaDeFaixa(nova('$subgenero_resolvido'))?.subgenero).toBeNull();
+      expect(lerLinhaDeFaixa(nova(''))?.subgenero).toBeNull();
+      expect(lerLinhaDeFaixa(nova('  '))?.subgenero).toBeNull();
+      expect(lerLinhaDeFaixa(nova('_Sem Subgenero'))?.subgenero).toBe('_Sem Subgenero');
+    });
+
+    it('com a linha nova, um caminho com tabulação continua inteiro; fora de /music, é ignorada', () => {
+      expect(lerLinhaDeFaixa(nova('Peak Time', '/music/Techno/A/B\tC.flac'))?.arquivo).toBe('Techno/A/B\tC.flac');
+      expect(lerLinhaDeFaixa(nova('Peak Time', '/outro/B.flac'))).toBeNull();
+    });
   });
 
   it('faixa sem título nas tags: o nome do arquivo ocupa o lugar; sem artista fica vazio', () => {
@@ -324,7 +360,8 @@ describe('lerPrevia (o `-p` do beets)', () => {
 
 describe('tarefas de manutenção', () => {
   it('só as quatro que o app conhece', () => {
-    for (const t of ['update', 'move', 'tomEBpm', 'importLeftovers']) expect(ehTarefaDeManutencao(t)).toBe(true);
+    for (const t of ['update', 'move', 'tomEBpm', 'importLeftovers', 'classificar'])
+      expect(ehTarefaDeManutencao(t)).toBe(true);
     for (const t of ['ls', 'remove', 'modify', 'rm -rf', '', null, 3]) expect(ehTarefaDeManutencao(t)).toBe(false);
   });
 });
@@ -371,5 +408,45 @@ describe('tomCamelot (o tom como DJ lê)', () => {
     expect(tomCamelot('13A')).toBeNull();
     expect(tomCamelot('H')).toBeNull();
     expect(tomCamelot('')).toBeNull();
+  });
+});
+
+describe('a classificação do subgênero', () => {
+  it('é uma tarefa de manutenção, sem prévia', () => {
+    expect(ehTarefaDeManutencao('classificar')).toBe(true);
+    expect(TAREFAS_COM_PREVIA).not.toContain('classificar');
+  });
+
+  it('conta as faixas que ainda não passaram pelo resolvedor', () => {
+    expect(faixasSemClassificacao([])).toBe(0);
+    expect(
+      faixasSemClassificacao([
+        faixa({ id: 1 }),
+        faixa({ id: 2, subgenero: 'Peak Time' }),
+        faixa({ id: 3, subgenero: '_Sem Subgenero' }),
+      ]),
+    ).toBe(1);
+  });
+
+  it('estima os minutos pelo Beatport, arredondando para cima', () => {
+    expect(minutosParaClassificar(0)).toBe(0);
+    expect(minutosParaClassificar(1)).toBe(1);
+    expect(minutosParaClassificar(30)).toBe(1);
+    expect(minutosParaClassificar(31)).toBe(2);
+    expect(minutosParaClassificar(300)).toBe(10);
+  });
+
+  it('o andamento sai da última linha soulcrate-beatport; sem nenhuma, é null', () => {
+    expect(andamentoDaClassificacao([])).toBeNull();
+    expect(andamentoDaClassificacao(['Importando', 'soulcrate-beatport: iniciando'])).toBeNull();
+    expect(
+      andamentoDaClassificacao([
+        'soulcrate-beatport: 1/300 Techno / Peak Time',
+        'ruído',
+        'soulcrate-beatport: 12/300 Techno / Peak Time',
+        'outra linha qualquer',
+      ]),
+    ).toEqual({ feitas: 12, total: 300 });
+    expect(andamentoDaClassificacao(['  soulcrate-beatport: 300/300  '])).toEqual({ feitas: 300, total: 300 });
   });
 });

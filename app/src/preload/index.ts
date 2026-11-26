@@ -59,6 +59,8 @@ const api: SoulcrateApi = {
       inicial === undefined
         ? chamar('config:pickFolder', finalidade)
         : chamar('config:pickFolder', finalidade, inicial),
+    testBeatport: () => chamar('config:testBeatport'),
+    disconnectBeatport: () => chamar('config:disconnectBeatport'),
   },
   setup: {
     prepareFolder: (entrada) => chamar('setup:prepareFolder', entrada),
@@ -116,7 +118,7 @@ const api: SoulcrateApi = {
     sharing: () => chamar('library:sharing'),
     rescanSharing: () => chamar('library:rescanSharing'),
     organization: () => chamar('library:organization'),
-    setOrganization: (alvo, organizacao) => chamar('library:setOrganization', alvo, organizacao),
+    setOrganization: (alvo, niveis) => chamar('library:setOrganization', alvo, niveis),
   },
   rekordbox: {
     state: () => chamar('rekordbox:state'),

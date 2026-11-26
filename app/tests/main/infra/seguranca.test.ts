@@ -104,6 +104,23 @@ describe('filtro de segredos', () => {
     expect(limpo).toContain('SLSKD_WEB_PASSWORD = ***');
   });
 
+  it('remove a senha do Beatport e os tokens do beatport-token.json', () => {
+    const senha = 'beatport-senha-9x7';
+    const acesso = 'eyJhbGciOiJSUzI1NiJ9.acesso';
+    const renovar = 'renovar-0123456789';
+    const limpo = redigirSegredos(
+      [
+        `BEATPORT_PASSWORD=${senha}`,
+        'BEATPORT_USERNAME=dj_beatport',
+        JSON.stringify({ access_token: acesso, refresh_token: renovar, expires_at: 1795000000 }),
+      ].join('\n'),
+    );
+    for (const s of [senha, acesso, renovar]) expect(limpo).not.toContain(s);
+    expect(limpo).toContain('BEATPORT_PASSWORD=***');
+    expect(limpo).toContain('BEATPORT_USERNAME=dj_beatport');
+    expect(limpo).toContain('"expires_at":1795000000');
+  });
+
   it('remove X-API-Key e Authorization de cabeçalhos', () => {
     const limpo = redigirSegredos(
       `GET /api/v0/transfers\nX-API-Key: ${SEGREDOS[3]}\nx-api-key=${SEGREDOS[3]}\nAuthorization: Bearer ${SEGREDOS[2]}`,

@@ -85,6 +85,12 @@ function Test-ConfigSoulcrate {
       if ($cfg[$k] -and $cfg[$k] -notmatch '^\d+$') { Add-Achado 'ENV_ID_INVALIDO' 'erro' '.env' $k "$k precisa ser um numero (ex.: 1000)." }
     }
 
+    # Conta Beatport (opcional): os dois preenchidos ou os dois vazios
+    $bpUsuario = [bool]$cfg['BEATPORT_USERNAME']; $bpSenha = [bool]$cfg['BEATPORT_PASSWORD']
+    if ($bpUsuario -ne $bpSenha) {
+      Add-Achado 'BEATPORT_INCOMPLETA' 'erro' '.env' $(if ($bpUsuario) { 'BEATPORT_PASSWORD' } else { 'BEATPORT_USERNAME' }) 'Preencha o usuario e a senha do Beatport, ou deixe os dois vazios.'
+    }
+
     # pastas: precisam existir (o Docker nao cria a origem de um bind mount) e de preferencia no mesmo disco
     $pastas = [ordered]@{}
     foreach ($k in @('DOWNLOADS_DIR', 'INCOMPLETE_DIR', 'MUSIC_DIR')) {

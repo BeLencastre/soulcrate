@@ -142,7 +142,7 @@ test('corrigir o título pela sugestão e tentar de novo baixa a faixa, sem edit
   await expect(janela.locator('[data-valor="nao-encontradas"]')).toHaveText('1');
   await expect(janela.getByTestId('relatorios')).toContainText('A linha que faltou');
   await expect(janela.getByTestId('opcoes-usadas')).toHaveText(
-    '-SemCatalogo -SemBeets -Versoes extended,club,original+semnome',
+    '-SemCatalogo -SemBeets -Versoes extended,original,club,vip,semnome',
   );
   await capturar(janela, 'f4-03-detalhe');
 
@@ -179,7 +179,7 @@ test('corrigir o título pela sugestão e tentar de novo baixa a faixa, sem edit
     .map((f) => /^eventos-(.+)\.jsonl$/.exec(f)?.[1])
     .map((id) => `nao-baixadas-${id}.txt`)[0] as string;
   await expect(janela.getByTestId('comando-equivalente')).toHaveText(
-    `baixar-lista.bat ${nomeDaRetentativa} -SemCatalogo -SemBeets -Versoes "extended,club,original+semnome"`,
+    `baixar-lista.bat ${nomeDaRetentativa} -SemCatalogo -SemBeets -Versoes "extended,original,club,vip,semnome"`,
   );
   expect(readFileSync(join(amb.projeto, nomeDaRetentativa), 'utf8')).toBe('Vendex - Dark Tower');
   await capturar(janela, 'f4-06-tentar-de-novo-opcoes');
