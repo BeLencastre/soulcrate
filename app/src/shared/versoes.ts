@@ -1,16 +1,16 @@
 // O card Versão da faixa (docs/adr/0006): quais versões o lote aceita nas linhas sem mix e em que ordem de
 // preferência. A ordem é uma lista de posições; cada posição tem uma ou mais versões ("Original Mix" e "sem versão no
-// nome" dividem a posição no padrão). O que não está na ordem fica em "Não baixar". O texto que vai para o script
-// (`-Versoes extended,club,original+semnome`) é a mesma ordem escrita: vírgula separa posições, `+` junta versões.
+// nome" podem dividir uma posição). O que não está na ordem fica em "Não baixar". O texto que vai para o script
+// (`-Versoes extended,original+semnome,club`) é a mesma ordem escrita: vírgula separa posições, `+` junta versões.
 // Tudo puro: o card, o resumo e o main usam as mesmas regras.
 
-export const VERSOES = ['extended', 'club', 'original', 'semnome', 'radioedit'] as const;
+export const VERSOES = ['extended', 'original', 'club', 'vip', 'semnome', 'radioedit'] as const;
 export type VersaoId = (typeof VERSOES)[number];
 
 /** Posições em ordem de preferência; cada uma com as versões que empatam. */
 export type OrdemVersoes = readonly (readonly VersaoId[])[];
 
-export const VERSOES_PADRAO = 'extended,club,original+semnome';
+export const VERSOES_PADRAO = 'extended,original,club,vip,semnome';
 
 export const ehVersao = (v: string): v is VersaoId => (VERSOES as readonly string[]).includes(v);
 
@@ -158,7 +158,7 @@ export function adicionarVersoes(texto: string, novas: readonly VersaoId[]): str
 /** Atalhos de um clique do card (os nomes estão em `msg.lote.versoes.atalhos`). */
 export const ATALHOS_VERSAO = [
   { id: 'pista', versoes: VERSOES_PADRAO },
-  { id: 'tantoFaz', versoes: 'extended,club,original+semnome,radioedit' },
+  { id: 'tantoFaz', versoes: 'extended,original,club,vip,semnome,radioedit' },
   { id: 'soExtended', versoes: 'extended' },
 ] as const;
 export type AtalhoVersaoId = (typeof ATALHOS_VERSAO)[number]['id'];
@@ -170,8 +170,9 @@ export const DURACAO_MINIMA_MAX = 3600;
 /** A versão pelo nome que o script escreve no motivo (`versao nao aceita ('radio edit')`). */
 export const NOME_NO_SCRIPT: Record<VersaoId, string> = {
   extended: 'extended mix',
-  club: 'club mix',
   original: 'original mix',
+  club: 'club mix',
+  vip: 'vip mix',
   semnome: 'sem versao no nome',
   radioedit: 'radio edit',
 };

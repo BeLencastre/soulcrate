@@ -6,7 +6,7 @@ import { criarErro } from '../../src/shared/erros';
 import type { MainEvent } from '../../src/shared/ipc';
 import type { LinhaAnalise } from '../../src/shared/analise-lista';
 import type { ListaRef, ResultadoAnalise } from '../../src/shared/lote';
-import type { OrganizacaoDasPastas } from '../../src/shared/organizacao';
+import type { NiveisDaOrganizacao } from '../../src/shared/organizacao';
 import { caminhoDoXml, RekordboxService, type FsRekordbox } from '../../src/main/services/rekordbox-service';
 import { ate } from './ajudantes';
 
@@ -24,6 +24,7 @@ const faixa = (id: number, arquivo: string, titulo = `Faixa ${id}`): FaixaDaBibl
   formato: 'FLAC',
   arquivo,
   semGenero: false,
+  subgenero: null,
 });
 
 const linha = (sourceLine: number, extra: Partial<LinhaAnalise>): LinhaAnalise => ({
@@ -74,7 +75,7 @@ interface Mundo {
   eventos: MainEvent[];
   dir: string | null;
   relogio: number;
-  organizacao: OrganizacaoDasPastas;
+  organizacao: NiveisDaOrganizacao;
 }
 let m: Mundo;
 
@@ -100,7 +101,7 @@ function montar(): RekordboxService {
     eventos: [],
     dir: DIR,
     relogio: 1000,
-    organizacao: 'genero',
+    organizacao: { subgenero: false, artista: false },
   };
   const fs: FsRekordbox = {
     modificadoEm: (c) => m.arquivos.get(c)?.em ?? null,
@@ -170,7 +171,7 @@ describe('gerar', () => {
   });
 
   it('a escolha do Rekordbox por gênero e artista: cada gênero vira pasta com Todas e uma playlist por artista', async () => {
-    m.organizacao = 'genero-artista';
+    m.organizacao = { subgenero: false, artista: true };
     await svc.gerar();
     expect(xml()).toContain('<NODE Type="0" Name="Acid Techno" Count="2">');
     expect(xml()).toContain('<NODE Type="1" Name="Todas" KeyType="0" Entries="1">');
@@ -179,7 +180,7 @@ describe('gerar', () => {
   });
 
   it('Rekordbox por gênero e artista mesmo com o disco só por gênero: o artista sai do nome do arquivo', async () => {
-    m.organizacao = 'genero-artista';
+    m.organizacao = { subgenero: false, artista: true };
     const lida = await m.leitura;
     if (!lida.ok) throw new Error('leitura do dublê');
     m.leitura = {
@@ -194,6 +195,26 @@ describe('gerar', () => {
     expect(xml()).toContain('<NODE Type="1" Name="Azyr" KeyType="0" Entries="1">');
     expect(xml()).toContain('<NODE Type="1" Name="Vendex" KeyType="0" Entries="1">');
     expect(xml()).toContain('Location="file://localhost/C:/DJ/Musics/Hard%20Techno/Azyr%20-%20A.flac"');
+  });
+
+  it('com o subgênero ligado no Rekordbox: o subgênero do banco vira uma pasta dentro do gênero', async () => {
+    m.organizacao = { subgenero: true, artista: false };
+    const lida = await m.leitura;
+    if (!lida.ok) throw new Error('leitura do dublê');
+    m.leitura = {
+      ok: true,
+      leitura: {
+        ...lida.leitura,
+        faixas: [
+          { ...faixa(1, 'Hard Techno/Azyr/A.flac', 'A'), subgenero: 'Peak Time' },
+          faixa(2, 'Hard Techno/Vendex/B.flac', 'B'),
+        ],
+      },
+    };
+    await svc.gerar();
+    expect(xml()).toContain('<NODE Type="0" Name="Hard Techno" Count="3">');
+    expect(xml()).toContain('<NODE Type="1" Name="Peak Time" KeyType="0" Entries="1">');
+    expect(xml()).toContain('<NODE Type="1" Name="_Sem Subgenero" KeyType="0" Entries="1">');
   });
 
   it('uma playlist por lista que já rodou, na ordem da lista; a que nunca rodou nem é analisada', async () => {

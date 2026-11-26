@@ -1,0 +1,600 @@
+{
+  "_leiame": "Taxonomia do Beatport (Beatport Genres, lida em 2026-11-24; ADR 0007, apendice A). generos[]: nome = como o Beatport escreve; pasta = nome curto de pasta do genero (varios generos do Beatport caem na mesma pasta); qualificador = so nas familias divididas (Techno e Trance), usado como subgenero quando o Beatport nao traz um (nome de pasta, '/' vira ' - '); subgeneros = sub-generos do Beatport (o nome de pasta e o mesmo com '/' trocado por ' - '). aliases[]: textos de tag/MusicBrainz que o plugin entende como (genero em pasta, subgenero em pasta ou null); valem so na reserva local. Desvios do nome literal: Ambient / Experimental, Breaks / Breakbeat / UK Bass, Dance / Pop, Electro (...) e Nu Disco / Disco usam a pasta curta que ja existia (Ambient, Breakbeat, Dance, Electro, Disco). 'Acid Techno' nao e alias: e pasta propria em GENEROS_CANONICOS do pastas.py e o Beatport nao tem sub-genero equivalente. Os aliases so valem quando o nivel de subgenero esta ligado (com ele desligado o genero da pasta nao muda). Todo nome de pasta aqui e seguro (sem barras, .. nem <>:\"?*|); o plugin valida ao carregar e ignora o que nao for.",
+  "versao": 1,
+  "generos": [
+    {
+      "nome": "140 / Deep Dubstep / Grime",
+      "pasta": "140 - Deep Dubstep - Grime",
+      "qualificador": null,
+      "subgeneros": [
+        "Grime"
+      ]
+    },
+    {
+      "nome": "Afro House",
+      "pasta": "Afro House",
+      "qualificador": null,
+      "subgeneros": [
+        "Afro / Latin",
+        "3Step",
+        "Afro Melodic"
+      ]
+    },
+    {
+      "nome": "Amapiano",
+      "pasta": "Amapiano",
+      "qualificador": null,
+      "subgeneros": []
+    },
+    {
+      "nome": "Ambient / Experimental",
+      "pasta": "Ambient",
+      "qualificador": null,
+      "subgeneros": []
+    },
+    {
+      "nome": "Bass / Club",
+      "pasta": "Bass - Club",
+      "qualificador": null,
+      "subgeneros": [
+        "Juke / Footwork",
+        "Global Club",
+        "Jersey Club",
+        "Gqom",
+        "Bass / Club",
+        "Reggae / Dancehall",
+        "UK Funky"
+      ]
+    },
+    {
+      "nome": "Bass House",
+      "pasta": "Bass House",
+      "qualificador": null,
+      "subgeneros": []
+    },
+    {
+      "nome": "Brazilian Funk",
+      "pasta": "Brazilian Funk",
+      "qualificador": null,
+      "subgeneros": [
+        "Carioca Funk",
+        "Mandelao Funk",
+        "BH Funk",
+        "Melodic Funk",
+        "Eletrofunk"
+      ]
+    },
+    {
+      "nome": "Breaks / Breakbeat / UK Bass",
+      "pasta": "Breakbeat",
+      "qualificador": null,
+      "subgeneros": [
+        "Glitch Hop"
+      ]
+    },
+    {
+      "nome": "Dance / Pop",
+      "pasta": "Dance",
+      "qualificador": null,
+      "subgeneros": [
+        "Pop",
+        "Tropical House",
+        "Afro Pop"
+      ]
+    },
+    {
+      "nome": "Deep House",
+      "pasta": "Deep House",
+      "qualificador": null,
+      "subgeneros": []
+    },
+    {
+      "nome": "DJ Tools",
+      "pasta": "DJ Tools",
+      "qualificador": null,
+      "subgeneros": [
+        "Loops",
+        "Acapellas",
+        "Battle Tools"
+      ]
+    },
+    {
+      "nome": "Downtempo",
+      "pasta": "Downtempo",
+      "qualificador": null,
+      "subgeneros": []
+    },
+    {
+      "nome": "Drum & Bass",
+      "pasta": "Drum & Bass",
+      "qualificador": null,
+      "subgeneros": [
+        "Liquid",
+        "Jump Up",
+        "Jungle",
+        "Deep",
+        "Halftime"
+      ]
+    },
+    {
+      "nome": "Dubstep",
+      "pasta": "Dubstep",
+      "qualificador": null,
+      "subgeneros": [
+        "Melodic Dubstep",
+        "Midtempo"
+      ]
+    },
+    {
+      "nome": "Electro (Classic / Detroit / Modern)",
+      "pasta": "Electro",
+      "qualificador": null,
+      "subgeneros": []
+    },
+    {
+      "nome": "Electronica",
+      "pasta": "Electronica",
+      "qualificador": null,
+      "subgeneros": []
+    },
+    {
+      "nome": "Funky House",
+      "pasta": "Funky House",
+      "qualificador": null,
+      "subgeneros": []
+    },
+    {
+      "nome": "Hard Dance / Hardcore / Neo Rave",
+      "pasta": "Hard Dance",
+      "qualificador": null,
+      "subgeneros": [
+        "Hardstyle",
+        "Hard House",
+        "Uptempo",
+        "Terror",
+        "UK / Happy Hardcore",
+        "Frenchcore",
+        "Neo Rave"
+      ]
+    },
+    {
+      "nome": "Hard Techno",
+      "pasta": "Hard Techno",
+      "qualificador": null,
+      "subgeneros": []
+    },
+    {
+      "nome": "House",
+      "pasta": "House",
+      "qualificador": null,
+      "subgeneros": [
+        "Acid",
+        "Soulful",
+        "Latin House"
+      ]
+    },
+    {
+      "nome": "Indie Dance",
+      "pasta": "Indie Dance",
+      "qualificador": null,
+      "subgeneros": [
+        "Dark Disco"
+      ]
+    },
+    {
+      "nome": "Indie Tech",
+      "pasta": "Indie Tech",
+      "qualificador": null,
+      "subgeneros": []
+    },
+    {
+      "nome": "Latin Electronic",
+      "pasta": "Latin Electronic",
+      "qualificador": null,
+      "subgeneros": [
+        "Raptor House",
+        "Tribal / Guaracha",
+        "Electronic Cumbia",
+        "Moombahton"
+      ]
+    },
+    {
+      "nome": "Mainstage",
+      "pasta": "Mainstage",
+      "qualificador": null,
+      "subgeneros": [
+        "Big Room",
+        "Electro House",
+        "Future House",
+        "Speed House",
+        "Future Rave"
+      ]
+    },
+    {
+      "nome": "Melodic House & Techno",
+      "pasta": "Melodic House & Techno",
+      "qualificador": null,
+      "subgeneros": [
+        "Melodic House",
+        "Melodic Techno"
+      ]
+    },
+    {
+      "nome": "Minimal / Deep Tech",
+      "pasta": "Minimal",
+      "qualificador": null,
+      "subgeneros": [
+        "Bounce",
+        "Deep Tech",
+        "Minimal House"
+      ]
+    },
+    {
+      "nome": "Nu Disco / Disco",
+      "pasta": "Disco",
+      "qualificador": null,
+      "subgeneros": [
+        "Funk / Soul",
+        "Italo"
+      ]
+    },
+    {
+      "nome": "Organic House",
+      "pasta": "Organic House",
+      "qualificador": null,
+      "subgeneros": []
+    },
+    {
+      "nome": "Progressive House",
+      "pasta": "Progressive House",
+      "qualificador": null,
+      "subgeneros": []
+    },
+    {
+      "nome": "Psy-Trance",
+      "pasta": "Psy-Trance",
+      "qualificador": null,
+      "subgeneros": [
+        "Full-On",
+        "Progressive Psy",
+        "Psychedelic",
+        "Goa Trance",
+        "Dark & Forest",
+        "Psycore & H-Tech"
+      ]
+    },
+    {
+      "nome": "Tech House",
+      "pasta": "Tech House",
+      "qualificador": null,
+      "subgeneros": [
+        "Latin Tech"
+      ]
+    },
+    {
+      "nome": "Techno (Peak Time / Driving)",
+      "pasta": "Techno",
+      "qualificador": "Peak Time - Driving",
+      "subgeneros": [
+        "Peak Time",
+        "Driving",
+        "Psy-Techno"
+      ]
+    },
+    {
+      "nome": "Techno (Raw / Deep / Hypnotic)",
+      "pasta": "Techno",
+      "qualificador": "Raw - Deep - Hypnotic",
+      "subgeneros": [
+        "Deep / Hypnotic",
+        "Raw",
+        "EBM",
+        "Dub",
+        "Broken"
+      ]
+    },
+    {
+      "nome": "Trance (Main Floor)",
+      "pasta": "Trance",
+      "qualificador": "Main Floor",
+      "subgeneros": [
+        "Progressive Trance",
+        "Tech Trance",
+        "Hard Trance",
+        "Uplifting Trance",
+        "Vocal Trance"
+      ]
+    },
+    {
+      "nome": "Trance (Raw / Deep / Hypnotic)",
+      "pasta": "Trance",
+      "qualificador": "Raw - Deep - Hypnotic",
+      "subgeneros": [
+        "Raw Trance",
+        "Deep Trance",
+        "Hypnotic Trance"
+      ]
+    },
+    {
+      "nome": "Trap / Future Bass",
+      "pasta": "Trap - Future Bass",
+      "qualificador": null,
+      "subgeneros": [
+        "Trap"
+      ]
+    },
+    {
+      "nome": "UK Garage / Bassline",
+      "pasta": "UK Garage - Bassline",
+      "qualificador": null,
+      "subgeneros": [
+        "UK Garage",
+        "Bassline",
+        "2-Step",
+        "Speed Garage"
+      ]
+    },
+    {
+      "nome": "Hip-Hop",
+      "pasta": "Hip-Hop",
+      "qualificador": null,
+      "subgeneros": [
+        "East Coast",
+        "West Coast",
+        "Global",
+        "Southern"
+      ]
+    },
+    {
+      "nome": "Pop",
+      "pasta": "Pop",
+      "qualificador": null,
+      "subgeneros": [
+        "K-Pop",
+        "J-Pop",
+        "Holiday"
+      ]
+    },
+    {
+      "nome": "R&B",
+      "pasta": "R&B",
+      "qualificador": null,
+      "subgeneros": [
+        "Funk",
+        "Soul"
+      ]
+    },
+    {
+      "nome": "Latin",
+      "pasta": "Latin",
+      "qualificador": null,
+      "subgeneros": [
+        "Cumbia",
+        "Salsa",
+        "Merengue",
+        "Reggaeton",
+        "Dembow",
+        "Regional Mexican",
+        "Bachata",
+        "Latin Dance",
+        "Latin Pop",
+        "Latin Hip-Hop"
+      ]
+    },
+    {
+      "nome": "African",
+      "pasta": "African",
+      "qualificador": null,
+      "subgeneros": [
+        "Afrobeats",
+        "Afropop",
+        "Afro R&B",
+        "Alte"
+      ]
+    },
+    {
+      "nome": "Caribbean",
+      "pasta": "Caribbean",
+      "qualificador": null,
+      "subgeneros": [
+        "Reggae",
+        "Dancehall",
+        "Soca",
+        "Calypso",
+        "Ska & Rocksteady"
+      ]
+    },
+    {
+      "nome": "Rock",
+      "pasta": "Rock",
+      "qualificador": null,
+      "subgeneros": [
+        "Indie Rock",
+        "Metal",
+        "Punk & Pop Punk",
+        "Ska"
+      ]
+    },
+    {
+      "nome": "Country",
+      "pasta": "Country",
+      "qualificador": null,
+      "subgeneros": [
+        "Country Pop",
+        "Country Dance"
+      ]
+    }
+  ],
+  "aliases": [
+    {
+      "texto": "Peak Time Techno",
+      "genero": "Techno",
+      "subgenero": "Peak Time"
+    },
+    {
+      "texto": "Driving Techno",
+      "genero": "Techno",
+      "subgenero": "Driving"
+    },
+    {
+      "texto": "Raw Techno",
+      "genero": "Techno",
+      "subgenero": "Raw"
+    },
+    {
+      "texto": "Hypnotic Techno",
+      "genero": "Techno",
+      "subgenero": "Deep - Hypnotic"
+    },
+    {
+      "texto": "Deep Techno",
+      "genero": "Techno",
+      "subgenero": "Deep - Hypnotic"
+    },
+    {
+      "texto": "Psy Techno",
+      "genero": "Techno",
+      "subgenero": "Psy-Techno"
+    },
+    {
+      "texto": "Dub Techno",
+      "genero": "Techno",
+      "subgenero": "Dub"
+    },
+    {
+      "texto": "Broken Techno",
+      "genero": "Techno",
+      "subgenero": "Broken"
+    },
+    {
+      "texto": "Minimal Techno",
+      "genero": "Minimal",
+      "subgenero": null
+    },
+    {
+      "texto": "Minimal House",
+      "genero": "Minimal",
+      "subgenero": "Minimal House"
+    },
+    {
+      "texto": "Deep Tech",
+      "genero": "Minimal",
+      "subgenero": "Deep Tech"
+    },
+    {
+      "texto": "Psytrance",
+      "genero": "Psy-Trance",
+      "subgenero": null
+    },
+    {
+      "texto": "Goa Trance",
+      "genero": "Psy-Trance",
+      "subgenero": "Goa Trance"
+    },
+    {
+      "texto": "Full-On",
+      "genero": "Psy-Trance",
+      "subgenero": "Full-On"
+    },
+    {
+      "texto": "Progressive Psytrance",
+      "genero": "Psy-Trance",
+      "subgenero": "Progressive Psy"
+    },
+    {
+      "texto": "Dark Psytrance",
+      "genero": "Psy-Trance",
+      "subgenero": "Dark & Forest"
+    },
+    {
+      "texto": "Forest Psytrance",
+      "genero": "Psy-Trance",
+      "subgenero": "Dark & Forest"
+    },
+    {
+      "texto": "Melodic Techno",
+      "genero": "Melodic House & Techno",
+      "subgenero": "Melodic Techno"
+    },
+    {
+      "texto": "Melodic House",
+      "genero": "Melodic House & Techno",
+      "subgenero": "Melodic House"
+    },
+    {
+      "texto": "Tech Trance",
+      "genero": "Trance",
+      "subgenero": "Tech Trance"
+    },
+    {
+      "texto": "Hard Trance",
+      "genero": "Trance",
+      "subgenero": "Hard Trance"
+    },
+    {
+      "texto": "Uplifting Trance",
+      "genero": "Trance",
+      "subgenero": "Uplifting Trance"
+    },
+    {
+      "texto": "Progressive Trance",
+      "genero": "Trance",
+      "subgenero": "Progressive Trance"
+    },
+    {
+      "texto": "Vocal Trance",
+      "genero": "Trance",
+      "subgenero": "Vocal Trance"
+    },
+    {
+      "texto": "Neo Rave",
+      "genero": "Hard Dance",
+      "subgenero": "Neo Rave"
+    },
+    {
+      "texto": "Hardstyle",
+      "genero": "Hard Dance",
+      "subgenero": "Hardstyle"
+    },
+    {
+      "texto": "Frenchcore",
+      "genero": "Hard Dance",
+      "subgenero": "Frenchcore"
+    },
+    {
+      "texto": "Speed House",
+      "genero": "Mainstage",
+      "subgenero": "Speed House"
+    },
+    {
+      "texto": "Big Room",
+      "genero": "Mainstage",
+      "subgenero": "Big Room"
+    },
+    {
+      "texto": "Future Rave",
+      "genero": "Mainstage",
+      "subgenero": "Future Rave"
+    },
+    {
+      "texto": "Acid House",
+      "genero": "House",
+      "subgenero": "Acid"
+    },
+    {
+      "texto": "Latin House",
+      "genero": "House",
+      "subgenero": "Latin House"
+    },
+    {
+      "texto": "Jungle",
+      "genero": "Drum & Bass",
+      "subgenero": "Jungle"
+    },
+    {
+      "texto": "Liquid Drum and Bass",
+      "genero": "Drum & Bass",
+      "subgenero": "Liquid"
+    }
+  ]
+}

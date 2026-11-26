@@ -126,7 +126,7 @@ Os testes e2e **nunca** tocam na sua stack, nos seus dados nem no seu navegador:
 - TypeScript estrito; todo o app em TypeScript.
 - Commits no padrão [Conventional Commits](../CONTRIBUTING.md#commits).
 - Textos da interface em português do Brasil, num só arquivo (`src/shared/mensagens.ts`), com o vocabulário do README ("lista", "lote", "biblioteca", "faixa").
-- O Modo DJ tem o seu vocabulário à parte (`src/shared/mensagens-dj.ts`): sem stack, contêiner, porta, beets, lote nem script. O modo muda só o que a tela desenha (`useModo` em `src/renderer/lib/modo.ts`); o main e o IPC não o conhecem ([ADR 0002](../docs/adr/0002-modo-dj-e-modo-dev.md)).
+- O Modo DJ tem o seu vocabulário à parte (`src/shared/mensagens-dj.ts`): sem stack, contêiner, porta, beets, lote nem script. O modo muda só o que a tela desenha (`useModo` em `src/renderer/lib/modo.ts`); o main e o IPC não o conhecem (ADR 0002 (arquivado)).
 - Identidade visual dos protótipos (`soulcrate-prototipos`): tokens de cor e tipografia em `src/renderer/estilos.css`.
 
 ## Fixtures do lote

@@ -7,6 +7,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { Link } from 'react-router';
 import {
   contarIndicadores,
+  faixasSemClassificacao,
   filtrarFaixas,
   type FaixaDaBiblioteca,
   type IndicadorId,
@@ -402,7 +403,13 @@ export function Biblioteca() {
             <PainelLateral
               paineis={{
                 cuidar: <CartaoManutencao leitura={lida} agora={agora} aoEscolher={setTarefa} />,
-                organizacao: <CartaoOrganizacao aoReorganizar={() => setTarefa('move')} />,
+                organizacao: (
+                  <CartaoOrganizacao
+                    faixas={lida.faixas}
+                    aoReorganizar={() => setTarefa('move')}
+                    aoClassificar={() => setTarefa('classificar')}
+                  />
+                ),
                 rekordbox: <CartaoRekordbox agora={agora} />,
                 compartilhar: <CartaoCompartilhamento slskdNoAr={slskdNoAr} />,
               }}
@@ -420,6 +427,7 @@ export function Biblioteca() {
       <DialogoManutencao
         tarefa={tarefa}
         indicadores={indicadores}
+        semClassificacao={lida ? faixasSemClassificacao(lida.faixas) : 0}
         parados={lida?.parados ?? []}
         agora={agora}
         aoFechar={() => setTarefa(null)}

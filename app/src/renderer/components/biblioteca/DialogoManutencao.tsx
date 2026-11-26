@@ -4,6 +4,7 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import * as Dialog from '@radix-ui/react-dialog';
 import {
+  andamentoDaClassificacao,
   TAREFAS_COM_PREVIA,
   type Indicadores,
   type ParadoEmDownloads,
@@ -14,7 +15,7 @@ import { erroInesperado, type AppError } from '@shared/erros';
 import { rotuloDoMomento } from '@shared/historico';
 import { msg } from '@shared/mensagens';
 import { api } from '../../lib/api';
-import { useManutencao } from '../../lib/biblioteca';
+import { useManutencao, useOrganizacao } from '../../lib/biblioteca';
 import { CartaoErro } from '../CartaoErro';
 import { Botao, Chip } from '../ui';
 
@@ -38,10 +39,22 @@ function Saida({ linhas, vivo }: { linhas: readonly string[]; vivo: boolean }) {
   );
 }
 
+/** "12 de 300 classificadas", lido da saída do `beatport-classificar` enquanto ele roda. */
+function Andamento({ linhas }: { linhas: readonly string[] }) {
+  const a = andamentoDaClassificacao(linhas);
+  if (!a) return null;
+  return (
+    <p role="status" className="m-0 text-sm font-semibold" data-testid="andamento-classificacao">
+      {msg.biblioteca.dialogo.classificar.andamento(a.feitas, a.total)}
+    </p>
+  );
+}
+
 /** O texto de cada tarefa (o corpo e o rótulo do botão que confirma). */
 function textosDaTarefa(
   tarefa: TarefaManutencao,
   indicadores: Indicadores,
+  classificacao: { semClassificacao: number; comConta: boolean },
 ): { titulo: string; corpo: string; confirmar: string } {
   const d = msg.biblioteca.dialogo;
   switch (tarefa) {
@@ -61,18 +74,26 @@ function textosDaTarefa(
       return { titulo: d.update.titulo, corpo: d.update.corpo, confirmar: d.update.confirmar };
     case 'move':
       return { titulo: d.move.titulo, corpo: d.move.corpo, confirmar: d.move.confirmar };
+    case 'classificar':
+      return {
+        titulo: d.classificar.titulo,
+        corpo: d.classificar.corpo(classificacao.semClassificacao, classificacao.comConta),
+        confirmar: d.classificar.confirmar,
+      };
   }
 }
 
 function Conteudo({
   tarefa,
   indicadores,
+  semClassificacao,
   parados,
   agora,
   aoFechar,
 }: {
   tarefa: TarefaManutencao;
   indicadores: Indicadores;
+  semClassificacao: number;
   parados: readonly ParadoEmDownloads[];
   agora: number;
   aoFechar(): void;
@@ -108,7 +129,8 @@ function Conteudo({
     };
   }, [tarefa, naoPrecisaDeConferencia, rodada]);
 
-  const t = textosDaTarefa(tarefa, indicadores);
+  const comConta = useOrganizacao().data?.contaBeatport ?? false;
+  const t = textosDaTarefa(tarefa, indicadores, { semClassificacao, comConta });
   const minha = operacao && operacao.id === meuId ? operacao : null;
 
   async function comecar(token: string | null) {
@@ -145,6 +167,7 @@ function Conteudo({
         ) : (
           <Dialog.Description className="m-0 text-sm text-texto-claro">{d.concluidoCorpo}</Dialog.Description>
         )}
+        {tarefa === 'classificar' ? <Andamento linhas={minha?.linhas ?? []} /> : null}
         <Saida linhas={minha?.linhas ?? []} vivo={!terminou} />
         {minha?.erro ? <CartaoErro erro={minha.erro} /> : null}
         <div className="flex justify-end">
@@ -191,6 +214,9 @@ function Conteudo({
         ))}
       </ul>
     );
+  } else if (tarefa === 'classificar') {
+    // sem prévia: só grava no banco do beets e é retomável; com tudo classificado, o plugin só confere e termina
+    nada = false;
   } else if (previa?.ok) {
     const p = previa.previa;
     nada = p.afetadas === 0;
@@ -270,6 +296,7 @@ function Conteudo({
 export function DialogoManutencao({
   tarefa,
   indicadores,
+  semClassificacao = 0,
   parados,
   agora,
   aoFechar,
@@ -277,6 +304,8 @@ export function DialogoManutencao({
   /** a tarefa que o usuário escolheu; null = fechado */
   tarefa: TarefaManutencao | null;
   indicadores: Indicadores;
+  /** faixas que nunca passaram pelo resolvedor do subgênero (o texto de "Classificar") */
+  semClassificacao?: number;
   parados: readonly ParadoEmDownloads[];
   agora: number;
   aoFechar(): void;
@@ -295,6 +324,7 @@ export function DialogoManutencao({
               key={tarefa}
               tarefa={tarefa}
               indicadores={indicadores}
+              semClassificacao={semClassificacao}
               parados={parados}
               agora={agora}
               aoFechar={aoFechar}

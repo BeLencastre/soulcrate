@@ -39,6 +39,7 @@ Com `-Json`, a saída é `{"ok": bool, "erros": n, "avisos": n, "achados": [{"id
 | `ENV_VAZIA` | `.env` | Falta ou está vazia uma destas: `PUID`, `PGID`, `TZ`, `DOWNLOADS_DIR`, `INCOMPLETE_DIR`, `MUSIC_DIR`, `SLSK_USERNAME`, `SLSK_PASSWORD`, `SLSKD_WEB_USER`, `SLSKD_WEB_PASSWORD`, `SOULBEET_SECRET_KEY` (um achado por variável) |
 | `ENV_EXEMPLO` | `.env` | Algum valor ainda é o do `.env.example`: começa com `PREENCHA_` ou `troque-`, ou é `seu_usuario_soulseek` ou `sua_senha_soulseek` (um achado por variável) |
 | `ENV_ID_INVALIDO` | `.env` | `PUID` ou `PGID` não é um número |
+| `BEATPORT_INCOMPLETA` | `.env` | Só um de `BEATPORT_USERNAME` e `BEATPORT_PASSWORD` está preenchido. A Conta Beatport é opcional, mas vale com os dois ou nenhum |
 | `PASTA_INVALIDA` | `.env` | `DOWNLOADS_DIR`, `INCOMPLETE_DIR` ou `MUSIC_DIR` não é um caminho válido |
 | `PASTA_INEXISTENTE` | `.env` | Uma dessas pastas não existe. O Docker não cria a origem de um bind mount: o `docker compose up` falharia |
 | `CHAVES_DIFERENTES` | `.env` | `SLSKD_API_KEY_SOULBEET` está preenchida (e não é o exemplo) e é diferente da chave do `slskd.yml`. O download em lote receberia 401 |

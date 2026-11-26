@@ -31,13 +31,19 @@ describe('argumentosDoLote', () => {
       '-ArquivoParada',
       'lotes/parar-20261007-161002.flag',
       '-Versoes',
-      'extended,club,original+semnome',
+      'extended,original,club,vip,semnome',
     ]);
   });
 
   it('acrescenta só as opções que diferem do padrão', () => {
     const a = argumentosDoLote({ ...base, opcoes: { ...novasOpcoes(), Paralelo: 8, AceitarAacAiff: true } });
-    expect(a.slice(14)).toEqual(['-Paralelo', '8', '-AceitarAacAiff', '-Versoes', 'extended,club,original+semnome']);
+    expect(a.slice(14)).toEqual([
+      '-Paralelo',
+      '8',
+      '-AceitarAacAiff',
+      '-Versoes',
+      'extended,original,club,vip,semnome',
+    ]);
   });
 
   it('só aponta o slskd para outro endereço quando pedido (testes ponta a ponta)', () => {

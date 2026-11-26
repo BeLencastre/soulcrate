@@ -156,3 +156,28 @@ describe('leitura dos arquivos', () => {
     expect(lerChaveSlskd('  soulbeet:\n    role: X\n  outra:\n    key: ZZZ\n')).toBe('ZZZ');
   });
 });
+
+describe('Conta Beatport: o validarConfiguracao aponta só a variável que falta', () => {
+  const comEnv = (extras: Record<string, string>) => {
+    const raiz = criarRaiz({ env: { trocar: extras } });
+    return validarConfiguracao(raiz).achados.filter((a) => a.id === 'BEATPORT_INCOMPLETA');
+  };
+
+  it('só o usuário: aponta a senha, como erro do .env, sem citar valores', () => {
+    const [a, ...resto] = comEnv({ BEATPORT_USERNAME: 'dj_beatport' });
+    expect(resto).toEqual([]);
+    expect(a).toMatchObject({ nivel: 'erro', arquivo: '.env', variavel: 'BEATPORT_PASSWORD' });
+    expect(a?.mensagem).toBe('Preencha o usuário e a senha do Beatport, ou deixe os dois vazios.');
+  });
+
+  it('só a senha: aponta o usuário e não repete a senha na mensagem', () => {
+    const [a] = comEnv({ BEATPORT_PASSWORD: 'senha-beatport-secreta' });
+    expect(a?.variavel).toBe('BEATPORT_USERNAME');
+    expect(JSON.stringify(a)).not.toContain('senha-beatport-secreta');
+  });
+
+  it('os dois, ou nenhum, passam', () => {
+    expect(comEnv({ BEATPORT_USERNAME: 'a_b', BEATPORT_PASSWORD: 'c_d' })).toEqual([]);
+    expect(comEnv({})).toEqual([]);
+  });
+});

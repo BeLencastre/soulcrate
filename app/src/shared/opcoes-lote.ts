@@ -46,7 +46,7 @@ export type AjusteId = OpcaoId | OpcaoVersaoId;
 export type OpcoesLote = Record<OpcaoBooleanaId, boolean> &
   Record<OpcaoNumericaId, number> & {
     /**
-     * `-Versoes`: as versões aceitas, em ordem (`extended,club,original+semnome`; ver `lerVersoes`). Vazio só nas
+     * `-Versoes`: as versões aceitas, em ordem (`extended,original,club,vip,semnome`; ver `lerVersoes`). Vazio só nas
      * opções lidas de um lote antigo, que rodou sem ela (a regra antiga).
      */
     Versoes: string;

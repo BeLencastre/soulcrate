@@ -538,7 +538,7 @@ describe('versão da faixa e formato: o veredito da faixa (docs/adr/0006)', () =
     expect(d.motivos[0]?.tipo).toBe('versaoNaoAceita');
     const r = detalharExecucao(b, ctx).retentativa;
     // a fixture rodou sem o card (regra antiga): a retentativa parte do card padrão e soma a Radio Edit
-    expect(r?.opcoes.Versoes).toBe('extended,club,original+semnome,radioedit');
+    expect(r?.opcoes.Versoes).toBe('extended,original,club,vip,semnome,radioedit');
     expect(r?.sugeridas).toContain('Versoes');
   });
 
@@ -553,7 +553,7 @@ describe('versão da faixa e formato: o veredito da faixa (docs/adr/0006)', () =
     const r = detalharExecucao(b, ctx).retentativa;
     expect(r?.sugeridas).toEqual([]);
     expect(r?.opcoes.AceitarAacAiff).toBe(false);
-    expect(r?.opcoes.Versoes).toBe('extended,club,original+semnome');
+    expect(r?.opcoes.Versoes).toBe('extended,original,club,vip,semnome');
   });
 
   it('a retentativa mantém o card com que o lote rodou', () => {

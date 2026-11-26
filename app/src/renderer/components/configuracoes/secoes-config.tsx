@@ -1,6 +1,7 @@
 // As seções do formulário de configuração. O assistente (um passo por seção) e a tela Configurações (uma aba por
 // seção) usam as mesmas peças: "Tela Configurações reaproveita os passos do assistente para editar depois" (Fase 2).
 import { useState } from 'react';
+import type { ResultadoTesteBeatport } from '@shared/beatport';
 import {
   formatarEspaco,
   type AchadoEntrada,
@@ -19,6 +20,7 @@ import { api } from '../../lib/api';
 import { achadosVisiveis, gerarSenha, paiDoCaminho } from '../../lib/formulario';
 import { CartaoCompartilhamento } from '../biblioteca/CartaoCompartilhamento';
 import { AchadosDoCampo, CaixaAviso, Campo, CampoSenha, Interruptor } from '../campos';
+import { CartaoErro } from '../CartaoErro';
 import { Botao, Cartao, Chip } from '../ui';
 
 export interface PropsSecao {
@@ -190,6 +192,119 @@ export function SecaoSoulseek({ entrada, aoMudar, config, validacao, mostrarErro
         dica={msg.assistente.soulseek.senhaDica}
         achados={ach(['slskSenha'])}
       />
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------- Beatport (opcional)
+
+/**
+ * A Conta Beatport (ADR 0007, item 7): usuário e senha opcionais, para o Soulcrate descobrir o subgênero de cada faixa.
+ * Tem o texto de consentimento, o estado (Conectada / Sem conta), "Testar login" e "Desconectar". O `id` é o alvo do
+ * atalho do cartão da Biblioteca (`/configuracoes?secao=beatport`).
+ */
+export function SecaoBeatport({
+  entrada,
+  aoMudar,
+  config,
+  validacao,
+  mostrarErros = true,
+  dj = false,
+  desconectando = false,
+  aoDesconectar,
+}: PropsSecao & {
+  /** o Modo DJ usa as palavras de `msgDj`, sem citar arquivo, variável nem "stack" */
+  dj?: boolean;
+  desconectando?: boolean;
+  /** apaga a conta; quem chama reinicia a stack se estiver no ar e atualiza a tela */
+  aoDesconectar(): void;
+}) {
+  const ach = (c: readonly CampoForm[]) => achadosVisiveis(validacao, c, mostrarErros);
+  const t = msg.configuracoes.beatport;
+  const d = msgDj.configuracoes.beatport;
+  const [testando, setTestando] = useState(false);
+  const [resultado, setResultado] = useState<ResultadoTesteBeatport | null>(null);
+
+  const conectada = config.campos.BEATPORT_USERNAME === 'ok' && config.campos.BEATPORT_PASSWORD === 'ok';
+  const temAlgo = config.campos.BEATPORT_USERNAME === 'ok' || config.campos.BEATPORT_PASSWORD === 'ok';
+  // o teste roda no contêiner, que só enxerga o que já está gravado e aplicado
+  const naoSalvo = entrada.beatportSenha !== '' || entrada.beatportUsuario !== config.beatportUsuario;
+
+  async function testar() {
+    setTestando(true);
+    setResultado(null);
+    try {
+      setResultado(await api.config.testBeatport());
+    } finally {
+      setTestando(false);
+    }
+  }
+
+  const textoDoCodigo = (codigo: keyof typeof t.teste): string =>
+    dj && codigo === 'sem-conta' ? d.semConta : t.teste[codigo];
+
+  return (
+    <div
+      id="conta-beatport"
+      className="flex flex-col gap-6"
+      data-conta-beatport={conectada ? 'conectada' : 'sem-conta'}
+    >
+      <div className="flex flex-col gap-3 rounded-lg border border-borda bg-cartao p-4">
+        <div className="flex items-center gap-3">
+          <Chip cor={conectada ? 'verde' : 'neutro'}>{conectada ? t.conectada : t.semConta}</Chip>
+          <span className="font-bold">{msg.configuracoes.secoes.beatport}</span>
+        </div>
+        {dj ? <p className="m-0 text-[13px] leading-normal text-texto-claro">{d.explicacao}</p> : null}
+        <p className="m-0 text-[13px] font-bold">{t.consentimento.titulo}</p>
+        <ul className="m-0 flex list-disc flex-col gap-1 pl-5 text-[13px] leading-normal text-texto-claro">
+          {t.consentimento.itens.map((i) => (
+            <li key={i}>{i}</li>
+          ))}
+        </ul>
+      </div>
+
+      <Campo
+        rotulo={t.usuario}
+        valor={entrada.beatportUsuario}
+        aoMudar={(v) => aoMudar({ beatportUsuario: v })}
+        achados={ach(['beatportUsuario'])}
+        autoComplete="username"
+      />
+      <CampoSenha
+        rotulo={t.senha}
+        configurada={config.campos.BEATPORT_PASSWORD === 'ok'}
+        valor={entrada.beatportSenha}
+        aoMudar={(v) => aoMudar({ beatportSenha: v })}
+        dica={dj ? d.senhaDica : t.senhaDica}
+        achados={ach(['beatportSenha'])}
+      />
+      <p className="hint m-0">{dj ? d.aplicarReinicio : t.aplicarReinicio}</p>
+
+      <div className="flex flex-wrap items-center gap-2">
+        <Botao pequeno disabled={!conectada || naoSalvo || testando} onClick={() => seguro(testar())}>
+          {testando ? t.testando : resultado ? t.testarDeNovo : t.testar}
+        </Botao>
+        {temAlgo ? (
+          <Botao variante="fantasma" pequeno disabled={desconectando || testando} onClick={aoDesconectar}>
+            {desconectando ? t.desconectando : t.desconectar}
+          </Botao>
+        ) : null}
+      </div>
+      {conectada && naoSalvo ? <p className="hint m-0">{t.salveAntes}</p> : null}
+      {temAlgo ? <p className="hint m-0">{dj ? d.desconectarDica : t.desconectarDica}</p> : null}
+
+      {resultado?.tipo === 'resultado' ? (
+        <p
+          role="status"
+          data-teste-beatport={resultado.codigo}
+          className={`m-0 text-[13px] leading-normal ${resultado.codigo === 'ok' ? 'text-chip-verde' : 'text-chip-laranja'}`}
+        >
+          {textoDoCodigo(resultado.codigo)}
+        </p>
+      ) : null}
+      {resultado?.tipo === 'erro' ? (
+        <CartaoErro erro={resultado.erro} aoTentarDeNovo={() => seguro(testar())} aoFechar={() => setResultado(null)} />
+      ) : null}
     </div>
   );
 }

@@ -10,6 +10,7 @@ import type {
   ResultadoRemocao,
   TarefaManutencao,
 } from './biblioteca.js';
+import type { ResultadoDesconectarBeatport, ResultadoTesteBeatport } from './beatport.js';
 import type {
   ConfigEntrada,
   ConfigPublica,
@@ -49,12 +50,7 @@ import type {
 } from './lote.js';
 import type { OpcoesLote } from './opcoes-lote.js';
 import type { ResultadoBuscaPlaylist } from './playlists.js';
-import type {
-  AlvoDaOrganizacao,
-  EstadoOrganizacao,
-  OrganizacaoDasPastas,
-  ResultadoOrganizacao,
-} from './organizacao.js';
+import type { AlvoDaOrganizacao, EstadoOrganizacao, NiveisDaOrganizacao, ResultadoOrganizacao } from './organizacao.js';
 import type { EstadoRekordbox, ResultadoRekordbox } from './rekordbox.js';
 import type { ArquivoDeLicencaId, CreditosELicenca, InfoSobre, ResultadoPacoteSuporte } from './sobre.js';
 import type { ServicoId } from './servicos.js';
@@ -114,6 +110,8 @@ export interface AppSettings {
    * Modo Dev (quem já usava o app antes dos modos continua vendo o mesmo). Leia sempre por `modoEfetivo`.
    */
   modo: ModoInterface | null;
+  /** o aviso de novidade do subgênero (cartão Organização, ADR 0007) já foi dispensado, ou a pessoa mexeu nos níveis */
+  avisoSubgeneroDispensado: boolean;
 }
 
 export interface EnvironmentStatus {
@@ -266,6 +264,10 @@ export interface SoulcrateApi {
     write(entrada: ConfigEntrada): Promise<ResultadoGravacao>;
     /** abre o seletor de pasta do sistema; null se o usuário cancelou */
     pickFolder(finalidade: FinalidadePasta, inicial?: string): Promise<string | null>;
+    /** "Testar login" da Conta Beatport: login e uma busca, pelo contêiner do Soulbeet (a stack precisa estar no ar) */
+    testBeatport(): Promise<ResultadoTesteBeatport>;
+    /** apaga o usuário e a senha do Beatport do .env e o token guardado; os dados das faixas ficam */
+    disconnectBeatport(): Promise<ResultadoDesconectarBeatport>;
   };
   setup: {
     /** passo 1 do assistente: copia a stack para uma pasta nova (ou confere uma existente) e passa a usá-la */
@@ -368,7 +370,7 @@ export interface SoulcrateApi {
      * grava uma das escolhas (a outra fica como estava); não move arquivos (isso é "Reorganizar as pastas") e não
      * precisa da stack no ar
      */
-    setOrganization(alvo: AlvoDaOrganizacao, organizacao: OrganizacaoDasPastas): Promise<ResultadoOrganizacao>;
+    setOrganization(alvo: AlvoDaOrganizacao, niveis: NiveisDaOrganizacao): Promise<ResultadoOrganizacao>;
   };
   rekordbox: {
     /** o arquivo de playlists para o Rekordbox: onde fica, quando foi gerado, se está gerando; null sem pasta */
@@ -461,6 +463,8 @@ export interface IpcInvoke {
   'config:validate': { args: [entrada: ConfigEntrada]; result: ResultadoValidacao };
   'config:write': { args: [entrada: ConfigEntrada]; result: ResultadoGravacao };
   'config:pickFolder': { args: [finalidade: FinalidadePasta, inicial?: string]; result: string | null };
+  'config:testBeatport': { args: []; result: ResultadoTesteBeatport };
+  'config:disconnectBeatport': { args: []; result: ResultadoDesconectarBeatport };
   'setup:prepareFolder': { args: [entrada: EntradaPasta]; result: ResultadoPasta };
   'setup:defaultFolder': { args: []; result: string };
   'setup:start': { args: [opcoes: OpcoesSetup]; result: SetupEstado };
@@ -513,7 +517,7 @@ export interface IpcInvoke {
   'library:rescanSharing': { args: []; result: ResultadoCompartilhamento };
   'library:organization': { args: []; result: EstadoOrganizacao | null };
   'library:setOrganization': {
-    args: [alvo: AlvoDaOrganizacao, organizacao: OrganizacaoDasPastas];
+    args: [alvo: AlvoDaOrganizacao, niveis: NiveisDaOrganizacao];
     result: ResultadoOrganizacao;
   };
   'rekordbox:state': { args: []; result: EstadoRekordbox | null };

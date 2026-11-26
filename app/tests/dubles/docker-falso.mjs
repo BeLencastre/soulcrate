@@ -112,6 +112,8 @@ function formatar(f, formato) {
     format: f.formato === 'WAV' ? 'WAVE' : (f.formato ?? '').split(' ')[0],
     bitrate: f.bitrate ?? '0kbps',
     path: `/music/${f.arquivo}`,
+    // campo flexível do plugin pastas.py (ADR 0007): como no beets, fica `$subgenero_resolvido` se a faixa não o tem
+    ...(f.subgenero ? { subgenero_resolvido: f.subgenero } : {}),
   };
   return formato.replace(/\$([a-z_]+)/g, (m, nome) => (nome in valores ? String(valores[nome]) : m));
 }
@@ -134,6 +136,27 @@ async function beets(args) {
 
   if (cmd === 'version') {
     console.log('beets version 2.11.0\nPython version 3.11.2\nplugins: autobpm, keyfinder');
+    return;
+  }
+
+  // Beatport (ADR 0007): o teste escolhe a resposta do "Testar login" em `biblioteca.beatportTestar` (padrão `ok`)
+  if (cmd === 'beatport-testar') {
+    console.log(`soulcrate-beatport: ${lib.beatportTestar ?? 'ok'}`);
+    return;
+  }
+
+  // classificar sem rede: as faixas sem subgênero ganham `_Sem Subgenero`, uma linha de andamento por faixa
+  if (cmd === 'beatport-classificar') {
+    const pendentes = lib.faixas.filter((f) => !f.subgenero);
+    console.log(`soulcrate-beatport: total=${pendentes.length} conta=0`);
+    pendentes.forEach((f, i) => {
+      f.subgenero = '_Sem Subgenero';
+      console.log(`soulcrate-beatport: ${i + 1}/${pendentes.length} ${f.generos || '_Sem Genero'} / _Sem Subgenero`);
+    });
+    console.log(
+      `soulcrate-beatport: fim classificadas=${pendentes.length} beatport=0 local=0 sem-subgenero=${pendentes.length} freio=0`,
+    );
+    salvar();
     return;
   }
 

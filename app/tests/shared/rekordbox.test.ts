@@ -15,6 +15,11 @@ import {
   resumir,
 } from '../../src/shared/rekordbox';
 
+const SO_GENERO = { subgenero: false, artista: false };
+const ARTISTA = { subgenero: false, artista: true };
+const SUBGENERO = { subgenero: true, artista: false };
+const SUBGENERO_E_ARTISTA = { subgenero: true, artista: true };
+
 const faixa = (id: number, arquivo: string, extra: Partial<FaixaDaBiblioteca> = {}): FaixaDaBiblioteca => ({
   id,
   artista: 'Azyr',
@@ -25,6 +30,7 @@ const faixa = (id: number, arquivo: string, extra: Partial<FaixaDaBiblioteca> = 
   formato: 'FLAC',
   arquivo,
   semGenero: false,
+  subgenero: null,
   ...extra,
 });
 
@@ -37,8 +43,8 @@ describe('a árvore', () => {
       faixa(4, 'Hard Techno/Azyr/No Escape.flac'),
     ]);
     expect(arvore.generos).toEqual([
-      { nome: 'Acid Techno', ids: [2], artistas: null },
-      { nome: 'Hard Techno', ids: [4, 1, 3], artistas: null },
+      { nome: 'Acid Techno', ids: [2], filhos: null },
+      { nome: 'Hard Techno', ids: [4, 1, 3], filhos: null },
     ]);
     expect(arvore.listas).toEqual([]);
   });
@@ -55,7 +61,7 @@ describe('a árvore', () => {
       faixa(1, 'Psy-Trance/A/x.flac', { artista: 'A' }),
       faixa(2, 'psy-trance/B/y.flac', { artista: 'B' }),
     ]);
-    expect(arvore.generos).toEqual([{ nome: 'Psy-Trance', ids: [1, 2], artistas: null }]);
+    expect(arvore.generos).toEqual([{ nome: 'Psy-Trance', ids: [1, 2], filhos: null }]);
   });
 
   it('uma playlist por lista, na ordem das linhas, sem repetir e só com o que está na biblioteca', () => {
@@ -84,16 +90,16 @@ describe('a árvore', () => {
         faixa(4, 'Hard Techno/Azyr/No Escape.flac'),
       ],
       [],
-      'genero-artista',
+      ARTISTA,
     );
     expect(arvore.generos).toEqual([
-      { nome: 'Acid Techno', ids: [2], artistas: [{ nome: 'AZYR', ids: [2] }] },
+      { nome: 'Acid Techno', ids: [2], filhos: [{ nome: 'AZYR', ids: [2], filhos: null }] },
       {
         nome: 'Hard Techno',
         ids: [4, 1, 3],
-        artistas: [
-          { nome: 'Azyr', ids: [4, 1] },
-          { nome: 'Vendex', ids: [3] },
+        filhos: [
+          { nome: 'Azyr', ids: [4, 1], filhos: null },
+          { nome: 'Vendex', ids: [3], filhos: null },
         ],
       },
     ]);
@@ -121,15 +127,15 @@ describe('a árvore', () => {
         faixa(3, 'Techno/Vendex - Plague.flac', { artista: 'Vendex', titulo: 'Plague' }),
       ],
       [],
-      'genero-artista',
+      ARTISTA,
     );
     expect(arvore.generos).toEqual([
       {
         nome: 'Techno',
         ids: [2, 1, 3],
-        artistas: [
-          { nome: 'Azyr', ids: [2, 1] },
-          { nome: 'Vendex', ids: [3] },
+        filhos: [
+          { nome: 'Azyr', ids: [2, 1], filhos: null },
+          { nome: 'Vendex', ids: [3], filhos: null },
         ],
       },
     ]);
@@ -139,14 +145,87 @@ describe('a árvore', () => {
     const arvore = montarArvore(
       [faixa(1, 'Techno/Azyr/Power.flac'), faixa(2, 'Techno/Vendex/Plague.flac', { artista: 'Vendex' })],
       [],
-      'genero',
+      SO_GENERO,
     );
-    expect(arvore.generos).toEqual([{ nome: 'Techno', ids: [1, 2], artistas: null }]);
+    expect(arvore.generos).toEqual([{ nome: 'Techno', ids: [1, 2], filhos: null }]);
+  });
+
+  describe('com subgênero (ADR 0007)', () => {
+    const faixas = [
+      faixa(1, 'Techno/Peak Time/Azyr/Power.flac', { titulo: 'Power', subgenero: 'Peak Time' }),
+      faixa(2, 'Techno/Peak Time/Vendex/Plague.flac', { artista: 'Vendex', subgenero: 'Peak Time' }),
+      faixa(3, 'Techno/Hard Techno/Azyr/Bass.flac', { subgenero: 'Hard Techno' }),
+      faixa(4, 'Techno/_Sem Subgenero/Luciid/Bye.flac', { artista: 'Luciid', subgenero: null }),
+    ];
+    const folha = (nome: string, ids: number[]) => ({ nome, ids, filhos: null });
+
+    it('as quatro árvores: só gênero, gênero e artista, gênero e subgênero, os três níveis', () => {
+      const de = (n: typeof SO_GENERO) => montarArvore(faixas, [], n).generos;
+      expect(de(SO_GENERO)).toEqual([folha('Techno', [3, 1, 4, 2])]);
+      expect(de(ARTISTA)).toEqual([
+        {
+          nome: 'Techno',
+          ids: [3, 1, 4, 2],
+          filhos: [folha('Azyr', [3, 1]), folha('Luciid', [4]), folha('Vendex', [2])],
+        },
+      ]);
+      expect(de(SUBGENERO)).toEqual([
+        {
+          nome: 'Techno',
+          ids: [3, 1, 4, 2],
+          filhos: [folha('_Sem Subgenero', [4]), folha('Hard Techno', [3]), folha('Peak Time', [1, 2])],
+        },
+      ]);
+      expect(de(SUBGENERO_E_ARTISTA)).toEqual([
+        {
+          nome: 'Techno',
+          ids: [3, 1, 4, 2],
+          filhos: [
+            { nome: '_Sem Subgenero', ids: [4], filhos: [folha('Luciid', [4])] },
+            { nome: 'Hard Techno', ids: [3], filhos: [folha('Azyr', [3])] },
+            { nome: 'Peak Time', ids: [1, 2], filhos: [folha('Azyr', [1]), folha('Vendex', [2])] },
+          ],
+        },
+      ]);
+    });
+
+    it('o subgênero vem do banco, então o Rekordbox o tem mesmo com o disco sem esse nível', () => {
+      const arvore = montarArvore([faixa(1, 'Techno/Azyr/Power.flac', { subgenero: 'Peak Time' })], [], SUBGENERO);
+      expect(arvore.generos[0]?.filhos).toEqual([folha('Peak Time', [1])]);
+    });
+
+    it('o artista sai do caminho com ou sem a pasta de subgênero no disco', () => {
+      expect(artistaDaPasta('Techno/Peak Time/Azyr/No Escape.flac', 'Peak Time')).toBe('Azyr');
+      expect(artistaDaPasta('Techno/peak time/Azyr/No Escape.flac', 'Peak Time')).toBe('Azyr');
+      expect(artistaDaPasta('Techno/_Sem Subgenero/Azyr/No Escape.flac')).toBe('Azyr');
+      expect(artistaDaPasta('Techno/Peak Time/Azyr - No Escape.flac', 'Peak Time')).toBe('Azyr');
+      expect(artistaDaPasta('Techno/_Sem Subgenero/Azyr - No Escape.flac')).toBe('Azyr');
+      // sem subgênero no disco, a segunda pasta continua sendo o artista
+      expect(artistaDaPasta('Techno/Azyr/No Escape.flac', 'Peak Time')).toBe('Azyr');
+      expect(artistaDaPasta('Techno/Azyr/No Escape.flac')).toBe('Azyr');
+      // uma faixa só com gênero e subgênero (sem artista no caminho)
+      expect(artistaDaPasta('Techno/Peak Time/No Escape.flac', 'Peak Time')).toBe(PLAYLIST_FORA_DAS_PASTAS);
+    });
+
+    it('misturando faixas com e sem pasta de subgênero (meio da reorganização), o artista junta', () => {
+      const mistas = [
+        faixa(1, 'Techno/Peak Time/Azyr/a.flac', { subgenero: 'Peak Time' }),
+        faixa(2, 'Techno/Azyr/b.flac', { subgenero: 'Peak Time' }),
+      ];
+      expect(montarArvore(mistas, [], SUBGENERO_E_ARTISTA).generos[0]?.filhos).toEqual([
+        { nome: 'Peak Time', ids: [1, 2], filhos: [folha('Azyr', [1, 2])] },
+      ]);
+    });
+
+    it('um subgênero chamado Todas não colide com a playlist do gênero inteiro', () => {
+      const arvore = montarArvore([faixa(1, 'Techno/Todas/Azyr/x.flac', { subgenero: 'Todas' })], [], SUBGENERO);
+      expect(arvore.generos[0]?.filhos).toEqual([folha('Todas (subgênero)', [1])]);
+    });
   });
 
   it('um artista chamado Todas não colide com a playlist do gênero inteiro', () => {
-    const arvore = montarArvore([faixa(1, 'Techno/todas/x.flac')], [], 'genero-artista');
-    expect(arvore.generos[0]?.artistas).toEqual([{ nome: `todas (artista)`, ids: [1] }]);
+    const arvore = montarArvore([faixa(1, 'Techno/todas/x.flac')], [], ARTISTA);
+    expect(arvore.generos[0]?.filhos).toEqual([{ nome: `todas (artista)`, ids: [1], filhos: null }]);
     expect(PLAYLIST_TODAS).toBe('Todas');
   });
 
@@ -256,7 +335,7 @@ describe('o XML', () => {
     const xml = gerarXml({
       pastaMusica: 'C:\\M',
       faixas,
-      arvore: montarArvore(faixas, [], 'genero-artista'),
+      arvore: montarArvore(faixas, [], ARTISTA),
       versao: '1',
     });
     expect(xml).toContain(
@@ -277,6 +356,54 @@ describe('o XML', () => {
         '        </NODE>',
       ].join('\n'),
     );
+  });
+
+  it('com subgênero e artista: pastas dentro de pastas, cada uma com Todas primeiro', () => {
+    const faixas = [
+      faixa(1, 'Techno/Peak Time/Azyr/Power.flac', { titulo: 'Power', subgenero: 'Peak Time' }),
+      faixa(2, 'Techno/_Sem Subgenero/Vendex/Plague.flac', { artista: 'Vendex', subgenero: null }),
+    ];
+    const xml = gerarXml({
+      pastaMusica: 'C:\\M',
+      faixas,
+      arvore: montarArvore(faixas, [], SUBGENERO_E_ARTISTA),
+      versao: '1',
+    });
+    expect(xml).toContain(
+      [
+        '        <NODE Type="0" Name="Gêneros" Count="1">',
+        '          <NODE Type="0" Name="Techno" Count="3">',
+        '            <NODE Type="1" Name="Todas" KeyType="0" Entries="2">',
+        '              <TRACK Key="1" />',
+        '              <TRACK Key="2" />',
+        '            </NODE>',
+        '            <NODE Type="0" Name="_Sem Subgenero" Count="2">',
+        '              <NODE Type="1" Name="Todas" KeyType="0" Entries="1">',
+        '                <TRACK Key="2" />',
+        '              </NODE>',
+        '              <NODE Type="1" Name="Vendex" KeyType="0" Entries="1">',
+        '                <TRACK Key="2" />',
+        '              </NODE>',
+        '            </NODE>',
+        '            <NODE Type="0" Name="Peak Time" Count="2">',
+        '              <NODE Type="1" Name="Todas" KeyType="0" Entries="1">',
+        '                <TRACK Key="1" />',
+        '              </NODE>',
+        '              <NODE Type="1" Name="Azyr" KeyType="0" Entries="1">',
+        '                <TRACK Key="1" />',
+        '              </NODE>',
+        '            </NODE>',
+        '          </NODE>',
+        '        </NODE>',
+      ].join('\n'),
+    );
+  });
+
+  it('um subgênero chamado Todas vira "Todas (subgênero)" no XML, sem repetir o nome da playlist de cima', () => {
+    const faixas = [faixa(1, 'Techno/Todas/Azyr/x.flac', { subgenero: 'Todas' })];
+    const xml = gerarXml({ pastaMusica: 'C:\\M', faixas, arvore: montarArvore(faixas, [], SUBGENERO), versao: '1' });
+    expect(xml).toContain('<NODE Type="1" Name="Todas (subgênero)" KeyType="0" Entries="1">');
+    expect(xml.match(/Name="Todas"/g)).toHaveLength(1);
   });
 
   it('sem lista nenhuma, a pasta Listas não aparece; biblioteca vazia ainda gera um arquivo válido', () => {

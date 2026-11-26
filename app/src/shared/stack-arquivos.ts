@@ -26,6 +26,9 @@ export const ARQUIVOS_DA_STACK: readonly string[] = [
   'soulbeet/config/config.yaml',
   'soulbeet/beets-plugins/keepmix.py',
   'soulbeet/beets-plugins/pastas.py',
+  // ADR 0007: a taxonomia do Beatport e o cliente da conta (só biblioteca padrão do Python)
+  'soulbeet/beets-plugins/beatport-generos.json',
+  'soulbeet/beets-plugins/beatport_cliente.py',
 ];
 
 /** Pastas vazias que o compose espera encontrar (o Docker cria só as de sintaxe curta, mas ficam à vista). */

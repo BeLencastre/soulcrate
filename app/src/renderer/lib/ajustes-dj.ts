@@ -53,7 +53,7 @@ const ROTULO_CURTO: Partial<Record<OpcaoBooleanaId, { rotulo: string; desligado:
   },
 };
 
-/** `Extended → Club → Original e sem nome · mínimo 5 min` */
+/** `Extended → Original → Club → VIP → sem nome · mínimo 5 min` */
 export function valorDaVersao(opcoes: Pick<OpcoesLote, 'Versoes' | 'DuracaoMinima'>): string {
   const l = msgDj.lote.ajustes.linhas;
   const texto = versoesValidas(opcoes.Versoes) ? opcoes.Versoes : OPCOES_PADRAO.Versoes;

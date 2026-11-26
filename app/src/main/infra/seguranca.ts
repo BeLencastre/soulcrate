@@ -56,7 +56,13 @@ export function mesmaOrigemDoServico(servico: ServicoId, url: string): boolean {
 
 // ---------------------------------------------------------------- segredos nos logs
 
-const VARIAVEIS_SECRETAS = ['SLSK_PASSWORD', 'SLSKD_WEB_PASSWORD', 'SOULBEET_SECRET_KEY', 'SLSKD_API_KEY_SOULBEET'];
+const VARIAVEIS_SECRETAS = [
+  'SLSK_PASSWORD',
+  'SLSKD_WEB_PASSWORD',
+  'SOULBEET_SECRET_KEY',
+  'SLSKD_API_KEY_SOULBEET',
+  'BEATPORT_PASSWORD',
+];
 const MASCARA = '***';
 
 const RE_VARIAVEL = new RegExp(`\\b(${VARIAVEIS_SECRETAS.join('|')})(\\s*[=:]\\s*)("[^"]*"|'[^']*'|[^\\s,;]+)`, 'gi');
@@ -66,7 +72,8 @@ const RE_JSON_SEGREDO = /("(?:[\w.-]*(?:password|passwd|secret|api[_-]?key|token
 
 /**
  * Remove de um texto os valores de `SLSK_PASSWORD`, `SLSKD_WEB_PASSWORD`, `SOULBEET_SECRET_KEY`,
- * `SLSKD_API_KEY_SOULBEET`, de cabeçalhos `X-API-Key` e `Authorization`, e de campos JSON com cara de segredo.
+ * `SLSKD_API_KEY_SOULBEET`, `BEATPORT_PASSWORD`, de cabeçalhos `X-API-Key` e `Authorization`, e de campos JSON com cara
+ * de segredo (o `beatport-token.json` tem `access_token` e `refresh_token`, que o `token` do padrão pega).
  * Passa por todo log do app e por tudo que vai para o pacote de suporte.
  */
 export function redigirSegredos(texto: string): string {

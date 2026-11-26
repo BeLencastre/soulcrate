@@ -45,6 +45,8 @@ interface FaixaFalsa {
   arquivo: string;
   calcular?: { bpm?: number; tom?: string };
   destino?: string;
+  /** o campo `subgenero_resolvido` do banco do beets (ADR 0007) */
+  subgenero?: string;
 }
 
 const faixa = (id: number, artista: string, titulo: string, extra: Partial<FaixaFalsa> = {}): FaixaFalsa => ({
@@ -202,7 +204,7 @@ test('Rekordbox: cria o arquivo por gênero e artista e uma playlist por lista q
 
   // só por gênero no Rekordbox (o disco não muda): o arquivo se refaz sozinho, com uma playlist por gênero
   await aba(janela, 'Organizar').click();
-  await janela.locator('[data-alvo="rekordbox"] [data-organizacao="genero"] input').check();
+  await janela.locator('[data-alvo="rekordbox"] [data-nivel="artista"] input').uncheck();
   await expect
     .poll(() => readFileSync(caminho, 'utf8'), { timeout: 60_000 })
     .toMatch(/<NODE Type="1" Name="Hard Techno" KeyType="0" Entries="4">/);
@@ -210,8 +212,55 @@ test('Rekordbox: cria o arquivo por gênero e artista e uma playlist por lista q
   expect(JSON.parse(readFileSync(join(amb.projeto, 'soulbeet', 'data', 'pastas.json'), 'utf8'))).toEqual({
     disco: 'genero-artista',
     rekordbox: 'genero',
+    subgenero: { disco: false, rekordbox: false },
   });
   expect(xml).toContain('/music/Hard%20Techno/Azyr/No%20Escape.flac"');
+});
+
+test('subgênero (ADR 0007): sem conta, o cartão avisa antes de ligar; classificar e o Rekordbox ganham o nível', async () => {
+  amb = criarAmbiente({ comScript: true, mundo: { containers: TODOS_NO_AR } });
+  // duas faixas já classificadas (o campo do banco do beets), as outras nunca passaram pelo resolvedor
+  montarBiblioteca(amb, {
+    faixas: FAIXAS.map((f) => (f.id <= 2 ? { ...f, subgenero: 'Peak Time - Driving' } : f)),
+  });
+  const janela = await abrirBiblioteca(dockerDoDubleNosScripts(amb));
+  await aba(janela, 'Rekordbox').click();
+  await janela.getByTestId('gerar-rekordbox').click();
+  const caminho = join(amb.projeto, 'rekordbox', 'soulcrate.xml');
+  await expect(janela.getByTestId('rekordbox-situacao')).toContainText('5 faixas', { timeout: 60_000 });
+
+  await aba(janela, 'Organizar').click();
+  const cartao = janela.getByTestId('cartao-organizacao');
+  await expect(cartao.getByTestId('organizacao-novidade')).toBeVisible();
+  await expect(cartao.getByTestId('organizacao-exemplo-disco')).toContainText('Techno / Azyr / No Escape');
+  await expect(cartao.getByTestId('organizacao-conta')).toContainText('Sem conta do Beatport');
+  await capturar(janela, '05-biblioteca-organizar');
+
+  // ligar o subgênero sem conta não grava em silêncio: o painel pergunta antes
+  // click, não check: a caixa só fica marcada depois da resposta do painel
+  const subgeneroNoRekordbox = cartao.locator('[data-alvo="rekordbox"] [data-nivel="subgenero"] input');
+  await subgeneroNoRekordbox.click();
+  await expect(cartao.getByTestId('organizacao-sem-conta')).toBeVisible();
+  await expect(cartao.getByTestId('organizacao-novidade')).toHaveCount(0);
+  await capturar(janela, '05-biblioteca-organizar-sem-conta');
+  await cartao.getByTestId('organizacao-continuar-sem-conta').click();
+  await expect(subgeneroNoRekordbox).toBeChecked();
+  await expect(cartao.getByTestId('organizacao-exemplo-rekordbox')).toContainText('Techno › Peak Time › Azyr');
+  await expect
+    .poll(() => readFileSync(caminho, 'utf8'), { timeout: 60_000 })
+    .toMatch(/<NODE Type="0" Name="Peak Time - Driving" Count="\d+">/);
+  expect(JSON.parse(readFileSync(join(amb.projeto, 'soulbeet', 'data', 'pastas.json'), 'utf8'))).toMatchObject({
+    subgenero: { disco: false, rekordbox: true },
+  });
+
+  // classificar o que falta: roda o subcomando do plugin e mostra o andamento
+  await cartao.getByTestId('organizacao-classificar').click();
+  const dialogo = janela.getByTestId('dialogo-manutencao');
+  await expect(dialogo).toContainText('Classificar o subgênero');
+  await dialogo.getByRole('button', { name: 'Classificar' }).click();
+  await expect(dialogo.getByTestId('manutencao-andamento')).toHaveAttribute('data-fim', 'sim', { timeout: 30_000 });
+  await expect(dialogo.getByTestId('andamento-classificacao')).toHaveText('3 de 3 classificadas');
+  expect(comandosDoBeets(amb, 'beatport-classificar')).toHaveLength(1);
 });
 
 test('aceite: sem a stack no ar a biblioteca explica e nenhum comando do beets roda', async () => {

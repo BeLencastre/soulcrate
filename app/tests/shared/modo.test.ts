@@ -86,8 +86,16 @@ describe('qual modo vale', () => {
 
 describe('seções de Configurações', () => {
   it('o Modo DJ só tem "Suas coisas" e as do app; o Dev mantém as seis da stack', () => {
-    expect(SECOES_DO_MODO.dj.stack).toEqual(['pastas', 'soulseek', 'compartilhamento']);
-    expect(SECOES_DO_MODO.dev.stack).toEqual(['conferencia', 'pastas', 'soulseek', 'webui', 'rede', 'avancado']);
+    expect(SECOES_DO_MODO.dj.stack).toEqual(['pastas', 'soulseek', 'beatport', 'compartilhamento']);
+    expect(SECOES_DO_MODO.dev.stack).toEqual([
+      'conferencia',
+      'pastas',
+      'soulseek',
+      'beatport',
+      'webui',
+      'rede',
+      'avancado',
+    ]);
     expect(SECOES_DO_MODO.dj.app).toEqual(SECOES_DO_MODO.dev.app);
   });
 
@@ -105,6 +113,7 @@ describe('seções de Configurações', () => {
   it('só aceita seções conhecidas vindas do endereço', () => {
     expect(ehSecaoConfig('compartilhamento')).toBe(true);
     expect(ehSecaoConfig('rede')).toBe(true);
+    expect(ehSecaoConfig('beatport')).toBe(true);
     expect(ehSecaoConfig('xpto')).toBe(false);
     expect(ehSecaoConfig(null)).toBe(false);
   });

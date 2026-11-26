@@ -57,6 +57,9 @@ export const COMANDOS_PERMITIDOS: readonly string[] = [
   'keyfinder',
   'autobpm',
   'import',
+  // ADR 0007: login e uma busca de teste no Beatport; classificar o subgênero das faixas (retomável)
+  'beatport-testar',
+  'beatport-classificar',
 ];
 
 /** Monta o comando do beets; recusa qualquer subcomando fora da lista (defesa em profundidade: a lista é fixa no código). */
@@ -322,6 +325,8 @@ export class BibliotecaService {
         return [['move']];
       case 'tomEBpm':
         return [['keyfinder'], ['autobpm']];
+      case 'classificar':
+        return [['beatport-classificar']];
       case 'importLeftovers': {
         const parados = await this.dep.escanearDownloads(this.dep.pastas(dir).downloads, this.dep.agora());
         if (parados.length === 0) return [];
@@ -437,4 +442,5 @@ const TITULO_DA_TAREFA: Record<TarefaManutencao, string> = {
   move: 'reorganizar as pastas',
   tomEBpm: 'recalcular o tom e o BPM',
   importLeftovers: 'importar o que sobrou em downloads/',
+  classificar: 'classificar o subgênero da biblioteca',
 };
